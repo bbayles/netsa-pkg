@@ -1,3 +1,4 @@
+MAINTAINER = "Bo Bayles <bbayles+netsa@gmail.com>"
 VERSION = 20160403
 PROC_ARC ?= amd64
 TARGET_ROOT = $(shell pwd)/packaging/root
@@ -42,6 +43,7 @@ deb:
 		-v ${VERSION} \
 		-p packaging/output/netsa-pkg.deb \
 		-a ${PROC_ARC} \
+		--maintainer ${MAINTAINER} \
 		--category admin \
 		--force \
 		--deb-compression bzip2 \
@@ -65,6 +67,7 @@ rpm:
 		-v ${VERSION} \
 		-p packaging/output/netsa-pkg.rpm \
 		-a ${PROC_ARC} \
+		--maintainer ${MAINTAINER} \
 		--category admin \
 		--force \
 		--rpm-compression bzip2 \
