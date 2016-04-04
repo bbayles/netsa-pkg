@@ -1,4 +1,4 @@
-VERSION = 20160401
+VERSION = 20160403
 PROC_ARC ?= amd64
 TARGET_ROOT = $(shell pwd)/packaging/root
 YAF_PREFIX = ${TARGET_ROOT}/opt/yaf
@@ -84,7 +84,7 @@ build_deb: libfixbuf yaf silk deb
 build_rpm: libfixbuf yaf silk rpm
 
 build_ubuntu:
-	$(eval IMAGE_ID = $(shell docker build --force-rm -q -f "packaging/scripts/buildimage_centos-6/Dockerfile" .))
+	$(eval IMAGE_ID = $(shell docker build --force-rm -q -f "packaging/scripts/buildimage_ubuntu-12.04/Dockerfile" .))
 	docker run -v "${OUTPUT_DIR}:/netsa-pkg/packaging/output" $(IMAGE_ID) /usr/bin/make build_deb
 	chmod -R 776 ${OUTPUT_DIR}/*
 
