@@ -1,3 +1,26 @@
+Version 2.0.0: 2018-05-02
+=========================
+
+This version is not backwards-compatible with fixbuf 1.x.
+
+Change source for infomodel to the IANA XML version of the IPFIX
+Information Elements.
+
+Require information element specifications for internal records to
+have non-defaulted (non-zero) sizes.
+
+Simplify new template callbacks, subsuming the three variants with
+one: fbSessionAddNewTemplateCallback().
+
+The default is now to consider the source port when separating
+incoming UDP streams.  The function fbCollectorManageUDPStreamByPort()
+has been removed.
+
+Change fbInfoElementWriteOptionsRecord() to take both the internal and
+external template id.
+
+Update to LGPL 3.
+
 Version 1.8.0: 2017-11-07
 =========================
 

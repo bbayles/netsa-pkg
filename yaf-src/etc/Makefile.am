@@ -14,7 +14,7 @@
 
 EXTRA_DIST = yaf.conf.in init.d/yaf.in yafApplabelRules.conf yaf.init
 
-dist_sysconf_DATA = yafApplabelRules.conf
+dist_sysconf_DATA = yafApplabelRules.conf yaf.conf
 
 if PLUGINENABLE
 dist_sysconf_DATA += yafDPIRules.conf dhcp_fingerprints.conf

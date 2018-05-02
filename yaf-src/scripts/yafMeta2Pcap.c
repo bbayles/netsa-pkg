@@ -7,7 +7,7 @@
  * Use the getFlowKeyHash program to calculate the flow key hash.
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2016 Carnegie Mellon University.
+ ** Copyright (C) 2006-2018 Carnegie Mellon University.
  ** All Rights Reserved.
  **
  ** ------------------------------------------------------------------------
@@ -149,11 +149,11 @@ static fbInfoElement_t new_info_elements[] = {
 
 
 static fbInfoElementSpec_t simple_flow[] = {
-    { "flowStartMilliseconds",              0, 0 },
-    { "flowEndMilliseconds",                0, 0 },
-    { "packetTotalCount",                   0, 0 },
-    { "yafFlowKeyHash",                     0, 0 },
-    { "reverseYafFlowKeyHash",              0, 0 },
+    { "flowStartMilliseconds",              8, 0 },
+    { "flowEndMilliseconds",                8, 0 },
+    { "packetTotalCount",                   8, 0 },
+    { "yafFlowKeyHash",                     4, 0 },
+    { "reverseYafFlowKeyHash",              4, 0 },
     FB_IESPEC_NULL
 };
 

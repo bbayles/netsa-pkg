@@ -3,7 +3,7 @@
 ## Makefile.am (toplevel)
 ## autotools build system for YAF
 ## ------------------------------------------------------------------------
-## Copyright (C) 2006-2016 Carnegie Mellon University. All Rights Reserved.
+## Copyright (C) 2006-2018 Carnegie Mellon University. All Rights Reserved.
 ## ------------------------------------------------------------------------
 ## Authors: Brian Trammell
 ## ------------------------------------------------------------------------
@@ -19,7 +19,7 @@ ACLOCAL_AMFLAGS = -I m4
 # Avoid picking up MacOS X resource forks in "make dist"
 am__tar = COPY_EXTENDED_ATTRIBUTES_DISABLE=1 COPYFILE_DISABLE=1 ${AMTAR} cof - "$$tardir"
 
-SUBDIRS = lua airframe libltdl src include etc scripts
+SUBDIRS = infomodel lua airframe libltdl src include etc scripts
 
 include doxygen.am
 
@@ -70,3 +70,4 @@ EXTRA_DIST = \
     doc/howto/yaf_super_pipeline.md \
     doc/LICENSE.txt
 
+EXTRA_DIST += xml2fixbuf.xslt make-infomodel

@@ -127,11 +127,12 @@ am__aclocal_m4_deps =  \
 	$(top_srcdir)/m4/ax_check_ltdl.m4 \
 	$(top_srcdir)/m4/ax_compare_version.m4 \
 	$(top_srcdir)/m4/ax_prog_doxygen.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltdl.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/m4/spread.m4 $(top_srcdir)/m4/yafsummary.m4 \
-	$(top_srcdir)/acinclude.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/infomodel.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltdl.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/m4/spread.m4 \
+	$(top_srcdir)/m4/yafsummary.m4 $(top_srcdir)/acinclude.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
@@ -348,6 +349,10 @@ GLIB_MKENUMS = @GLIB_MKENUMS@
 GOBJECT_QUERY = @GOBJECT_QUERY@
 GREP = @GREP@
 INCLTDL = @INCLTDL@
+INFOMODEL_REGISTRIES = @INFOMODEL_REGISTRIES@
+INFOMODEL_REGISTRY_INCLUDES = @INFOMODEL_REGISTRY_INCLUDES@
+INFOMODEL_REGISTRY_INCLUDE_FILES = @INFOMODEL_REGISTRY_INCLUDE_FILES@
+INFOMODEL_REGISTRY_PREFIXES = @INFOMODEL_REGISTRY_PREFIXES@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -383,6 +388,7 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERL = @PERL@
 PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
@@ -399,6 +405,7 @@ SPREAD_LDFLAGS = @SPREAD_LDFLAGS@
 SPREAD_LIBS = @SPREAD_LIBS@
 STRIP = @STRIP@
 VERSION = @VERSION@
+XSLTPROC = @XSLTPROC@
 YAF_HAS_DAG = @YAF_HAS_DAG@
 YAF_HAS_NAPATECH = @YAF_HAS_NAPATECH@
 YAF_HAS_NETRONOME = @YAF_HAS_NETRONOME@
@@ -485,7 +492,7 @@ top_srcdir = @top_srcdir@
 version_info = @version_info@
 AUTOMAKE_OPTIONS = check-news subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = lua airframe libltdl src include etc scripts
+SUBDIRS = infomodel lua airframe libltdl src include etc scripts
 @DX_COND_doc_TRUE@@DX_COND_html_TRUE@DX_CLEAN_HTML = @DX_DOCDIR@/html
 @DX_COND_chm_TRUE@@DX_COND_doc_TRUE@DX_CLEAN_CHM = @DX_DOCDIR@/chm
 @DX_COND_chi_TRUE@@DX_COND_chm_TRUE@@DX_COND_doc_TRUE@DX_CLEAN_CHI = @DX_DOCDIR@/@PACKAGE@.chi
@@ -514,24 +521,13 @@ MOSTLYCLEANFILES = $(DX_CLEANFILES)
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libyaf.pc
 DISTCLEANFILES = $(YAF_SUMMARY_FILE)
-EXTRA_DIST = \
-    Doxyfile.in \
-    DoxygenLayout.xml \
-    yaf.spec \
-    yaf.spec.in \
-    doc/add-header.pl \
-    doc/Doxyhead.html \
-    doc/Doxyfoot.html \
-    doc/doxygen.css \
-    doc/news2xhtml.pl \
-    doc/howto/yaf_pcap.md \
-    doc/howto/yaf_pcap2.md \
-    doc/howto/yaf_super_silk.md \
-    doc/howto/yaf_silk.md \
-    doc/howto/yaf_orcus.md \
-    doc/howto/yaf_super_pipeline.md \
-    doc/LICENSE.txt
-
+EXTRA_DIST = Doxyfile.in DoxygenLayout.xml yaf.spec yaf.spec.in \
+	doc/add-header.pl doc/Doxyhead.html doc/Doxyfoot.html \
+	doc/doxygen.css doc/news2xhtml.pl doc/howto/yaf_pcap.md \
+	doc/howto/yaf_pcap2.md doc/howto/yaf_super_silk.md \
+	doc/howto/yaf_silk.md doc/howto/yaf_orcus.md \
+	doc/howto/yaf_super_pipeline.md doc/LICENSE.txt \
+	xml2fixbuf.xslt make-infomodel
 all: all-recursive
 
 .SUFFIXES:

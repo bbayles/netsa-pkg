@@ -986,7 +986,7 @@ gboolean yfCapMain(
                     yfCapUpdateStats(cs->pcap);
                 }
 
-                if (!yfWriteStatsFlow(ctx, yaf_pcap_drop+yaf_ifdrop,
+                if (!yfWriteOptionsDataFlows(ctx, yaf_pcap_drop+yaf_ifdrop,
                                       yfStatGetTimer(),
                                       &(ctx->err)))
                 {

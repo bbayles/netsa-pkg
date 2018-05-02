@@ -2506,7 +2506,7 @@ static void yfNDPIApplabel(
     flow->ndpi_master = proto.master_protocol;
     flow->ndpi_sub = proto.protocol;
 
-    //g_debug("proto is %d other is %d", proto.master_protocol, proto.protocol);
+    /* g_debug("proto is %d other is %d", proto.master_protocol, proto.protocol); */
     ndpi_free_flow(nflow);
 
 }

@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<?xml-stylesheet type="text/xsl" href="ipfix.xsl"?>
+<registry id="netflowv9"
+          xmlns="http://www.iana.org/assignments"
+          xmlns:cert="http://www.cert.org/ipfix">
+  <registry id="nfv9-information-elements">
+    <title>Netflow v9 elements</title>
+
+    <record>
+      <name>NF_F_FW_EXT_EVENT</name>
+      <dataType>unsigned16</dataType>
+      <dataTypeSemantics>identifier</dataTypeSemantics>
+      <cert:reversible>false</cert:reversible>
+      <elementId>9997</elementId>
+      <description>
+        <paragraph>
+          When libfixbuf is used as a NetFlowV9 translator, this is
+          the element to which libfixbuf maps the Cisco Element
+          NF_F_FW_EXT_EVENT whose ID (33002) represents an enterprise
+          element in IPFIX.
+        </paragraph>
+      </description>
+    </record>
+
+    <record>
+      <name>NF_F_FW_EVENT</name>
+      <dataType>unsigned8</dataType>
+      <dataTypeSemantics>identifier</dataTypeSemantics>
+      <cert:reversible>false</cert:reversible>
+      <elementId>9998</elementId>
+      <description>
+        <paragraph>
+          When libfixbuf is used as a NetFlowV9 translator, this is
+          the element to which libfixbuf maps the Cisco Element
+          NF_F_FW_EVENT whose ID (40005) represents an enterprise
+          element in IPFIX.
+        </paragraph>
+      </description>
+    </record>
+
+    <record>
+      <name>ciscoNetflowGeneric</name>
+      <dataType>unsigned64</dataType>
+      <cert:reversible>false</cert:reversible>
+      <elementId>9999</elementId>
+      <description>
+        <paragraph>
+          When libfixbuf is used as a NetFlowV9 translator, this is
+          the element to which libfixbuf maps arbitrary Cisco Elements
+          whose ID is greater than 346 and are not specifically
+          translated to another element.
+        </paragraph>
+      </description>
+    </record>
+
+  </registry>
+</registry>
+

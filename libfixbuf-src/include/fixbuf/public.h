@@ -3,53 +3,34 @@
  ** fixbuf IPFIX Implementation Public Interface
  **
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2016 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2006-2018 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Brian Trammell, Dan Ruef
  ** ------------------------------------------------------------------------
  ** Use of the libfixbuf system and related source code is subject to the terms
  ** of the following licenses:
  **
- ** GNU Lesser GPL (LGPL) Rights pursuant to Version 2.1, February 1999
- ** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
+ ** Copyright 2018 Carnegie Mellon University. All Rights Reserved.
  **
- ** NO WARRANTY
+ ** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
+ ** ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS"
+ ** BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY KIND,
+ ** EITHER EXPRESSED OR IMPLIED, AS TO ANY MATTER INCLUDING, BUT NOT
+ ** LIMITED TO, WARRANTY OF FITNESS FOR PURPOSE OR MERCHANTABILITY,
+ ** EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE
+ ** MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ ** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR
+ ** COPYRIGHT INFRINGEMENT.
  **
- ** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
- ** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
- ** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
- ** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
- ** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
- ** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
- ** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
- ** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
- ** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
- ** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
- ** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
- ** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
- ** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
- ** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
- ** DELIVERABLES UNDER THIS LICENSE.
+ ** Released under a GNU-Lesser GPL 3.0-style license, please see
+ ** License.txt or contact permission@sei.cmu.edu for full terms.
  **
- ** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
- ** Mellon University, its trustees, officers, employees, and agents from
- ** all claims or demands made against them (and any related losses,
- ** expenses, or attorney's fees) arising out of, or relating to Licensee's
- ** and/or its sub licensees' negligent use or willful misuse of or
- ** negligent conduct or willful misconduct regarding the Software,
- ** facilities, or other rights or assistance granted by Carnegie Mellon
- ** University under this License, including, but not limited to, any
- ** claims of product liability, personal injury, death, damage to
- ** property, or violation of any laws or regulations.
+ ** [DISTRIBUTION STATEMENT A] This material has been approved for
+ ** public release and unlimited distribution.  Please see Copyright
+ ** notice for non-US Government use and distribution.
  **
- ** Carnegie Mellon University Software Engineering Institute authored
- ** documents are sponsored by the U.S. Department of Defense under
- ** Contract FA8721-05-C-0003. Carnegie Mellon University retains
- ** copyrights in all material produced under this contract. The U.S.
- ** Government retains a non-exclusive, royalty-free license to publish or
- ** reproduce these documents, or allow others to do so, for U.S.
- ** Government purposes only pursuant to the copyright license under the
- ** contract clause at 252.227.7013.
+ ** Carnegie Mellon® and CERT® are registered in the U.S. Patent and
+ ** Trademark Office by Carnegie Mellon University.
  **
  ** ------------------------------------------------------------------------
  */
@@ -437,14 +418,6 @@
  * will return FB_ERROR_NLREAD.  The application should ignore errors with
  * this error code by clearing the error and calling fBufNext().
  *
- * To manage netflow v9 and UDP sessions by port as well as IP and
- * observation domain, use fbCollectorManageUDPStreamByPort().  Some
- * netflow v9 devices send two separate streams from different ports to
- * the same sensor.  Unless the observation domain is different on each
- * of the streams, use fbCollectorManageUDPStreamByPort() to prevent
- * template confusion between streams.
- *
- *
  * @page v9  NetFlow v9 Collectors
  *
  * How-To use libfixbuf as a NetFlow v9 Collector:
@@ -513,26 +486,25 @@
  * template ID of 0xEEEE and the Options Records will have a template ID of
  * 0xEEEF.
  *
- * Fixbuf first reads the sFlow header to
- * ensure the buffer contains sFlow v5.  Fixbuf currently only has support for
- * sFlow v5.  The sFlow header only contains the time since the device last
- * rebooted (but not the time of reboot) and this time will be reported in
- * the systemInitTimeMilliseconds field. Fixbuf records
- * the time that the sFlow message was received in the
- * collectionTimeMilliseconds field.  Once the first message
- * has been received, the translator will create an external buffer and export
- * the fixed templates to the fixbuf session.  Note: the first sFlow message
- * that fixbuf receives will not be processed - this is used to setup the
- * translation process.  The translator will keep track of sequence numbers
- * per peer (IP)/observation domain (agent ID) by default. Use
- * fbCollectorManageUDPStreamByPort() to differentiate sessions by IP, port,
- * and observation domain.  There are multiple sequence numbers in sFlow.
- * Each sFlow message has a sequence number and each sample has a sequence
- * number.  The sFlow message sequence number is used to determine if
- * sFlow messages have been dropped.  Fixbuf will report if either sequence
- * number is out of sequence and emit a warning. The warning is just for
- * notification, libfixbuf will process all well-formed samples that it
- * receives.
+ * Fixbuf first reads the sFlow header to ensure the buffer contains
+ * sFlow v5.  Fixbuf currently only has support for sFlow v5.  The
+ * sFlow header only contains the time since the device last rebooted
+ * (but not the time of reboot) and this time will be reported in the
+ * systemInitTimeMilliseconds field. Fixbuf records the time that the
+ * sFlow message was received in the collectionTimeMilliseconds field.
+ * Once the first message has been received, the translator will
+ * create an external buffer and export the fixed templates to the
+ * fixbuf session.  Note: the first sFlow message that fixbuf receives
+ * will not be processed - this is used to setup the translation
+ * process.  The translator will keep track of sequence numbers per
+ * peer (IP)/observation domain (agent ID) by default.  There are
+ * multiple sequence numbers in sFlow.  Each sFlow message has a
+ * sequence number and each sample has a sequence number.  The sFlow
+ * message sequence number is used to determine if sFlow messages have
+ * been dropped.  Fixbuf will report if either sequence number is out
+ * of sequence and emit a warning. The warning is just for
+ * notification, libfixbuf will process all well-formed samples that
+ * it receives.
  *
  * libfixbuf will process Flow Samples (1), Extended Flow Samples (3), Counter
  * Samples (2), and Extended Counter Samples (4).  Any other format will
@@ -786,19 +758,14 @@
  * functionality has been added to fixbuf to alert the user when a new external
  * template has arrived.  The callback functions are stored in the session
  * structure, which manages the templates.  fbNewTemplateCallback_fn gives the
- * application a  pointer to the template structure, allowing the
- * application to determine the contents of the template, a template ID to
- * identify the incoming template, and the session pointer.
- * This information is sufficient for the  application to successfully
- * add template pairs to the session for sub template decoding.
+ * application the session pointer, the template, the template ID, as well as a
+ * context variable that is stored for the application in the template.  The
+ * callback also gives the user another callback that can be used to free the
+ * context variable upon template deletion.  This information is sufficient for
+ * the application to successfully add template pairs to the session for sub
+ * template decoding.
  *
- * The other callback function, fbTemplateCtxCallback2_fn gives the
- * application the session pointer, the template, the template ID, as well
- * as a context variable that is stored for the application in the template.
- * The callback also gives the user another callback that can be used to
- * free the context variable upon template deletion.
- *
- * If the application does not use the callback, or does not add any template
+ * If the application does not use the callback or does not add any template
  * pairs to the session, then fixbuf will transcode each of the sub templates
  * as if the external and internal template were same.  This causes all of the
  * fields sent over the wire to be transcoded into the data buffer on the
@@ -876,46 +843,56 @@
  * Option Template/Records that can encode the full set of properties
  * for the definition of an Information Element in order for a
  * Collecting Process to be able to know how to decode data that
- * contains enterprise -specific Information Elements.
+ * contains enterprise-specific Information Elements.
  *
  * @section exp RFC 5610 Exporters
  *
  * To create a new enterprise-specific Information Element, the
  * Exporting Process should define a new information element using
- * the FB_IE_INIT_FULL macro to provide the name, private enterprise
+ * the FB_IE_INIT_FULL() macro to provide the name, private enterprise
  * number, id, length, description, data type, and units of the
  * information element.  The Information Elements should then be
  * added to the Information Model using fbInfoModelAddElement() or
  * fbInfoModelAddElementArray().
  *
- * An options template can then be created using
- * fbInfoElementAllocTypeTemplate().  This creates an option template
- * that contains all of the necessary properties to define an
- * Information Element:
+ * Once an enterprise-specific information element exists, there are
+ * two ways to export that information.  The simplest way is to
+ * configure automated enterprise-specific information element
+ * information export.  This is done by calling
+ * fbSessionEnableTypeMetadata() with the `enabled` parameter set to
+ * `TRUE`.  Once this has been set, the full set of information
+ * elements in the information model that have a non-zero Private
+ * Enterprise Number will be exported every time template records are
+ * exported.
  *
- * -informationElementRangeBegin
- * -informationElementRangeEnd
- * -privateEnterpriseNumber
- * -informationElementUnits
- * -informationElementId
- * -informationElementDataType
- * -informationElementSemantics
- * -paddingOctets
- * -informationElementName
- * -informationElementDescription
+ * The other option is to export the information element options
+ * records manually. An information element options template can then
+ * be created using fbInfoElementAllocTypeTemplate().  This creates an
+ * option template that contains all of the necessary properties to
+ * define an Information Element:
+ *
+ * - informationElementRangeBegin
+ * - informationElementRangeEnd
+ * - privateEnterpriseNumber
+ * - informationElementUnits
+ * - informationElementId
+ * - informationElementDataType
+ * - informationElementSemantics
+ * - paddingOctets
+ * - informationElementName
+ * - informationElementDescription
  *
  * Then the template can be added to the session using
- * fbSessionAddTemplate().  Create the exporter and fbuf as
- * described above for the necessary mode of transport.  In order
- * to use the above template, set the internal template to the
- * to the options template created above using the template id
- * that was returned by fbSessionAddTemplate() using fBufSetInternalTemplate().
- * Use fBufSetExportTemplate() to set the external template
- * on the fBuf, then use fbInfoElementWriteOptionsRecord() with
- * the enterprise-specific Information Element.  For Example:
- * \code{.c}
- * fbInfoElementWriteOptionsRecord(fbuf, fbInfoModelGetElementByName(infoModel, "myNewElement"), tid, err);
- * \endcode
+ * fbSessionAddTemplate().  You will need to add it twice, once as an
+ * internal template, and once as an external template.  Create the
+ * exporter and fbuf as described above for the necessary mode of
+ * transport.  Then, to write out an information element options
+ * record, use fbInfoElementWriteOptionsRecord(), using the template
+ * IDs returned by the fbSessionAddTemplate() calls as the internal
+ * and export template IDs, passing it a pointer to the information
+ * element you want to export.  For example:
+ *
+ *  \code{.c} fbInfoElementWriteOptionsRecord(fbuf, fbInfoModelGetElementByName(infoModel, "myNewElement"), itid, etid, *err); \endcode
  *
  * The Options Record will automatically be appended to the fbuf
  * and will be sent upon calling fBufEmit().
@@ -930,9 +907,7 @@
  *
  * OR - the collector can simply use fBufSetAutomaticInsert()
  * after creating an fBuf to automatically insert any information
- * elements into the Information Model.  Use the FB_IE_UNITS()
- * and FB_IE_SEMANTIC() macros to query the flags field for the
- * appropriate field.
+ * elements into the Information Model.
  *
  */
 
@@ -946,6 +921,7 @@
 #ifndef _FB_PUBLIC_H_
 #define _FB_PUBLIC_H_
 #include <fixbuf/autoinc.h>
+#include "version.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -1031,6 +1007,10 @@ extern "C" {
  * Setup error
  */
 #define FB_ERROR_SETUP              15
+/**
+ * Internal template with defaulted element sizes
+ */
+#define FB_ERROR_LAXSIZE            16
 
 /*
  * Public Datatypes and Constants
@@ -1085,7 +1065,7 @@ typedef struct fbInfoModelIter_st {
 } fbInfoModelIter_t;
 
 /**
- * NEW Convenience macro for creating full fbInfoElement_t static initializers.
+ * Convenience macro for creating full fbInfoElement_t static initializers.
  * Used for creating information element arrays suitable for passing to
  * fbInfoModelAddElementArray().
  */
@@ -1093,9 +1073,9 @@ typedef struct fbInfoModelIter_st {
     { {(const struct fbInfoElement_st*)_name_}, 0, _ent_, _num_, _len_, _flags_, _min_, _max_, _type_, _desc_ }
 
 /**
- * Convenience macro for creating default fbInfoElement_t static initializers.
- * Used for creating information element arrays suitable for passing to
- * fbInfoModelAddElementArray().
+ * @deprecated Convenience macro for creating default fbInfoElement_t
+ * static initializers.  Used for creating information element arrays
+ * suitable for passing to fbInfoModelAddElementArray().
  */
 #define FB_IE_INIT(_name_, _ent_, _num_, _len_, _flags_) \
     FB_IE_INIT_FULL(_name_, _ent_, _num_, _len_, _flags_, 0, 0, 0, (char*)NULL)
@@ -1191,6 +1171,20 @@ typedef struct fbInfoModelIter_st {
  *
  */
 #define FB_IE_LIST                              0x00000600
+
+/**
+ * An Information Element Semantics Flag used to describe an information
+ * element as an SNMP counter.
+ *
+ */
+#define FB_IE_SNMPCOUNTER                       0x00000700
+
+/**
+ * An Information Element Semantics Flag used to describe an information
+ * element as a SNMP gauge.
+ *
+ */
+#define FB_IE_SNMPGAUGE                         0x00000800
 
 /**
  * An Information Element Semantics Flag used to describe an information
@@ -1515,8 +1509,15 @@ typedef struct fbInfoElementSpec_st {
     /** Information element name */
     char                *name;
     /**
-     * Length override; if nonzero, replace the length of the IE from the
-     * model with this length. Used for reduced-length encoding.
+     * The size of the information element in bytes.  For internal
+     * templates, this is the size of the memory location that will be
+     * filled by the transcoder (i.e., the size of a field in a
+     * struct). Zero cannot be used to default the size of elements
+     * used in internal templates. This is so changes in the "default"
+     * length will not silently be different then the sizes of fields
+     * in an internal struct definition. Zero can be used as the size
+     * of #FB_IE_VARLEN elements.  This field can also be used to
+     * specify reduced-length encoding.
      */
     uint16_t            len_override;
     /**
@@ -1699,114 +1700,48 @@ struct fbListenerGroup_st;
 typedef struct fbListenerGroup_st fbListenerGroup_t;
 
 /**
- * The callback function to be called when the session receives a new
- * external template from the connected node.
- * The point of this callback is to be able to assign an internal template
- * to a received external template for subTemplates or to apply some
- * context variable to a template.
- * The callback should be set using fbSessionAddTemplateCallback() and
- * that function should be called upon session creation.  Libfixbuf often
- * clones sessions upon receiving a connection (particularly in the UDP case)
- * and this callback function is carried over to cloned sessions.
- *
- * @param session a pointer to the session that received the template
- * @param tid the template ID for the template that was received
- * @param tmpl pointer to the template information of the received template
- * @return NO return value
- */
-typedef void (*fbNewTemplateCallback_fn) (
-    fbSession_t    *session,
-    uint16_t        tid,
-    fbTemplate_t   *tmpl);
-
-/**
  * A callback function that is called when a template is freed.  The free
- * function should be set during the fbTemplateCtxCallback.
- *
- * @param ctx a pointer to the ctx that is stored within the fbTemplate.
- * @return NO return value
- */
-typedef void (*fbTemplateCtxFree_fn)(
-    void           *ctx);
-
-/**
- * A callback function that is called when a template is freed.  The free
- * function should be set during the fbTemplateCtxCallback2.
+ * function should be set during the fbNewTemplateCtxCallback.
  *
  * @param tmpl_ctx a pointer to the ctx that is stored within the fbTemplate.
  * @param app_ctx the app_ctx pointer that was passed to the
- *                fbSessionAddTemplateCtxCallback2() call
+ *                fbSessionAddNewTemplateCallback() call
  * @return NO return value
  */
-typedef void (*fbTemplateCtxFree2_fn)(
+typedef void (*fbTemplateCtxFree_fn)(
     void           *tmpl_ctx,
     void           *app_ctx);
 
-
 /**
  * A callback function that will be called when the session receives
  * a new external template.  This callback can be used to assign an
  * internal template to an incoming external template for nested template
  * records using fbSessionAddTemplatePair() or to apply some context variable
- * to a template.  The fbNewTemplateCallback_fn is retained for backwards
- * compatibility.
+ * to a template.
  *
- * The callback should be set using fbSessionAddTemplateCtxCallback() and
+ * The callback should be set using fbSessionAddNewTemplateCallback(), and
  * that function should be called after fbSessionAlloc().  Libfixbuf often
  * clones session upon receiving a connection (particularly in the UDP case
- * since a collector and fbuf can have multiple sessions) and this callback
- * is carried over to cloned sessions.
- *
- * This callback function does not provide a way for the caller to pass
- * their application's context into the function for making a C closure.
- * For that, use fbSessionAddTemplateCtxCallback2().
- *
- * @param session a pointer to the session that received the template
- * @param tid the template ID for the template that was received
- * @param tmpl pointer to the template information of the received template
- * @param ctx pointer that is stored in the fbTemplate structure.
- * @param fn a callback function that should be called to free the ctx
- *                when the template is freed/replaced.
- * @return NO return value
- **/
-typedef void (*fbTemplateCtxCallback_fn) (
-    fbSession_t          *session,
-    uint16_t             tid,
-    fbTemplate_t         *tmpl,
-    void                 **ctx,
-    fbTemplateCtxFree_fn *fn);
-
-/**
- * A callback function that will be called when the session receives
- * a new external template.  This callback can be used to assign an
- * internal template to an incoming external template for nested template
- * records using fbSessionAddTemplatePair() or to apply some context variable
- * to a template.  The fbNewTemplateCallback_fn is retained for backwards
- * compatibility.
- *
- * The callback should be set using fbSessionAddTemplateCtxCallback2() and
- * that function should be called after fbSessionAlloc().  Libfixbuf often
- * clones session upon receiving a connection (particularly in the UDP case
- * since a collector and fbuf can have multiple sessions) and this callback
+ * since a collector and fbuf can have multiple sessions), and this callback
  * is carried over to cloned sessions.
  *
  * @param session a pointer to the session that received the template
  * @param tid the template ID for the template that was received
  * @param tmpl pointer to the template information of the received template
  * @param app_ctx the app_ctx pointer that was passed to the
- *                fbSessionAddTemplateCtxCallback2() call
+ *                fbSessionAddNewTemplateCallback() call
  * @param tmpl_ctx pointer that is stored in the fbTemplate structure.
  * @param fn a callback function that should be called to free the ctx
  *                when the template is freed/replaced.
  * @return NO return value
  **/
-typedef void (*fbTemplateCtxCallback2_fn) (
+typedef void (*fbNewTemplateCallback_fn) (
     fbSession_t           *session,
     uint16_t              tid,
     fbTemplate_t          *tmpl,
     void                  *app_ctx,
     void                  **tmpl_ctx,
-    fbTemplateCtxFree2_fn *fn);
+    fbTemplateCtxFree_fn  *fn);
 
 
 /**
@@ -2571,7 +2506,7 @@ uint16_t fbSubTemplateMultiListEntryGetTemplateID(
  * This does not free the record itself.  It will only free any
  * list information elements and nested list information elements.
  *
- * @param template pointer to the internal template that MUST match the record
+ * @param tmpl pointer to the internal template that MUST match the record
  * @param record pointer to the data
  * @return NONE
  */
@@ -3292,7 +3227,8 @@ fbTemplate_t *fbInfoElementAllocTypeTemplate(
  *
  * @param fbuf       An existing fbuf
  * @param model_ie   A pointer to the information element to export type info.
- * @param tid        The template id of the Options Template.
+ * @param itid       The internal template id of the Options Template.
+ * @param etid       The external template id of the Options Template.
  * @param err        GError
  * @return           TRUE if successful, FALSE if an error occurred.
  */
@@ -3300,7 +3236,8 @@ fbTemplate_t *fbInfoElementAllocTypeTemplate(
 gboolean fbInfoElementWriteOptionsRecord(
     fBuf_t                  *fbuf,
     const fbInfoElement_t   *model_ie,
-    uint16_t                tid,
+    uint16_t                itid,
+    uint16_t                etid,
     GError                  **err);
 
 /**
@@ -3602,10 +3539,10 @@ uint16_t fbSessionAddTemplateWithMetadata(
     fbSession_t         *session,
     gboolean             internal,
     uint16_t             tid,
-    fbTemplate_t           *tmpl,
-    const char           *name,
-    const char           *description,
-    GError               **err);
+    fbTemplate_t        *tmpl,
+    const char          *name,
+    const char          *description,
+    GError              **err);
 
 /**
  * Add template metadata for a given template
@@ -3622,7 +3559,7 @@ gboolean fbSessionSetTemplateMetadata(
     uint16_t             tid,
     const char          *name,
     const char          *description,
-    GError                    **err);
+    GError             **err);
 
 /**
  * fbSessionGetInfoModel
@@ -3635,34 +3572,6 @@ gboolean fbSessionSetTemplateMetadata(
 fbInfoModel_t       *fbSessionGetInfoModel(
     fbSession_t         *session);
 
-
-/**
- * This function sets the callback to let the user know when a new template
- * has arrived from the connected IPFIX node.  Assigning a callback here
- * is NOT required.  Not using one will cause all sub templates to be fully
- * decoded, transcoding all information elements in the external template.
- *
- * This function should be called after fbSessionAlloc().  Fixbuf often
- * clones sessions upon receiving a connection.  In the TCP case, the
- * application has access to the session right after fbListenerWait() returns
- * by calling fBufGetSession().  In the UDP case, the application does
- * not have access to the fbSession until after a call to fBufNext() for
- * fBufNextCollectionTemplate() and by this time the application may have
- * already received some templates.  Therefore, it is important to call this
- * function before fBufNext().  Any callbacks added to the session will be
- * carried over to cloned sessions.
- *
- * In order to add application context to a template use the newer API call
- * fbSessionAddTemplateCtxCallback2() instead.
- *
- * @param session pointer to the session to assign the callback to
- * @param callback the function to be called when a new template is received
- * @return NONE
- */
-void fbSessionAddTemplateCallback(
-    fbSession_t                *session,
-    fbNewTemplateCallback_fn    callback);
-
 /**
  * This function sets the callback that allows the application to set its
  * own context variable with a new incoming template.  Assigning a callback
@@ -3683,52 +3592,6 @@ void fbSessionAddTemplateCallback(
  * already received some templates.  Therefore, it is important to call this
  * function before fBufNext().  Any callbacks added to the session will be
  * carried over to cloned sessions.
- *
- * This function replaced the deprecated function
- * fbSessionAddTemplateCallback(), and should be used with the
- * fbNewTemplateCallback_fn.  This function should be used with the
- * fbTemplateCtxCallback_fn.
- *
- * The callback function passed to this function does not provide a way for
- * the caller to pass their application's context into the function for
- * making a C closure.  For that, use fbSessionAddTemplateCtxCallback2().
- * (Only one of fbSessionAddTemplateCtxCallback() and
- * fbSessionAddTemplateCtxCallback2() should be used.
- *
- * @param session pointer session to assign the callback to
- * @param callback the function that should be called when a new template
- *                 is received
- * @return NONE
- */
-void fbSessionAddTemplateCtxCallback(
-    fbSession_t               *session,
-    fbTemplateCtxCallback_fn  callback);
-
-/**
- * This function sets the callback that allows the application to set its
- * own context variable with a new incoming template.  Assigning a callback
- * is not required and is only useful if the application either needs to
- * store some information about the template or to prevent certain nested
- * templates from being transcoded.  If the application's template contains
- * a subTemplateMultiList or subTemplateList and the callback is not used,
- * all incoming templates contained in these lists will be fully transcoded
- * and the application is responsible for freeing any nested lists contained
- * within those objects.
- *
- * This function should be called after fbSessionAlloc().  Fixbuf often
- * clones sessions upon receiving a connection.  In the TCP case, the
- * application has access to the session right after fbListenerWait() returns
- * by calling fBufGetSession().  In the UDP case, the application does
- * not have access to the fbSession until after a call to fBufNext() for
- * fBufNextCollectionTemplate() and by this time the application may have
- * already received some templates.  Therefore, it is important to call this
- * function before fBufNext().  Any callbacks added to the session will be
- * carried over to cloned sessions.
- *
- * This function updates and subsumes the functionality of
- * fbSessionAddTemplateCtxCallback() by adding an application context
- * pointer.  (Only one of fbSessionAddTemplateCtxCallback() and
- * fbSessionAddTemplateCtxCallback2() should be used.)
  *
  * @param session pointer session to assign the callback to
  * @param callback the function that should be called when a new template
@@ -3736,9 +3599,9 @@ void fbSessionAddTemplateCtxCallback(
  * @param app_ctx parameter that gets passed onto the callback function
  * @return NONE
  */
-void fbSessionAddTemplateCtxCallback2(
+void fbSessionAddNewTemplateCallback(
     fbSession_t               *session,
-    fbTemplateCtxCallback2_fn callback,
+    fbNewTemplateCallback_fn   callback,
     void                      *app_ctx);
 
 /**
@@ -4555,23 +4418,6 @@ void fbCollectorSetUDPMultiSession(
     fbCollector_t *collector,
     gboolean       multi_session);
 
-/**
- * An attempt to fix what some netflow v9 exporters do wrong.
- * Netflow v9 rfc 3954 states that collectors should use a combination of
- * peer IP address and observation domain to manage netflow streams.
- * However, some devices send two separate streams on the same IP, obdomain,
- * and the only way to differentiate is by using peer port. Turning this
- * flag on will prevent fixbuf from zeroing out the port before comparing
- * sockaddr structs and makes fixbuf manage streams by ip, port, and obdomain.
- *
- * @param collector     pointer to collector associated with listener.
- * @param manage_port   TRUE if fixbuf should manage UDP streams by port,
- *                      FALSE by default.
- *
- */
-void fbCollectorManageUDPStreamByPort(
-    fbCollector_t *collector,
-    gboolean       manage_port);
 
 #ifdef __cplusplus
 } /* extern "C" */

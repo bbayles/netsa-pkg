@@ -104,11 +104,12 @@ am__aclocal_m4_deps =  \
 	$(top_srcdir)/m4/ax_check_ltdl.m4 \
 	$(top_srcdir)/m4/ax_compare_version.m4 \
 	$(top_srcdir)/m4/ax_prog_doxygen.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltdl.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/m4/spread.m4 $(top_srcdir)/m4/yafsummary.m4 \
-	$(top_srcdir)/acinclude.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/infomodel.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltdl.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/m4/spread.m4 \
+	$(top_srcdir)/m4/yafsummary.m4 $(top_srcdir)/acinclude.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__noinst_HEADERS_DIST) \
@@ -165,7 +166,9 @@ am_libyaf_la_OBJECTS = libyaf_la-yafcore.lo libyaf_la-yaftab.lo \
 	applabel/libyaf_la-payloadScanner.lo \
 	applabel/libyaf_la-portHash.lo $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3)
-libyaf_la_OBJECTS = $(am_libyaf_la_OBJECTS)
+nodist_libyaf_la_OBJECTS = libyaf_la-infomodel.lo
+libyaf_la_OBJECTS = $(am_libyaf_la_OBJECTS) \
+	$(nodist_libyaf_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -229,8 +232,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libyaf_la_SOURCES) $(yaf_SOURCES) $(yafcollect_SOURCES) \
-	$(yafscii_SOURCES)
+SOURCES = $(libyaf_la_SOURCES) $(nodist_libyaf_la_SOURCES) \
+	$(yaf_SOURCES) $(yafcollect_SOURCES) $(yafscii_SOURCES)
 DIST_SOURCES = $(am__libyaf_la_SOURCES_DIST) $(yaf_SOURCES) \
 	$(yafcollect_SOURCES) $(yafscii_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
@@ -252,7 +255,8 @@ MANS = $(man1_MANS)
 am__noinst_HEADERS_DIST = yafdag.h yafcap.h yafpcapx.h yafstat.h \
 	yafout.h yaflush.h yafctx.h yafapplabel.h \
 	applabel/payloadScanner.h applabel/portHash.h yafnfe.h \
-	yafpfring.h applabel/p0f/p0ftcp.h applabel/p0f/yfp0f.h
+	yafpfring.h infomodel.h applabel/p0f/p0ftcp.h \
+	applabel/p0f/yfp0f.h
 HEADERS = $(noinst_HEADERS)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
@@ -373,6 +377,10 @@ GLIB_MKENUMS = @GLIB_MKENUMS@
 GOBJECT_QUERY = @GOBJECT_QUERY@
 GREP = @GREP@
 INCLTDL = @INCLTDL@
+INFOMODEL_REGISTRIES = @INFOMODEL_REGISTRIES@
+INFOMODEL_REGISTRY_INCLUDES = @INFOMODEL_REGISTRY_INCLUDES@
+INFOMODEL_REGISTRY_INCLUDE_FILES = @INFOMODEL_REGISTRY_INCLUDE_FILES@
+INFOMODEL_REGISTRY_PREFIXES = @INFOMODEL_REGISTRY_PREFIXES@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -408,6 +416,7 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERL = @PERL@
 PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
@@ -424,6 +433,7 @@ SPREAD_LDFLAGS = @SPREAD_LDFLAGS@
 SPREAD_LIBS = @SPREAD_LIBS@
 STRIP = @STRIP@
 VERSION = @VERSION@
+XSLTPROC = @XSLTPROC@
 YAF_HAS_DAG = @YAF_HAS_DAG@
 YAF_HAS_NAPATECH = @YAF_HAS_NAPATECH@
 YAF_HAS_NETRONOME = @YAF_HAS_NETRONOME@
@@ -511,7 +521,7 @@ PODFILES = yaf.pod yafscii.pod applabel.pod yafdpi.pod yafdhcp.pod yaf.init.pod
 man1_MANS = yaf.1 yafscii.1 applabel.1 yafdpi.1 yafdhcp.1 yaf.init.1
 HTMLFILES = yaf.html yafscii.html applabel.html yafdpi.html yafdhcp.html yaf.init.html
 WARN_CFLAGS = -g -DDEBUG -Wall -W -Wmissing-prototypes -Wformat=2 -Wdeclaration-after-statement -Wpointer-arith -Wshadow
-CLEANFILES = $(man1_MANS) $(HTMLFILES)
+CLEANFILES = $(man1_MANS) $(HTMLFILES) infomodel.c infomodel.h
 EXTRA_DIST = $(PODFILES)
 lib_LTLIBRARIES = libyaf.la
 AM_CPPFLAGS = $(LTDLINCL)
@@ -535,8 +545,17 @@ yafcollect_LDFLAGS = -L../airframe/src -lairframe @GLIB_LIBS@ @libfixbuf_LIBS@
 yafcollect_CFLAGS = @GLIB_CFLAGS@ @libfixbuf_CFLAGS@
 noinst_HEADERS = yafdag.h yafcap.h yafpcapx.h yafstat.h yafout.h \
 	yaflush.h yafctx.h yafapplabel.h applabel/payloadScanner.h \
-	applabel/portHash.h yafnfe.h yafpfring.h $(am__append_4)
-all: all-recursive
+	applabel/portHash.h yafnfe.h yafpfring.h infomodel.h \
+	$(am__append_4)
+BUILT_SOURCES = infomodel.c infomodel.h
+nodist_libyaf_la_SOURCES = infomodel.c infomodel.h
+RUN_MAKE_INFOMODEL = $(AM_V_GEN) \
+ srcdir=$(top_builddir) ; \
+ test -f $(top_builddir)/make-infomodel || srcdir=$(top_srcdir) ; \
+ $(PERL) $${srcdir}/make-infomodel --package $(PACKAGE) --dir-name=$(top_builddir)/infomodel $(INFOMODEL_REGISTRY_PREFIXES)
+
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
 .SUFFIXES: .1 .c .html .lo .o .obj .pod
@@ -706,6 +725,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libyaf_la-decode.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libyaf_la-infomodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libyaf_la-picq.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libyaf_la-ring.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libyaf_la-yafapplabel.Plo@am__quote@
@@ -844,6 +864,13 @@ libyaf_la-yafcygwin.lo: yafcygwin.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafcygwin.c' object='libyaf_la-yafcygwin.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-yafcygwin.lo `test -f 'yafcygwin.c' || echo '$(srcdir)/'`yafcygwin.c
+
+libyaf_la-infomodel.lo: infomodel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT libyaf_la-infomodel.lo -MD -MP -MF $(DEPDIR)/libyaf_la-infomodel.Tpo -c -o libyaf_la-infomodel.lo `test -f 'infomodel.c' || echo '$(srcdir)/'`infomodel.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libyaf_la-infomodel.Tpo $(DEPDIR)/libyaf_la-infomodel.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='infomodel.c' object='libyaf_la-infomodel.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-infomodel.lo `test -f 'infomodel.c' || echo '$(srcdir)/'`infomodel.c
 
 yaf-yaf.o: yaf.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yaf.o -MD -MP -MF $(DEPDIR)/yaf-yaf.Tpo -c -o yaf-yaf.o `test -f 'yaf.c' || echo '$(srcdir)/'`yaf.c
@@ -1203,7 +1230,8 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-recursive
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-recursive
 all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(MANS) $(HEADERS)
 install-binPROGRAMS: install-libLTLIBRARIES
 
@@ -1212,7 +1240,8 @@ installdirs-am:
 	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-recursive
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-recursive
 install-exec: install-exec-recursive
 install-data: install-data-recursive
 uninstall: uninstall-recursive
@@ -1247,6 +1276,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-recursive
 
 clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
@@ -1321,7 +1351,8 @@ uninstall-am: uninstall-binPROGRAMS uninstall-libLTLIBRARIES \
 
 uninstall-man: uninstall-man1
 
-.MAKE: $(am__recursive_targets) install-am install-strip
+.MAKE: $(am__recursive_targets) all check install install-am \
+	install-strip
 
 .PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am check \
 	check-am clean clean-binPROGRAMS clean-generic \
@@ -1361,6 +1392,10 @@ clean-docs:
 
 clean-local:
 	rm -f pod2htm*.tmp
+
+infomodel.c : infomodel.h
+infomodel.h : $(top_builddir)/make-infomodel Makefile
+	$(RUN_MAKE_INFOMODEL)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

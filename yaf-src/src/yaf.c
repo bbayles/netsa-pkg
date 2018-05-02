@@ -99,6 +99,8 @@ static yfConfig_t    yaf_config = YF_CONFIG_INIT;
 static char          *yaf_config_file = NULL;
 static int           yaf_opt_rotate = 0;
 static int           yaf_opt_stats = 300;
+static gboolean      yaf_opt_no_tombstone = FALSE;
+static uint16_t      yaf_opt_configured_id = 0;
 static uint64_t      yaf_rotate_ms = 0;
 static gboolean      yaf_opt_caplist_mode = FALSE;
 static char          *yaf_opt_ipfix_transport = NULL;
@@ -318,6 +320,12 @@ AirOptionEntry yaf_optent_exp[] = {
                THE_LAME_80COL_FORMATTER_STRING"Export yaf process stats "
                "every n seconds "THE_LAME_80COL_FORMATTER_STRING
                "[300 (5 min)]", NULL),
+    AF_OPTION( "no-tombstone", (char)0, 0, AF_OPT_TYPE_NONE, &yaf_opt_no_tombstone,
+               THE_LAME_80COL_FORMATTER_STRING"Turn off tombstone records "
+               "IPFIX export", NULL),
+    AF_OPTION( "tombstone-configured-id", (char)0, 0, AF_OPT_TYPE_INT, &yaf_opt_configured_id,
+               THE_LAME_80COL_FORMATTER_STRING"Set tombstone record's 16 bit "
+               "configured identifier.", NULL),
     AF_OPTION( "silk", (char)0, 0, AF_OPT_TYPE_NONE, &yaf_opt_silk_mode,
                THE_LAME_80COL_FORMATTER_STRING"Clamp octets to 32 bits, "
                "note continued in"THE_LAME_80COL_FORMATTER_STRING
@@ -1018,6 +1026,8 @@ static void yfLuaLoadConfig(
     }
 
     yf_lua_getnum("stats", yaf_opt_stats);
+    yf_lua_getbool("no_tombstone", yaf_opt_no_tombstone);
+    yf_lua_getnum("tombstone_configured_id", yaf_opt_configured_id);
     yf_lua_getnum("ingress", yaf_opt_ingress_int);
     yf_lua_getnum("egress", yaf_opt_egress_int);
     yf_lua_getnum("obdomain", yaf_config.odid);
@@ -1455,6 +1465,8 @@ static void yfParseOptions(
         yaf_config.stats = yaf_opt_stats;
     }
 
+    yaf_config.tombstone_configured_id = yaf_opt_configured_id;
+    yaf_config.no_tombstone = yaf_opt_no_tombstone;
     yaf_config.ingressInt = yaf_opt_ingress_int;
     yaf_config.egressInt = yaf_opt_egress_int;
 
@@ -1851,6 +1863,10 @@ int main (
 
     /* Set up quit handler */
     yfQuitInit();
+
+    /* Initialize random number generator using the system time */
+    srand((unsigned) time(NULL));
+    ctx.cfg->tombstone_unique_id = rand(); 
 
     /* open interface if we're doing live capture */
     if (yaf_liveopen_fn) {

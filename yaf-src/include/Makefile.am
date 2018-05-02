@@ -3,7 +3,7 @@
 ## Makefile.am (include)
 ## autotools build system for YAF
 ## ------------------------------------------------------------------------
-## Copyright (C) 2006-2015 Carnegie Mellon University. All Rights Reserved.
+## Copyright (C) 2006-2018 Carnegie Mellon University. All Rights Reserved.
 ## ------------------------------------------------------------------------
 ## Authors: Brian Trammell
 ## ------------------------------------------------------------------------
@@ -13,5 +13,5 @@
 
 nobase_include_HEADERS = yaf/yafcore.h  yaf/yafrag.h  yaf/yaftab.h \
                          yaf/decode.h  yaf/picq.h     yaf/autoinc.h \
-			 yaf/ring.h yaf/CERT_IE.h     yaf/yafhooks.h
+			 yaf/ring.h  yaf/yafhooks.h
 

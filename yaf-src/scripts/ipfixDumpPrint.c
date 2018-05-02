@@ -252,9 +252,9 @@ uint16_t idPrintTemplate(
         }
     }
 
-    if (!noprint) {
-        fprintf(fp, "\n");
-    }
+    /* if (!noprint) { */
+    /*     fprintf(fp, "\n"); */
+    /* } */
 
     return length;
 }
@@ -493,10 +493,12 @@ void idPrintDataRecord(
     idPrint(fp, "\tfield count: %5u\n", tc->count);
     idPrint(fp, "%sfields:\n", prefix);
 
-
     for (i = 0; i < tc->count; i++) {
         ie = fbTemplateGetIndexedIE(tmpl, i);
-        idPrint(fp, "%s\t(%d) %30s \t : \t", prefix, ie->num,
+        idPrint(fp, "%s\t(%d)%*s %30s \t : \t", prefix, ie->num,
+                ((ie->num < 100)
+                 ? ((ie->num < 10) ? 4 : 3)
+                 : ((ie->num < 1000) ? 2 : (ie->num < 10000))), "",
                 ie->ref.canon->ref.name);
 
         /* if padding, print length and continue */

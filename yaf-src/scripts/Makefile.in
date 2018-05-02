@@ -101,11 +101,12 @@ am__aclocal_m4_deps =  \
 	$(top_srcdir)/m4/ax_check_ltdl.m4 \
 	$(top_srcdir)/m4/ax_compare_version.m4 \
 	$(top_srcdir)/m4/ax_prog_doxygen.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltdl.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/m4/spread.m4 $(top_srcdir)/m4/yafsummary.m4 \
-	$(top_srcdir)/acinclude.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/infomodel.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltdl.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/m4/spread.m4 \
+	$(top_srcdir)/m4/yafsummary.m4 $(top_srcdir)/acinclude.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(noinst_HEADERS) \
@@ -131,7 +132,9 @@ getFlowKeyHash_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(LDFLAGS) -o $@
 am_ipfixDump_OBJECTS = ipfixDump-ipfixDump.$(OBJEXT) \
 	ipfixDump-ipfixDumpPrint.$(OBJEXT)
-ipfixDump_OBJECTS = $(am_ipfixDump_OBJECTS)
+nodist_ipfixDump_OBJECTS = ipfixDump-infomodel.$(OBJEXT)
+ipfixDump_OBJECTS = $(am_ipfixDump_OBJECTS) \
+	$(nodist_ipfixDump_OBJECTS)
 ipfixDump_LDADD = $(LDADD)
 ipfixDump_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(ipfixDump_CFLAGS) \
@@ -183,7 +186,8 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(getFlowKeyHash_SOURCES) $(ipfixDump_SOURCES) \
-	$(yafMeta2Pcap_SOURCES) $(yafzcbalance_SOURCES)
+	$(nodist_ipfixDump_SOURCES) $(yafMeta2Pcap_SOURCES) \
+	$(yafzcbalance_SOURCES)
 DIST_SOURCES = $(getFlowKeyHash_SOURCES) $(ipfixDump_SOURCES) \
 	$(yafMeta2Pcap_SOURCES) $(yafzcbalance_SOURCES)
 am__can_run_installinfo = \
@@ -305,6 +309,10 @@ GLIB_MKENUMS = @GLIB_MKENUMS@
 GOBJECT_QUERY = @GOBJECT_QUERY@
 GREP = @GREP@
 INCLTDL = @INCLTDL@
+INFOMODEL_REGISTRIES = @INFOMODEL_REGISTRIES@
+INFOMODEL_REGISTRY_INCLUDES = @INFOMODEL_REGISTRY_INCLUDES@
+INFOMODEL_REGISTRY_INCLUDE_FILES = @INFOMODEL_REGISTRY_INCLUDE_FILES@
+INFOMODEL_REGISTRY_PREFIXES = @INFOMODEL_REGISTRY_PREFIXES@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -340,6 +348,7 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERL = @PERL@
 PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
@@ -356,6 +365,7 @@ SPREAD_LDFLAGS = @SPREAD_LDFLAGS@
 SPREAD_LIBS = @SPREAD_LIBS@
 STRIP = @STRIP@
 VERSION = @VERSION@
+XSLTPROC = @XSLTPROC@
 YAF_HAS_DAG = @YAF_HAS_DAG@
 YAF_HAS_NAPATECH = @YAF_HAS_NAPATECH@
 YAF_HAS_NETRONOME = @YAF_HAS_NETRONOME@
@@ -441,7 +451,7 @@ version_info = @version_info@
 PODFILES = getFlowKeyHash.pod yafMeta2Pcap.pod ipfixDump.pod yafzcbalance.pod
 man1_MANS = getFlowKeyHash.1 yafMeta2Pcap.1 ipfixDump.1 yafzcbalance.1 
 HTMLFILES = getFlowKeyHash.html yafMeta2Pcap.html ipfixDump.html yafzcbalance.html
-CLEANFILES = $(man1_MANS) $(HTMLFILES)
+CLEANFILES = $(man1_MANS) $(HTMLFILES) infomodel.c infomodel.h
 EXTRA_DIST = $(PODFILES) \
 	yafzcbalance.c
 
@@ -457,8 +467,16 @@ ipfixDump_CFLAGS = @GLIB_CFLAGS@ @libfixbuf_CFLAGS@
 yafzcbalance_SOURCES = yafzcbalance.c
 yafzcbalance_LDFLAGS = -L../airframe/src -lairframe @GLIB_LIBS@ -lpthread
 yafzcbalance_CFLAGS = @GLIB_CFLAGS@
-noinst_HEADERS = ipfixDumpPrint.h
-all: all-am
+noinst_HEADERS = ipfixDumpPrint.h infomodel.h
+BUILT_SOURCES = infomodel.c infomodel.h
+nodist_ipfixDump_SOURCES = infomodel.c infomodel.h
+RUN_MAKE_INFOMODEL = $(AM_V_GEN) \
+ srcdir=$(top_builddir) ; \
+ test -f $(top_builddir)/make-infomodel || srcdir=$(top_srcdir) ; \
+ $(PERL) $${srcdir}/make-infomodel --package ipfixDump --dir-name=$(top_builddir)/infomodel $(INFOMODEL_REGISTRY_PREFIXES)
+
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .1 .c .html .lo .o .obj .pod
@@ -564,6 +582,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getFlowKeyHash-getFlowKeyHash.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipfixDump-infomodel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipfixDump-ipfixDump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ipfixDump-ipfixDumpPrint.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yafMeta2Pcap-yafMeta2Pcap.Po@am__quote@
@@ -634,6 +653,20 @@ ipfixDump-ipfixDumpPrint.obj: ipfixDumpPrint.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ipfixDumpPrint.c' object='ipfixDump-ipfixDumpPrint.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ipfixDump_CFLAGS) $(CFLAGS) -c -o ipfixDump-ipfixDumpPrint.obj `if test -f 'ipfixDumpPrint.c'; then $(CYGPATH_W) 'ipfixDumpPrint.c'; else $(CYGPATH_W) '$(srcdir)/ipfixDumpPrint.c'; fi`
+
+ipfixDump-infomodel.o: infomodel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ipfixDump_CFLAGS) $(CFLAGS) -MT ipfixDump-infomodel.o -MD -MP -MF $(DEPDIR)/ipfixDump-infomodel.Tpo -c -o ipfixDump-infomodel.o `test -f 'infomodel.c' || echo '$(srcdir)/'`infomodel.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ipfixDump-infomodel.Tpo $(DEPDIR)/ipfixDump-infomodel.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='infomodel.c' object='ipfixDump-infomodel.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ipfixDump_CFLAGS) $(CFLAGS) -c -o ipfixDump-infomodel.o `test -f 'infomodel.c' || echo '$(srcdir)/'`infomodel.c
+
+ipfixDump-infomodel.obj: infomodel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ipfixDump_CFLAGS) $(CFLAGS) -MT ipfixDump-infomodel.obj -MD -MP -MF $(DEPDIR)/ipfixDump-infomodel.Tpo -c -o ipfixDump-infomodel.obj `if test -f 'infomodel.c'; then $(CYGPATH_W) 'infomodel.c'; else $(CYGPATH_W) '$(srcdir)/infomodel.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ipfixDump-infomodel.Tpo $(DEPDIR)/ipfixDump-infomodel.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='infomodel.c' object='ipfixDump-infomodel.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ipfixDump_CFLAGS) $(CFLAGS) -c -o ipfixDump-infomodel.obj `if test -f 'infomodel.c'; then $(CYGPATH_W) 'infomodel.c'; else $(CYGPATH_W) '$(srcdir)/infomodel.c'; fi`
 
 yafMeta2Pcap-yafMeta2Pcap.o: yafMeta2Pcap.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yafMeta2Pcap_CFLAGS) $(CFLAGS) -MT yafMeta2Pcap-yafMeta2Pcap.o -MD -MP -MF $(DEPDIR)/yafMeta2Pcap-yafMeta2Pcap.Tpo -c -o yafMeta2Pcap-yafMeta2Pcap.o `test -f 'yafMeta2Pcap.c' || echo '$(srcdir)/'`yafMeta2Pcap.c
@@ -793,13 +826,15 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(PROGRAMS) $(MANS) $(HEADERS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -830,6 +865,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic clean-libtool clean-local \
@@ -903,7 +939,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-man
 
 uninstall-man: uninstall-man1
 
-.MAKE: install-am install-strip
+.MAKE: all check install install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean \
 	clean-binPROGRAMS clean-generic clean-libtool clean-local \
@@ -942,6 +978,10 @@ clean-docs:
 
 clean-local:
 	rm -f pod2htm*.tmp
+
+infomodel.c : infomodel.h
+infomodel.h : $(top_builddir)/make-infomodel Makefile
+	$(RUN_MAKE_INFOMODEL)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

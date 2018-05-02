@@ -103,6 +103,9 @@ support is not present.
 libfixbuf does not build with TLS support by default. The --with-openssl option
 must be given to the libfixbuf ./configure script to include TLS support.
 
+If the information model in src/ipfix.xml changes, xsltproc is a
+prerequisite for re-creating the infomodel data structure.
+
 Known Issues
 ------------
 

@@ -3,7 +3,7 @@ dnl ------------------------------------------------------------------------
 dnl configure.in
 dnl autotools build system for YAF applications
 dnl ------------------------------------------------------------------------
-dnl Copyright (C) 2005-2016 Carnegie Mellon University. All Rights Reserved.
+dnl Copyright (C) 2005-2018 Carnegie Mellon University. All Rights Reserved.
 dnl ------------------------------------------------------------------------
 dnl Authors: Brian Trammell
 dnl ------------------------------------------------------------------------
@@ -13,7 +13,7 @@ dnl ------------------------------------------------------------------------
 
 dnl RCSIDENT("$Id$")
 
-AC_INIT([yaf], [2.9.3], [netsa-help@cert.org],[yaf])
+AC_INIT([yaf], [2.9.4], [netsa-help@cert.org],[yaf])
 AC_CONFIG_AUX_DIR([autoconf])
 AC_COPYRIGHT([Copyright (C) 2006-2017 by Carnegie Mellon University
 GNU Public License (GPL) Rights pursuant to Version 2, June 1991
@@ -263,14 +263,14 @@ dnl Check for libfixbuf
 dnl when changing the version number required, do both the subst, and
 dnl package lines!
 dnl ----------------------------------------------------------------------
-AC_SUBST(YAF_REQ_FIXBUF_VER, [1.7.0])
-PKG_CHECK_MODULES(libfixbuf, [libfixbuf >= 1.7.0],
+AC_SUBST(YAF_REQ_FIXBUF_VER, [2.0.0])
+PKG_CHECK_MODULES(libfixbuf, [libfixbuf >= 2.0.0 libfixbuf < 3.0.0],
                   [
-		    YF_PKGCONFIG_VERSION(libfixbuf)
+                    YF_PKGCONFIG_VERSION(libfixbuf)
                     YF_PKGCONFIG_LPATH(libfixbuf)
                     OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}"fixbuf "${yfpkg_ver}" "${yfpkg_lpath}"|"
                   ],
-                  [AC_MSG_ERROR([Cannot find a suitable libfixbuf (>= 1.7.0) (Try setting PKG_CONFIG_PATH): $libfixbuf_PKG_ERRORS])
+                  [AC_MSG_ERROR([Cannot find a suitable libfixbuf (>= 2.0.0) (Try setting PKG_CONFIG_PATH): $libfixbuf_PKG_ERRORS])
 ])
 YF_PKGCONFIG_VERSION(libfixbuf)
 fixbuf_install_loc=`$PKG_CONFIG --variable=prefix libfixbuf`
@@ -281,16 +281,16 @@ fixbuf_version=$yfpkg_ver
 
 
 AC_ARG_ENABLE(ndpi,
-	AS_HELP_STRING([--enable-ndpi], [Enable NDPI application labeling]),[
-	PKG_CHECK_MODULES(libndpi, [libndpi >= 1.7.0 libndpi < 1.8.0],
-	[
-	YF_PKGCONFIG_VERSION(libndpi)
-	YF_PKGCONFIG_LPATH(libndpi)
-	ndpi=true
+        AS_HELP_STRING([--enable-ndpi], [Enable NDPI application labeling]),[
+        PKG_CHECK_MODULES(libndpi, [libndpi >= 1.7.0 libndpi < 1.8.0],
+        [
+        YF_PKGCONFIG_VERSION(libndpi)
+        YF_PKGCONFIG_LPATH(libndpi)
+        ndpi=true
         AC_DEFINE(YAF_ENABLE_NDPI, 1, [Define to 1 to enable ndpi])
-	],
-	[
-	AC_MSG_ERROR([Cannot find a suitable libndpi (>= 1.7.0 and < 1.8.0) (Try setting PKG_CONFIG_PATH): $libndpi_PKG_ERRORS])
+        ],
+        [
+        AC_MSG_ERROR([Cannot find a suitable libndpi (>= 1.7.0 and < 1.8.0) (Try setting PKG_CONFIG_PATH): $libndpi_PKG_ERRORS])
 ])])
 
 dnl ----------------------------------------------------------------------
@@ -300,60 +300,60 @@ AC_ARG_WITH(libpcap,
     AS_HELP_STRING([--with-libpcap=PCAP_DIR],[find pcap.h in PCAP_DIR/include, libpcap in PCAP_DIR/lib]),[
     if test "x$withval" != "xno"; then
         if test -d ${withval}; then
-     	    if test -d ${withval}/lib; then
+            if test -d ${withval}/lib; then
                 CFLAGS="-I${withval}/include $CFLAGS"
                 CPPFLAGS="$CPPFLAGS -I${withval}/include"
-		if test "x$target_os" = "xcygwin"; then
-			LIBS="-L${withval}/lib -lwpcap $LIBS"
-		else
-			LIBS="-L${withval}/lib -lpcap $LIBS"
-                	if test "x$target_os" = "xlinux" -o \
-                        	"x$target_os" = "xlinux-gnu"; then
-                    	    LIBS="-Wl,--rpath -Wl,${withval}/lib $LIBS"
-                	fi
-		fi
+                if test "x$target_os" = "xcygwin"; then
+                        LIBS="-L${withval}/lib -lwpcap $LIBS"
+                else
+                        LIBS="-L${withval}/lib -lpcap $LIBS"
+                        if test "x$target_os" = "xlinux" -o \
+                                "x$target_os" = "xlinux-gnu"; then
+                            LIBS="-Wl,--rpath -Wl,${withval}/lib $LIBS"
+                        fi
+                fi
             else
-		if test "x$target_os" = "xcygwin"; then
-			LIBS="-L${withval} -lwpcap $LIBS"
-		else
-			LIBS="-L${withval} -lpcap $LIBS"
-			if test "x$target_os" = "xlinux" -o \
-				"x$target_os" = "xlinux-gnu"; then
-			    LIBS="-Wl,--rpath -Wl,${withval} $LIBS"
-			fi
-		fi
+                if test "x$target_os" = "xcygwin"; then
+                        LIBS="-L${withval} -lwpcap $LIBS"
+                else
+                        LIBS="-L${withval} -lpcap $LIBS"
+                        if test "x$target_os" = "xlinux" -o \
+                                "x$target_os" = "xlinux-gnu"; then
+                            LIBS="-Wl,--rpath -Wl,${withval} $LIBS"
+                        fi
+                fi
             fi
-	    pcap_from="${withval}"
+            pcap_from="${withval}"
             OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}"libpcap from ${withval}|"
             RPM_CONFIG_FLAGS="${RPM_CONFIG_FLAGS} --with-libpcap=${withval}"
-	fi
-	if test "x$target_os" = "xcygwin"; then
-		AC_CHECK_LIB(wpcap,pcap_open_offline,,
-			[AC_MSG_ERROR([cannot locate required WPCAP library])]
-		)
-	else
-		AC_CHECK_LIB(pcap,pcap_open_offline, ,
-	   		[AC_MSG_ERROR([cannot locate required PCAP library])]
-		)
-	fi
-	AC_CHECK_HEADERS(pcap.h,[],
-	   [AC_MSG_ERROR([cannot locate required pcap.h header file])]
-	)
+        fi
+        if test "x$target_os" = "xcygwin"; then
+                AC_CHECK_LIB(wpcap,pcap_open_offline,,
+                        [AC_MSG_ERROR([cannot locate required WPCAP library])]
+                )
+        else
+                AC_CHECK_LIB(pcap,pcap_open_offline, ,
+                        [AC_MSG_ERROR([cannot locate required PCAP library])]
+                )
+        fi
+        AC_CHECK_HEADERS(pcap.h,[],
+           [AC_MSG_ERROR([cannot locate required pcap.h header file])]
+        )
     fi
     ],[
-	if test "x$target_os" = "xcygwin"; then
-		AC_CHECK_LIB(wpcap, pcap_open_offline, ,
-		    [AC_MSG_ERROR([cannot locate required PCAP library, try the --with-libpcap option])]
-		)
-	else
-		AC_CHECK_LIB(pcap, pcap_open_offline, ,
-		    [AC_MSG_ERROR([cannot locate required PCAP library, try the --with-libpcap option])]
-		)
-	fi
+        if test "x$target_os" = "xcygwin"; then
+                AC_CHECK_LIB(wpcap, pcap_open_offline, ,
+                    [AC_MSG_ERROR([cannot locate required PCAP library, try the --with-libpcap option])]
+                )
+        else
+                AC_CHECK_LIB(pcap, pcap_open_offline, ,
+                    [AC_MSG_ERROR([cannot locate required PCAP library, try the --with-libpcap option])]
+                )
+        fi
         AC_CHECK_HEADERS(pcap.h,
             [],
             [AC_MSG_ERROR([cannot locate the required pcap.h header file])]
-	)
+        )
     ]
 )
 
@@ -362,39 +362,39 @@ dnl Check for pfring
 dnl ---------------------------------------------------------------------
 AC_ARG_WITH(pfring,
         AS_HELP_STRING([--with-pfring=PFRING_DIR],[find pfring.h in PFRING_DIR/include, libpfring in PFRING_DIR/lib]),[
-	if test "x$withval" != "xno"; then
-	   if test -d ${withval}; then
-	      if test -d ${withval}/lib; then
-	      	  LIBS="-L${withval}/lib -lpfring -lrt $LIBS"
-        	  CFLAGS="$CFLAGS -I${withval}/include"
-		  CPPFLAGS="$CPPFLAGS -I${withval}/include"
-	      fi
+        if test "x$withval" != "xno"; then
+           if test -d ${withval}; then
+              if test -d ${withval}/lib; then
+                  LIBS="-L${withval}/lib -lpfring -lrt $LIBS"
+                  CFLAGS="$CFLAGS -I${withval}/include"
+                  CPPFLAGS="$CPPFLAGS -I${withval}/include"
+              fi
            else
               LIBS="-lpfring -lrt $LIBS"
            fi
 
-	   AC_CHECK_LIB(pfring,pfring_zc_numa_get_cpu_node,[
-			AC_DEFINE(YAF_ENABLE_PFRING, 1, [Define to 1 to enable PFRING support])
-			AC_SUBST(YAF_HAS_PFRING, [1])
-	                AC_DEFINE(YAF_ENABLE_SEPARATE_INTERFACES,1,[Define to 1 to enable YAF Separate Interface Support])
-	                AC_DEFINE(YAF_ENABLE_PFRINGZC, 1, [Define to 1 to enable PFRING ZC support])
-			pfringzc=true
-			pfring=true
-			],
-			[AC_MSG_NOTICE([Cannot locate PFRING ZC library v. 6.2.0 or greater])
-			pfringzc=false
-			pfring=false])
+           AC_CHECK_LIB(pfring,pfring_zc_numa_get_cpu_node,[
+                        AC_DEFINE(YAF_ENABLE_PFRING, 1, [Define to 1 to enable PFRING support])
+                        AC_SUBST(YAF_HAS_PFRING, [1])
+                        AC_DEFINE(YAF_ENABLE_SEPARATE_INTERFACES,1,[Define to 1 to enable YAF Separate Interface Support])
+                        AC_DEFINE(YAF_ENABLE_PFRINGZC, 1, [Define to 1 to enable PFRING ZC support])
+                        pfringzc=true
+                        pfring=true
+                        ],
+                        [AC_MSG_NOTICE([Cannot locate PFRING ZC library v. 6.2.0 or greater])
+                        pfringzc=false
+                        pfring=false])
            AC_CHECK_HEADERS(pfring.h,[],
-		[AC_MSG_ERROR([cannot open PFRING header file])
-		pfring=false])
-	   AC_CHECK_HEADERS(pfring_zc.h,
-	        [AC_DEFINE(YAF_ENABLE_PFRINGZC, 1, [Define to 1 to enable PFRING ZC support])],
-		[AC_MSG_NOTICE([cannot open PFRING ZC header file])
-		pfringzc=false
-		AC_DEFINE(YAF_ENABLE_PFRINGZC, 0, [Define to 1 to enable PFRING ZC support])
-		])
+                [AC_MSG_ERROR([cannot open PFRING header file])
+                pfring=false])
+           AC_CHECK_HEADERS(pfring_zc.h,
+                [AC_DEFINE(YAF_ENABLE_PFRINGZC, 1, [Define to 1 to enable PFRING ZC support])],
+                [AC_MSG_NOTICE([cannot open PFRING ZC header file])
+                pfringzc=false
+                AC_DEFINE(YAF_ENABLE_PFRINGZC, 0, [Define to 1 to enable PFRING ZC support])
+                ])
 
-	fi
+        fi
       ]
 )
 AM_CONDITIONAL([HASPFRINGZC], [test x$pfringzc = xtrue])
@@ -433,7 +433,7 @@ if test "x$withval" != "xno"; then
 
     AC_CHECK_HEADER(dagapi.h,,[
         AC_MSG_ERROR([--with-dag given but cannot find dagapi.h])
-	dagapi=false
+        dagapi=false
     ])
 fi
 ])
@@ -495,12 +495,12 @@ if test "x$withval" != "xno"; then
         AC_SUBST(YAF_HAS_NETRONOME, [1])
        AC_DEFINE(YAF_ENABLE_SEPARATE_INTERFACES, 1, [Define to 1 to enable recording interface numbers])
         interface=true
-	nfeapi=true
+        nfeapi=true
         RPM_CONFIG_FLAGS="${RPM_CONFIG_FLAGS} --with-netronome"
         OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}"Netronome|"
     ],[
         AC_MSG_ERROR([--with-netronome given but cannot find nfe_packetcap.h])
-	nfeapi=false
+        nfeapi=false
     ],[
     [#if HAVE_NFE_PACKETCAP_H
     #include <nfe_packetcap.h>
@@ -526,7 +526,7 @@ AS_HELP_STRING([--with-bivio=PCAP_ZCOPY_DIR],[include Bivio support (find pcap-z
        interface=true
         RPM_CONFIG_FLAGS="${RPM_CONFIG_FLAGS} --with-bivio=${withval}"
         OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}" bivio ${withval}|"
-	biviozcopy=true
+        biviozcopy=true
        ],[
        AC_MSG_ERROR([--with-bivio given but cannot find pcap-zcopy.h])
        biviozcopy=false
@@ -574,11 +574,11 @@ dnl ----------------------------------------------------------------------
 dnl see if the user wants to enable hooks/plugins
 dnl ----------------------------------------------------------------------
 AC_ARG_ENABLE(plugins,
-	AC_HELP_STRING([--enable-plugins], [enable YAF to load plugin extensions (default is no)]),
+        AC_HELP_STRING([--enable-plugins], [enable YAF to load plugin extensions (default is no)]),
         [
       AC_DEFINE(YAF_ENABLE_HOOKS, 1, [Define to 1 to enable plugin support])
                 plugins=true
-		OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}"Plugin Support |"
+                OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}"Plugin Support |"
                 RPM_CONFIG_FLAGS="${RPM_CONFIG_FLAGS} --enable-plugins"
                 AC_SUBST(YAF_REQ_PLUG_CONF, [1])
         ],
@@ -618,10 +618,10 @@ dnl ----------------------------------------------------------------------
 AC_ARG_ENABLE(applabel,
     AC_HELP_STRING([--enable-applabel], [enable the packet payload application label engine (default is no) requires PCRE library]),
     [
-	    if test "x$enableval" = "xno"; then
-	        AC_MSG_NOTICE([Disabling the application labeler])
-	        applabeler=false
-	    else
+            if test "x$enableval" = "xno"; then
+                AC_MSG_NOTICE([Disabling the application labeler])
+                applabeler=false
+            else
             AC_DEFINE(YAF_ENABLE_APPLABEL, 1, [Define to 1 to enable application labeler engine])
             applabeler=true
             if test "x$pcreexist" != "xtrue"; then
@@ -630,7 +630,7 @@ AC_ARG_ENABLE(applabel,
             if test "x$nopayload" == "xtrue"; then
                 AC_MSG_ERROR([The application labeler cannot be enabled if the payload processing is disabled])
             fi
-	        AC_MSG_NOTICE([Application labeler is enabled])
+                AC_MSG_NOTICE([Application labeler is enabled])
             AC_SUBST(YAF_REQ_PCRE, [1])
             RPM_CONFIG_FLAGS="${RPM_CONFIG_FLAGS} --enable-applabel"
             OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}"applabeling|"
@@ -647,27 +647,27 @@ dnl ----------------------------------------------------------------------
 dnl check if the user wants to enable export of DNS Authoritative Resp ONLY
 dnl ----------------------------------------------------------------------
 AC_ARG_ENABLE(exportDNSAuth,
-	AC_HELP_STRING([--enable-exportDNSAuth], [enable export of DNS Authoritative Responses Only (default is export everything)]),
-	[
-		if test "x$enableval" = "xno"; then
-		   AC_MSG_NOTICE([Enabling export of all DNS Responses])
-		   exportDNSAuth = false
-		else
-		AC_DEFINE(YAF_ENABLE_DNSAUTH, 1, [Define to 1 to enable export of DNS Authoritative Responses Only])
-		exportDNSAuth=true
-		if test "x$plugins" != "xtrue"; then
-		   AC_MSG_ERROR([DNS Authoritative Response Export requires plugins to be enabled])
-		fi
-		if test "x$applabeler" != "xtrue"; then
-		   AC_MSG_ERROR([Application labeling must be enabled to export DNS Authoritative Responses])
-		fi
-		   AC_MSG_NOTICE([Export only DNS Authoritative Responses is enabled])
+        AC_HELP_STRING([--enable-exportDNSAuth], [enable export of DNS Authoritative Responses Only (default is export everything)]),
+        [
+                if test "x$enableval" = "xno"; then
+                   AC_MSG_NOTICE([Enabling export of all DNS Responses])
+                   exportDNSAuth = false
+                else
+                AC_DEFINE(YAF_ENABLE_DNSAUTH, 1, [Define to 1 to enable export of DNS Authoritative Responses Only])
+                exportDNSAuth=true
+                if test "x$plugins" != "xtrue"; then
+                   AC_MSG_ERROR([DNS Authoritative Response Export requires plugins to be enabled])
+                fi
+                if test "x$applabeler" != "xtrue"; then
+                   AC_MSG_ERROR([Application labeling must be enabled to export DNS Authoritative Responses])
+                fi
+                   AC_MSG_NOTICE([Export only DNS Authoritative Responses is enabled])
           fi
-	],
-	[
-	 exportDNSAuth=false
-	 AC_MSG_NOTICE([Enable Export of DNS Authoritative Responses is disabled by default])
-	]
+        ],
+        [
+         exportDNSAuth=false
+         AC_MSG_NOTICE([Enable Export of DNS Authoritative Responses is disabled by default])
+        ]
 
 )
 AM_CONDITIONAL([EXPORTDNSAUTH], [test x$exportDNSAuth = xtrue])
@@ -738,16 +738,16 @@ dnl ----------------------------------------------------------------------
 AC_ARG_ENABLE(entropy,
     AC_HELP_STRING([--enable-entropy], [enable the packet payload entropy calculation]),
     [
-	    if test "x$enableval" = "xno"; then
-	        AC_MSG_NOTICE([Disabling the entropy calculator])
-	        entropycalc=false
-	    else
+            if test "x$enableval" = "xno"; then
+                AC_MSG_NOTICE([Disabling the entropy calculator])
+                entropycalc=false
+            else
             AC_DEFINE(YAF_ENABLE_ENTROPY, 1, [Define to 1 to enable entropy calculator])
             entropycalc=true
             if test "x$nopayload" == "xtrue"; then
                 AC_MSG_ERROR([The entropy calculator cannot be enabled if the payload processing is disabled])
             fi
-	        AC_MSG_NOTICE([Entropy calculator is enabled])
+                AC_MSG_NOTICE([Entropy calculator is enabled])
             RPM_CONFIG_FLAGS="${RPM_CONFIG_FLAGS} --enable-entropy"
             OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}"entropy|"
         fi
@@ -808,16 +808,16 @@ dnl ----------------------------------------------------------------------
 AC_ARG_ENABLE(fpexporter,
     AC_HELP_STRING([--enable-fpexporter], [enable export of handshake headers for external fingerprinting, default is off]),
     [
-	   if test "x$enableval" = "xno"; then
-	      AC_MSG_NOTICE([Disabling the fingerprint exporter])
-	      fp_exporter = false
-	   else
-	   AC_DEFINE(YAF_ENABLE_FPEXPORT, 1, [Define to 1 to enable fingerprint exporter])
-	   fp_exporter=true
-	   AC_MSG_NOTICE([Fingerprint exporter is enabled])
-	   RPM_CONFIG_FLAGS="${RPM_CONFIG_FLAGS} --enable-fpexporter"
-	   OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}"fingerprint export|"
-	fi
+           if test "x$enableval" = "xno"; then
+              AC_MSG_NOTICE([Disabling the fingerprint exporter])
+              fp_exporter = false
+           else
+           AC_DEFINE(YAF_ENABLE_FPEXPORT, 1, [Define to 1 to enable fingerprint exporter])
+           fp_exporter=true
+           AC_MSG_NOTICE([Fingerprint exporter is enabled])
+           RPM_CONFIG_FLAGS="${RPM_CONFIG_FLAGS} --enable-fpexporter"
+           OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}"fingerprint export|"
+        fi
      ],
      [
        fp_exporter=false
@@ -833,16 +833,16 @@ p0f_printer=
 AC_ARG_ENABLE(p0fprinter,
     AC_HELP_STRING([--enable-p0fprinter], [enable the p0f based OS finger printing capability, default is off]),
     [
-	    if test "x$enableval" = "xno"; then
-	        AC_MSG_NOTICE([Disabling the p0f fingerprinter])
-	        p0f_printer=false
-	    else
+            if test "x$enableval" = "xno"; then
+                AC_MSG_NOTICE([Disabling the p0f fingerprinter])
+                p0f_printer=false
+            else
             AC_DEFINE(YAF_ENABLE_P0F, 1, [Define to 1 to enable p0f OS fingerprinter])
             p0f_printer=true
             if test "x$applabeler" != "xtrue"; then
                 AC_MSG_ERROR([The p0f finger printer cannot be enabled if the application labeler is not also enabled])
             fi
-	    AC_MSG_NOTICE([p0f based OS finger printer is enabled])
+            AC_MSG_NOTICE([p0f based OS finger printer is enabled])
             RPM_CONFIG_FLAGS="${RPM_CONFIG_FLAGS} --enable-p0fprinter"
             OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}"p0f labeling|"
             AC_SUBST(YAF_REQ_P0F_CONF, [1])
@@ -861,7 +861,7 @@ if test "x$p0f_printer" = "xtrue"; then
                   [
                     YF_PKGCONFIG_VERSION(libp0f)
                     YF_PKGCONFIG_LPATH(libp0f)
-		  ],
+                  ],
                   [AC_MSG_ERROR([Cannot find a suitable libp0f (>= 2.0.8): $libp0f_PKG_ERRORS])
 ])
 fi
@@ -903,8 +903,8 @@ AC_ARG_ENABLE(nonip,
                 AC_DEFINE(YAF_NONIP, 1, [Define to 1 to enable non-IP flow data export])
                 if test "x$mpls" != "xtrue"; then
                     AC_MSG_ERROR([Non-IP data decode and flow export requires --enable-mpls])
-		fi
-		nonip=true
+                fi
+                nonip=true
                 AC_MSG_NOTICE([Enabling NON-IP data decode and export])
                 RPM_CONFIG_FLAGS="${RPM_CONFIG_FLAGS} --enable-nonip"
                 OPTION_CONFIG_STRING=${OPTION_CONFIG_STRING}"nonip|"
@@ -975,7 +975,7 @@ AC_ARG_ENABLE([localtime],
             [use the local timezone for command inputs and for printing records.  Default is to use UTC.  (Flows are always exported in UTC time.)])[]dnl
         ],[[
         if test "x$enableval" = "xyes"
-	then
+        then
             ENABLE_LOCALTIME=1
         fi]])
 
@@ -1000,7 +1000,7 @@ dnl ----------------------------------------------------------------------
 dnl Check if this is Solaris and enabled the impure-text option
 dnl ----------------------------------------------------------------------
 case $target_os in
-	solaris*) LDFLAGS="$LDFLAGS -mimpure-text" ;;
+        solaris*) LDFLAGS="$LDFLAGS -mimpure-text" ;;
 esac
 
 dnl ----------------------------------------------------------------------
@@ -1012,6 +1012,13 @@ dnl ---------------------------------------------------------------------
 dnl Check for decompression support
 dnl ---------------------------------------------------------------------
 AX_CHECK_LIBZ
+
+dnl ----------------------------------------------------------------------
+dnl Determine infomodel information
+dnl ----------------------------------------------------------------------
+AM_MISSING_PROG(XSLTPROC, xsltproc)
+INFOMODEL_AC_COLLECT_REGISTRIES([infomodel])
+AC_PATH_PROG([PERL], [perl])
 
 dnl ----------------------------------------------------------------------
 dnl Lets put the configuation information into the version output for YAF
@@ -1035,30 +1042,31 @@ AC_SUBST([abs_top_builddir])
 YAF_AC_WRITE_SUMMARY
 
 AC_CONFIG_FILES([Makefile
-				src/Makefile
-				include/Makefile
-				etc/Makefile
-				scripts/Makefile
-				src/applabel.pod
-				src/yafdpi.pod
-				src/applabel/Makefile
-				src/applabel/plugins/Makefile
-				src/applabel/hooks/Makefile
-				src/yaf.pod
-				libyaf.pc
-				etc/init.d/yaf
-				yaf.spec
-				Doxyfile
-				README
-				etc/yaf.conf
-				airframe/Makefile
-				airframe/src/Makefile
-				airframe/include/Makefile
-				airframe/doc/Makefile
-				airframe/libairframe.pc
-				airframe/libairframe.spec
-				airframe/Doxyfile
-				])
+                                src/Makefile
+                                include/Makefile
+                                infomodel/Makefile
+                                etc/Makefile
+                                scripts/Makefile
+                                src/applabel.pod
+                                src/yafdpi.pod
+                                src/applabel/Makefile
+                                src/applabel/plugins/Makefile
+                                src/applabel/hooks/Makefile
+                                src/yaf.pod
+                                libyaf.pc
+                                etc/init.d/yaf
+                                yaf.spec
+                                Doxyfile
+                                README
+                                etc/yaf.conf
+                                airframe/Makefile
+                                airframe/src/Makefile
+                                airframe/include/Makefile
+                                airframe/doc/Makefile
+                                airframe/libairframe.pc
+                                airframe/libairframe.spec
+                                airframe/Doxyfile
+                                ])
 
 
 AC_OUTPUT

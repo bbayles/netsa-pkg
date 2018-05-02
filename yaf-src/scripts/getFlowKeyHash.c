@@ -16,7 +16,7 @@
  * time, you can find the pcap file which contains the entire
  * flow.
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2016 Carnegie Mellon University.
+ ** Copyright (C) 2006-2018 Carnegie Mellon University.
  ** All Rights Reserved.
  **
  ** ------------------------------------------------------------------------
@@ -145,29 +145,29 @@ static fbInfoElement_t new_info_elements[] = {
 };
 
 static fbInfoElementSpec_t simple_flow[] = {
-    { "flowStartMilliseconds",              0, 0 },
-    { "flowEndMilliseconds",                0, 0 },
-    { "sourceIPv6Address",                  0, 0 },
-    { "destinationIPv6Address",             0, 0 },
-    { "packetTotalCount",                   0, 0 },
-    { "packetDeltaCount",                   0, 0 },
-    { "sourceIPv4Address",                  0, 0 },
-    { "destinationIPv4Address",             0, 0 },
-    { "sourceTransportPort",                0, 0 },
-    { "destinationTransportPort",           0, 0 },
-    { "ingressInterface",                   0, 0 },
-    { "vlanId",                             0, 0 },
-    { "protocolIdentifier",                 0, 0 },
+    { "flowStartMilliseconds",              8, 0 },
+    { "flowEndMilliseconds",                8, 0 },
+    { "sourceIPv6Address",                  16, 0 },
+    { "destinationIPv6Address",             16, 0 },
+    { "packetTotalCount",                   8, 0 },
+    { "packetDeltaCount",                   8, 0 },
+    { "sourceIPv4Address",                  4, 0 },
+    { "destinationIPv4Address",             4, 0 },
+    { "sourceTransportPort",                2, 0 },
+    { "destinationTransportPort",           2, 0 },
+    { "ingressInterface",                   4, 0 },
+    { "vlanId",                             2, 0 },
+    { "protocolIdentifier",                 1, 0 },
     FB_IESPEC_NULL
 };
 
 
 static fbInfoElementSpec_t simple_out_flow[] = {
-    { "flowStartMilliseconds",              0, 0 },
-    { "flowEndMilliseconds",                0, 0 },
-    { "packetTotalCount",                   0, 0 },
-    { "yafFlowKeyHash",                     0, 0 },
-    { "reverseYafFlowKeyHash",              0, 0 },
+    { "flowStartMilliseconds",              8, 0 },
+    { "flowEndMilliseconds",                8, 0 },
+    { "packetTotalCount",                   8, 0 },
+    { "yafFlowKeyHash",                     4, 0 },
+    { "reverseYafFlowKeyHash",              4, 0 },
     FB_IESPEC_NULL
 };
 

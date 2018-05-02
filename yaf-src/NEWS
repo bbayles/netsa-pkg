@@ -1,3 +1,11 @@
+Version 2.9.4: 2018-04-30
+==========================
+
+Support for FixBuf 2.0.0 added, and is now required.
+Derive information elements from included XML files.
+Various reporting/output bug fixes for ipfixDump.
+Support for tombstone records added.
+
 Version 2.9.3: 2017-12-21
 ==========================
 

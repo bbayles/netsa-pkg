@@ -266,9 +266,15 @@ Functions</h2></td></tr>
 <tr class="memitem:af5fade3de6363844ac8d55470e81f9df"><td class="memItemLeft" align="right" valign="top">fBuf_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="yafcore_8h.html#af5fade3de6363844ac8d55470e81f9df">yfWriterForSpec</a> (fbConnSpec_t *spec, uint32_t domain, gboolean export_meta, GError **err)</td></tr>
 <tr class="memdesc:af5fade3de6363844ac8d55470e81f9df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get an IPFIX message buffer for writing YAF flows to a socket.  <a href="#af5fade3de6363844ac8d55470e81f9df">More...</a><br /></td></tr>
 <tr class="separator:af5fade3de6363844ac8d55470e81f9df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a107643892b9846c39b27ecea4b90cf35"><td class="memItemLeft" align="right" valign="top">gboolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="yafcore_8h.html#a107643892b9846c39b27ecea4b90cf35">yfWriteOptionsDataFlows</a> (void *yfContext, uint32_t pcap_drop, GTimer *timer, GError **err)</td></tr>
+<tr class="memdesc:a107643892b9846c39b27ecea4b90cf35"><td class="mdescLeft">&#160;</td><td class="mdescRight">A wrapper that calls both yfWriteStatsFlow and yfWriteDataFlow with appropriate condition checking.  <a href="#a107643892b9846c39b27ecea4b90cf35">More...</a><br /></td></tr>
+<tr class="separator:a107643892b9846c39b27ecea4b90cf35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad688e7ab8e1c8a7c221db81b8b4ab9b"><td class="memItemLeft" align="right" valign="top">gboolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="yafcore_8h.html#aad688e7ab8e1c8a7c221db81b8b4ab9b">yfWriteStatsFlow</a> (void *yfContext, uint32_t pcap_drop, GTimer *timer, GError **err)</td></tr>
-<tr class="memdesc:aad688e7ab8e1c8a7c221db81b8b4ab9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write an options data record to an IPFIX Message buffer.  <a href="#aad688e7ab8e1c8a7c221db81b8b4ab9b">More...</a><br /></td></tr>
+<tr class="memdesc:aad688e7ab8e1c8a7c221db81b8b4ab9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write a statistics options data record to an IPFIX Message buffer.  <a href="#aad688e7ab8e1c8a7c221db81b8b4ab9b">More...</a><br /></td></tr>
 <tr class="separator:aad688e7ab8e1c8a7c221db81b8b4ab9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a791a57ef2c8c5e66afa9ca3b9ceaa298"><td class="memItemLeft" align="right" valign="top">gboolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="yafcore_8h.html#a791a57ef2c8c5e66afa9ca3b9ceaa298">yfWriteTombstoneFlow</a> (void *yfContext, GError **err)</td></tr>
+<tr class="memdesc:a791a57ef2c8c5e66afa9ca3b9ceaa298"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write a tombstone options data record to an IPFIX Message buffer.  <a href="#a791a57ef2c8c5e66afa9ca3b9ceaa298">More...</a><br /></td></tr>
+<tr class="separator:a791a57ef2c8c5e66afa9ca3b9ceaa298"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4aba445d9e6561395ee1a2de5a91ac15"><td class="memItemLeft" align="right" valign="top">gboolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="yafcore_8h.html#a4aba445d9e6561395ee1a2de5a91ac15">yfWriteFlow</a> (void *yfContext, <a class="el" href="yafcore_8h.html#a65678110dc9767958969a4f57bf801ba">yfFlow_t</a> *flow, GError **err)</td></tr>
 <tr class="memdesc:a4aba445d9e6561395ee1a2de5a91ac15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write a single flow to an IPFIX message buffer.  <a href="#a4aba445d9e6561395ee1a2de5a91ac15">More...</a><br /></td></tr>
 <tr class="separator:a4aba445d9e6561395ee1a2de5a91ac15"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1028,6 +1034,56 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="yafc
 
 </div>
 </div>
+<a class="anchor" id="a107643892b9846c39b27ecea4b90cf35"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">gboolean yfWriteOptionsDataFlows </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>yfContext</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>pcap_drop</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">GTimer *&#160;</td>
+          <td class="paramname"><em>timer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">GError **&#160;</td>
+          <td class="paramname"><em>err</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>A wrapper that calls both yfWriteStatsFlow and yfWriteDataFlow with appropriate condition checking. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">yfContext</td><td>Context pointer for the yaf state, used to get the fbuf pointer. </td></tr>
+    <tr><td class="paramname">pcap_drop</td><td>Number of packets dropped reported by libpcap </td></tr>
+    <tr><td class="paramname">timer</td><td>Pointer to yafstats GTimer </td></tr>
+    <tr><td class="paramname">err</td><td>an error description; required. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>TRUE on success, FALSE otherwise. </dd></dl>
+
+</div>
+</div>
 <a class="anchor" id="ace9d2497ad9dfacc3abb8cc20a95492b"></a>
 <div class="memitem">
 <div class="memproto">
@@ -1260,13 +1316,50 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="yafc
       </table>
 </div><div class="memdoc">
 
-<p>Write an options data record to an IPFIX Message buffer. </p>
-<p>To turn off stats output - use &ndash;nostats. Sets the internal template to the option template, builds the record, and sends it - then sets the internal template back to the full flow record.</p>
+<p>Write a statistics options data record to an IPFIX Message buffer. </p>
+<p>To turn off stats output - use &ndash;nostats. Sets the internal template to the stats option template, builds the record, and sends it - then sets the internal template back to the full flow record.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">yfContext</td><td>Context pointer for the yaf state, used to get the fbuf pointer. </td></tr>
     <tr><td class="paramname">pcap_drop</td><td>Number of packets dropped reported by libpcap </td></tr>
     <tr><td class="paramname">timer</td><td>Pointer to yafstats GTimer </td></tr>
+    <tr><td class="paramname">err</td><td>an error description; required. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>TRUE on success, FALSE otherwise. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a791a57ef2c8c5e66afa9ca3b9ceaa298"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">gboolean yfWriteTombstoneFlow </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>yfContext</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">GError **&#160;</td>
+          <td class="paramname"><em>err</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Write a tombstone options data record to an IPFIX Message buffer. </p>
+<p>Sets the internal template to the tombstone option template, builds the record, and sends it - then sets the internal template back to the full flow record.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">yfContext</td><td>Context pointer for the yaf state, used to get the fbuf pointer. </td></tr>
     <tr><td class="paramname">err</td><td>an error description; required. </td></tr>
   </table>
   </dd>

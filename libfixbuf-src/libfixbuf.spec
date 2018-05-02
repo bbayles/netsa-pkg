@@ -1,5 +1,5 @@
 %define name libfixbuf
-%define version 1.8.0
+%define version 2.0.0
 %define release 1
 
 Summary: Fixbuf IPFIX implementation library
@@ -7,7 +7,7 @@ Name: %{name}
 Version: %{version}
 Release: %{release}%{?dist}
 Group: Applications/System
-License: LGPLv2
+License: LGPLv3
 Source: http://tools.netsa.cert.org/releases/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}
 Vendor: http://tools.netsa.cert.org/
@@ -35,10 +35,10 @@ BuildRequires: libspread-devel
 BuildRequires: openssl-devel
 %endif
 
-%description 
+%description
 libfixbuf aims to be a compliant implementation of the IPFIX Protocol
 and message format, from which IPFIX Collecting Processes and
-IPFIX Exporting Processes may be built. 
+IPFIX Exporting Processes may be built.
 
 %package devel
 Summary: Static libraries and C header files for libfixbuf

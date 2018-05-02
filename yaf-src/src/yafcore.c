@@ -4,7 +4,7 @@
  ** YAF core I/O routines
  **
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2016 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2006-2018 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Brian Trammell, Chris Inacio, Emily Ecoff <ecoff@cert.org>
  ** ------------------------------------------------------------------------
@@ -64,6 +64,10 @@
 #include <airframe/airutil.h>
 #include <yaf/yafrag.h>
 
+#define INFOMODEL_EXCLUDE_yaf_dpi 1
+#define INFOMODEL_EXCLUDE_yaf_dhcp 1
+#include "infomodel.h"
+
 #ifdef YAF_ENABLE_HOOKS
 #include <yaf/yafhooks.h>
 #endif
@@ -85,13 +89,17 @@
 #define YAF_FLOW_FULL_TID   0xB800 /* base no internal*/
 #define YAF_FLOW_EXT_TID    0xB7FF /* everything except internal */
 
-#define YAF_OPTIONS_TID     0xD000
+#define YAF_STAT_OPTN_FLOW_TID  0xD000
+#define YAF_TOMBSTONE_FLOW_TID  0xD001
+#define YAF_TOMBSTONE_ACCESS_TID  0xD002
 
 #define YAF_FLOW_BASE_NAME "yaf_flow_base"
 #define YAF_FLOW_FULL_NAME "yaf_flow_full"
 #define YAF_FLOW_EXT_NAME  "yaf_flow_ext"
 
-#define YAF_OPTIONS_NAME  "yaf_process_stats"
+#define YAF_STATS_OPTION_NAME       "yaf_process_stats"
+#define YAF_TOMBSTONE_NAME          "tombstone_record"
+#define YAF_TOMBSTONE_ACCESS_NAME   "tombstone_access"
 
 /* 49154 - 49160 */
 #define YAF_APP_FLOW_TID       0xC001 /* not used */
@@ -166,13 +174,15 @@
 #define YF_PRINT_DELIM  "|"
 
 /** include the CERT IE extensions for YAF */
-#include "yaf/CERT_IE.h"
+#define INFOMODEL_EXCLUDE_yaf_dpi 1
+#define INFOMODEL_EXCLUDE_yaf_dhcp 1
+#include "infomodel.h"
 
 /* IPFIX definition of the full YAF flow record */
 static fbInfoElementSpec_t yaf_flow_spec[] = {
     /* Millisecond start and end (epoch) (native time) */
-    { "flowStartMilliseconds",              0, 0 },
-    { "flowEndMilliseconds",                0, 0 },
+    { "flowStartMilliseconds",              8, 0 },
+    { "flowEndMilliseconds",                8, 0 },
     /* Counters */
     { "octetTotalCount",                    8, YTF_FLE | YTF_TOTAL },
     { "reverseOctetTotalCount",             8, YTF_FLE | YTF_TOTAL | YTF_BIF },
@@ -194,47 +204,47 @@ static fbInfoElementSpec_t yaf_flow_spec[] = {
     { "packetDeltaCount",                   4, YTF_RLE | YTF_DELTA },
     { "reversePacketDeltaCount",            4, YTF_RLE | YTF_DELTA | YTF_BIF },
     /* 5-tuple and flow status */
-    { "sourceIPv6Address",                  0, YTF_IP6 },
-    { "destinationIPv6Address",             0, YTF_IP6 },
-    { "sourceIPv4Address",                  0, YTF_IP4 },
-    { "destinationIPv4Address",             0, YTF_IP4 },
-    { "sourceTransportPort",                0, 0 },
-    { "destinationTransportPort",           0, 0 },
-    { "flowAttributes",                     0, 0 },
-    { "reverseFlowAttributes",              0, YTF_BIF },
-    { "protocolIdentifier",                 0, 0 },
-    { "flowEndReason",                      0, 0 },
+    { "sourceIPv6Address",                  16, YTF_IP6 },
+    { "destinationIPv6Address",             16, YTF_IP6 },
+    { "sourceIPv4Address",                  4, YTF_IP4 },
+    { "destinationIPv4Address",             4, YTF_IP4 },
+    { "sourceTransportPort",                2, 0 },
+    { "destinationTransportPort",           2, 0 },
+    { "flowAttributes",                     2, 0 },
+    { "reverseFlowAttributes",              2, YTF_BIF },
+    { "protocolIdentifier",                 1, 0 },
+    { "flowEndReason",                      1, 0 },
 #if defined(YAF_ENABLE_APPLABEL)
-    { "silkAppLabel",                       0, 0 },
+    { "silkAppLabel",                       2, 0 },
 #else
     { "paddingOctets",                      2, YTF_INTERNAL },
 #endif
     /* Round-trip time */
-    { "reverseFlowDeltaMilliseconds",       0, YTF_BIF }, // 32-bit
+    { "reverseFlowDeltaMilliseconds",       4, YTF_BIF }, /*  32-bit */
     /*TCP Info would need to go here 4 SiLK & 4b padding*/
-    { "tcpSequenceNumber",                  0, YTF_SILK },
-    { "reverseTcpSequenceNumber",           0, YTF_SILK | YTF_BIF },
-    { "initialTCPFlags",                    0, YTF_SILK },
-    { "unionTCPFlags",                      0, YTF_SILK },
-    { "reverseInitialTCPFlags",             0, YTF_SILK | YTF_BIF },
-    { "reverseUnionTCPFlags",               0, YTF_SILK | YTF_BIF },
-    { "vlanId",                             0, 0 },
-    { "reverseVlanId",                      0, YTF_BIF },
-    { "ingressInterface",                   0, YTF_DAGIF },
-    { "egressInterface",                    0, YTF_DAGIF },
-    { "ipClassOfService",                   0, 0 },
-    { "reverseIpClassOfService",            0, YTF_BIF },
+    { "tcpSequenceNumber",                  4, YTF_SILK },
+    { "reverseTcpSequenceNumber",           4, YTF_SILK | YTF_BIF },
+    { "initialTCPFlags",                    1, YTF_SILK },
+    { "unionTCPFlags",                      1, YTF_SILK },
+    { "reverseInitialTCPFlags",             1, YTF_SILK | YTF_BIF },
+    { "reverseUnionTCPFlags",               1, YTF_SILK | YTF_BIF },
+    { "vlanId",                             2, 0 },
+    { "reverseVlanId",                      2, YTF_BIF },
+    { "ingressInterface",                   4, YTF_DAGIF },
+    { "egressInterface",                    4, YTF_DAGIF },
+    { "ipClassOfService",                   1, 0 },
+    { "reverseIpClassOfService",            1, YTF_BIF },
     { "mplsTopLabelStackSection",           3, YTF_MPLS },
     { "mplsLabelStackSection2",             3, YTF_MPLS },
     { "mplsLabelStackSection3",             3, YTF_MPLS },
 #if defined(YAF_ENABLE_NDPI)
     { "paddingOctets",                      1, YTF_INTERNAL },
-    { "nDPIL7Protocol",                     0, 0 },
-    { "nDPIL7SubProtocol",                  0, 0 },
+    { "nDPIL7Protocol",                     2, 0 },
+    { "nDPIL7SubProtocol",                  2, 0 },
 #else
     { "paddingOctets",                      5, YTF_INTERNAL },
 #endif
-    { "subTemplateMultiList",               0, 0 },
+    { "subTemplateMultiList",               FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -242,57 +252,57 @@ static fbInfoElementSpec_t yaf_flow_spec[] = {
 #   if defined(YAF_ENABLE_ENTROPY)
     /* entropy fields */
 static fbInfoElementSpec_t yaf_entropy_spec[] = {
-    { "payloadEntropy",                     0, 0 },
-    { "reversePayloadEntropy",              0, YTF_BIF },
+    { "payloadEntropy",                     1, 0 },
+    { "reversePayloadEntropy",              1, YTF_BIF },
     FB_IESPEC_NULL
 };
 #endif
 
 static fbInfoElementSpec_t yaf_tcp_spec[] = {
     /* TCP-specific information */
-    { "tcpSequenceNumber",                  0, 0 },
-    { "initialTCPFlags",                    0, 0 },
-    { "unionTCPFlags",                      0, 0 },
-    { "reverseInitialTCPFlags",             0, YTF_BIF },
-    { "reverseUnionTCPFlags",               0, YTF_BIF },
-    { "reverseTcpSequenceNumber",           0, YTF_BIF },
+    { "tcpSequenceNumber",                  4, 0 },
+    { "initialTCPFlags",                    1, 0 },
+    { "unionTCPFlags",                      1, 0 },
+    { "reverseInitialTCPFlags",             1, YTF_BIF },
+    { "reverseUnionTCPFlags",               1, YTF_BIF },
+    { "reverseTcpSequenceNumber",           4, YTF_BIF },
     FB_IESPEC_NULL
 };
 
 /* MAC-specific information */
 static fbInfoElementSpec_t yaf_mac_spec[] = {
-    { "sourceMacAddress",                   0, 0 },
-    { "destinationMacAddress",              0, 0 },
+    { "sourceMacAddress",                   6, 0 },
+    { "destinationMacAddress",              6, 0 },
     FB_IESPEC_NULL
 };
 
 static fbInfoElementSpec_t yaf_mptcp_spec[] = {
-    { "mptcpInitialDataSequenceNumber",      0, 0 },
-    { "mptcpReceiverToken",                 0, 0 },
-    { "mptcpMaximumSegmentSize",            0, 0 },
-    { "mptcpAddressID",                     0, 0 },
-    { "mptcpFlags",                         0, 0 },
+    { "mptcpInitialDataSequenceNumber",     8, 0 },
+    { "mptcpReceiverToken",                 4, 0 },
+    { "mptcpMaximumSegmentSize",            2, 0 },
+    { "mptcpAddressID",                     1, 0 },
+    { "mptcpFlags",                         1, 0 },
     FB_IESPEC_NULL
 };
 
 
 #   if YAF_ENABLE_P0F
 static fbInfoElementSpec_t yaf_p0f_spec[] = {
-    { "osName",                             0, 0 },
-    { "osVersion",                          0, 0 },
-    { "osFingerPrint",                      0, 0 },
-    { "reverseOsName",                      0, YTF_BIF },
-    { "reverseOsVersion",                   0, YTF_BIF },
-    { "reverseOsFingerPrint",               0, YTF_BIF },
+    { "osName",                             FB_IE_VARLEN, 0 },
+    { "osVersion",                          FB_IE_VARLEN, 0 },
+    { "osFingerPrint",                      FB_IE_VARLEN, 0 },
+    { "reverseOsName",                      FB_IE_VARLEN, YTF_BIF },
+    { "reverseOsVersion",                   FB_IE_VARLEN, YTF_BIF },
+    { "reverseOsFingerPrint",               FB_IE_VARLEN, YTF_BIF },
     FB_IESPEC_NULL
 };
 #   endif
 
 #   if YAF_ENABLE_FPEXPORT
 static fbInfoElementSpec_t yaf_fpexport_spec[] = {
-    { "firstPacketBanner",                  0, 0 },
-    { "secondPacketBanner",                 0, 0 },
-    { "reverseFirstPacketBanner",           0, YTF_BIF },
+    { "firstPacketBanner",                  FB_IE_VARLEN, 0 },
+    { "secondPacketBanner",                 FB_IE_VARLEN, 0 },
+    { "reverseFirstPacketBanner",           FB_IE_VARLEN, YTF_BIF },
     FB_IESPEC_NULL
 };
 #   endif
@@ -300,8 +310,8 @@ static fbInfoElementSpec_t yaf_fpexport_spec[] = {
 #   if YAF_ENABLE_PAYLOAD
     /* Variable-length payload fields */
 static fbInfoElementSpec_t yaf_payload_spec[] = {
-    { "payload",                            0, 0 },
-    { "reversePayload",                     0, YTF_BIF },
+    { "payload",                            FB_IE_VARLEN, 0 },
+    { "reversePayload",                     FB_IE_VARLEN, YTF_BIF },
     FB_IESPEC_NULL
 };
 #   endif
@@ -309,62 +319,75 @@ static fbInfoElementSpec_t yaf_payload_spec[] = {
 /* IPFIX definition of the YAF flow record time extension */
 static fbInfoElementSpec_t yaf_extime_spec[] = {
     /* Microsecond start and end (RFC1305-style) (extended time) */
-    { "flowStartMicroseconds",              0, 0 },
-    { "flowEndMicroseconds",                0, 0 },
+    { "flowStartMicroseconds",              8, 0 },
+    { "flowEndMicroseconds",                8, 0 },
     /* Second start, end, and duration (extended time) */
-    { "flowStartSeconds",                   0, 0 },
-    { "flowEndSeconds",                     0, 0 },
+    { "flowStartSeconds",                   4, 0 },
+    { "flowEndSeconds",                     4, 0 },
     /* Flow durations (extended time) */
-    { "flowDurationMicroseconds",           0, 0 },
-    { "flowDurationMilliseconds",           0, 0 },
+    { "flowDurationMicroseconds",           4, 0 },
+    { "flowDurationMilliseconds",           4, 0 },
     /* Microsecond delta start and end (extended time) */
-    { "flowStartDeltaMicroseconds",         0, 0 },
-    { "flowEndDeltaMicroseconds",           0, 0 },
+    { "flowStartDeltaMicroseconds",         4, 0 },
+    { "flowEndDeltaMicroseconds",           4, 0 },
     FB_IESPEC_NULL
 };
 
 static fbInfoElementSpec_t yaf_stats_option_spec[] = {
-    { "systemInitTimeMilliseconds",         0, 0 },
-    { "exportedFlowRecordTotalCount",       0, 0 },
-    { "packetTotalCount",                   0, 0 },
-    { "droppedPacketTotalCount",            0, 0 },
-    { "ignoredPacketTotalCount",            0, 0 },
-    { "notSentPacketTotalCount",            0, 0 },
-    { "expiredFragmentCount",               0, 0 },
-    { "assembledFragmentCount",             0, 0 },
-    { "flowTableFlushEventCount",           0, 0 },
-    { "flowTablePeakCount",                 0, 0 },
-    { "exporterIPv4Address",                0, 0 },
-    { "exportingProcessId",                 0, 0 },
-    { "meanFlowRate",                       0, 0 },
-    { "meanPacketRate",                     0, 0 },
+    { "systemInitTimeMilliseconds",         8, 0 },
+    { "exportedFlowRecordTotalCount",       8, 0 },
+    { "packetTotalCount",                   8, 0 },
+    { "droppedPacketTotalCount",            8, 0 },
+    { "ignoredPacketTotalCount",            8, 0 },
+    { "notSentPacketTotalCount",            8, 0 },
+    { "expiredFragmentCount",               4, 0 },
+    { "assembledFragmentCount",             4, 0 },
+    { "flowTableFlushEventCount",           4, 0 },
+    { "flowTablePeakCount",                 4, 0 },
+    { "exporterIPv4Address",                4, 0 },
+    { "exportingProcessId",                 4, 0 },
+    { "meanFlowRate",                       4, 0 },
+    { "meanPacketRate",                     4, 0 },
     FB_IESPEC_NULL
 };
 
+static fbInfoElementSpec_t yaf_tombstone_option_spec[] = {
+    { "exporterConfiguredId",               2, 0 },
+    { "exporterUniqueId",                   2, 0 },
+    { "tombstoneId",                        4, 0 },
+    { "subTemplateList",                    FB_IE_VARLEN, 0 },
+    FB_IESPEC_NULL
+};
+
+static fbInfoElementSpec_t yaf_tombstone_access_spec[] = {
+    { "exportingProcessId",                 4, 0 },
+    { "observationTimeSeconds",             4, 0 },
+    FB_IESPEC_NULL
+};
 
 static fbInfoElementSpec_t yaf_flow_stats_spec[] = {
-    { "dataByteCount",                      0, 0 },
-    { "averageInterarrivalTime",            0, 0 },
-    { "standardDeviationInterarrivalTime",  0, 0 },
+    { "dataByteCount",                      8, 0 },
+    { "averageInterarrivalTime",            8, 0 },
+    { "standardDeviationInterarrivalTime",  8, 0 },
     { "tcpUrgTotalCount",                   4, 0 },
-    { "smallPacketCount",                   0, 0 },
-    { "nonEmptyPacketCount",                0, 0 },
-    { "largePacketCount",                   0, 0 },
-    { "firstNonEmptyPacketSize",            0, 0 },
-    { "maxPacketSize",                      0, 0 },
-    { "standardDeviationPayloadLength",     0, 0 },
-    { "firstEightNonEmptyPacketDirections", 0, 0 },
+    { "smallPacketCount",                   4, 0 },
+    { "nonEmptyPacketCount",                4, 0 },
+    { "largePacketCount",                   4, 0 },
+    { "firstNonEmptyPacketSize",            2, 0 },
+    { "maxPacketSize",                      2, 0 },
+    { "standardDeviationPayloadLength",     2, 0 },
+    { "firstEightNonEmptyPacketDirections", 1, 0 },
     { "paddingOctets",                      1, 1 },
-    { "reverseDataByteCount",               0, YTF_BIF },
-    { "reverseAverageInterarrivalTime",     0, YTF_BIF },
-    { "reverseStandardDeviationInterarrivalTime", 0, YTF_BIF },
+    { "reverseDataByteCount",               8, YTF_BIF },
+    { "reverseAverageInterarrivalTime",     8, YTF_BIF },
+    { "reverseStandardDeviationInterarrivalTime", 8, YTF_BIF },
     { "reverseTcpUrgTotalCount",            4, YTF_BIF },
-    { "reverseSmallPacketCount",            0, YTF_BIF },
-    { "reverseNonEmptyPacketCount",         0, YTF_BIF },
-    { "reverseLargePacketCount",            0, YTF_BIF },
-    { "reverseFirstNonEmptyPacketSize",     0, YTF_BIF },
-    { "reverseMaxPacketSize",               0, YTF_BIF },
-    { "reverseStandardDeviationPayloadLength", 0, YTF_BIF },
+    { "reverseSmallPacketCount",            4, YTF_BIF },
+    { "reverseNonEmptyPacketCount",         4, YTF_BIF },
+    { "reverseLargePacketCount",            4, YTF_BIF },
+    { "reverseFirstNonEmptyPacketSize",     2, YTF_BIF },
+    { "reverseMaxPacketSize",               2, YTF_BIF },
+    { "reverseStandardDeviationPayloadLength", 2, YTF_BIF },
     { "paddingOctets",                      2, 1 },
     FB_IESPEC_NULL
 };
@@ -399,6 +422,8 @@ typedef struct yfFlowStatsRecord_st {
 
 typedef struct yfTemplates_st {
     fbTemplate_t *ipfixStatsTemplate;
+    fbTemplate_t *tombstoneRecordTemplate;
+    fbTemplate_t *tombstoneAccessTemplate;
     fbTemplate_t *fstatsTemplate;
     fbTemplate_t *revfstatsTemplate;
 #if YAF_ENABLE_ENTROPY
@@ -562,6 +587,18 @@ typedef struct yfIpfixStats_st {
     uint32_t    meanPacketRate;
 } yfIpfixStats_t;
 
+typedef struct yfTombstoneRecord_st {
+    uint16_t            exporterConfiguredId;
+    uint16_t            exporterUniqueId;
+    uint32_t            tombstoneId;
+    fbSubTemplateList_t accessList;
+} yfTombstoneRecord_t;
+
+typedef struct yfTombstoneAccess_st {
+    uint32_t    exportingProcessId;
+    uint32_t    observationTimeSeconds;
+} yfTombstoneAccess_t;
+
 /* Core library configuration variables */
 static int yaf_core_export_payload = 0;
 static gboolean yaf_core_map_ipv6 = FALSE;
@@ -693,6 +730,19 @@ void yfAlignmentCheck()
     RUN_CHECKS(yfIpfixStats_t, exportingProcessId, 1);
     RUN_CHECKS(yfIpfixStats_t, meanFlowRate, 1);
     RUN_CHECKS(yfIpfixStats_t, meanPacketRate, 1);
+
+    prevOffset = 0;
+    prevSize = 0;
+
+    RUN_CHECKS(yfTombstoneRecord_t, exporterConfiguredId, 1);
+    RUN_CHECKS(yfTombstoneRecord_t, exporterUniqueId, 1);
+    RUN_CHECKS(yfTombstoneRecord_t, tombstoneId, 1);
+
+    prevOffset = 0;
+    prevSize = 0;
+
+    RUN_CHECKS(yfTombstoneAccess_t, exportingProcessId, 1);
+    RUN_CHECKS(yfTombstoneAccess_t, observationTimeSeconds, 1);
 
     prevOffset = 0;
     prevSize = 0;
@@ -840,15 +890,14 @@ static fbInfoModel_t *yfInfoModel()
 #endif
     if (!yaf_model) {
         yaf_model = fbInfoModelAlloc();
-        fbInfoModelAddElementArray(yaf_model, yaf_info_elements);
+
+        infomodelAddGlobalElements(yaf_model);
 
 #if YAF_ENABLE_HOOKS
-    (void)yaf_dpi_info_elements;
-    (void)yaf_dhcp_info_elements;
-    yaf_hook_elements = yfHookGetInfoModel();
-    if (yaf_hook_elements) {
-        fbInfoModelAddElementArray(yaf_model, yaf_hook_elements);
-    }
+        yaf_hook_elements = yfHookGetInfoModel();
+        if (yaf_hook_elements) {
+            fbInfoModelAddElementArray(yaf_model, yaf_hook_elements);
+        }
 #endif
     }
 
@@ -974,21 +1023,76 @@ static fbSession_t *yfInitExporterSession(
     /* Scope fields are exporterIPv4Address and exportingProcessID */
     fbTemplateSetOptionsScope(yaf_tmpl.ipfixStatsTemplate, 2);
 #if YAF_ENABLE_METADATA_EXPORT
-    if (!fbSessionAddTemplateWithMetadata(session, FALSE, YAF_OPTIONS_TID,
+    if (!fbSessionAddTemplateWithMetadata(session, FALSE, YAF_STAT_OPTN_FLOW_TID,
                                           yaf_tmpl.ipfixStatsTemplate,
-                                          YAF_OPTIONS_NAME, NULL, err))
+                                          YAF_STATS_OPTION_NAME, NULL, err))
     {
         return NULL;
     }
 #else
-    if (!fbSessionAddTemplate(session, FALSE, YAF_OPTIONS_TID,
+    if (!fbSessionAddTemplate(session, FALSE, YAF_STAT_OPTN_FLOW_TID,
                               yaf_tmpl.ipfixStatsTemplate, err))
     {
         return NULL;
     }
 #endif
-    if (!fbSessionAddTemplate(session, TRUE, YAF_OPTIONS_TID,
+    if (!fbSessionAddTemplate(session, TRUE, YAF_STAT_OPTN_FLOW_TID,
                               yaf_tmpl.ipfixStatsTemplate, err))
+    {
+        return NULL;
+    }
+
+    /* Create the Tombstone record Template */
+    yaf_tmpl.tombstoneRecordTemplate = fbTemplateAlloc(model);
+    if (!fbTemplateAppendSpecArray(yaf_tmpl.tombstoneRecordTemplate,
+                                   yaf_tombstone_option_spec, 0, err))
+    {
+        return NULL;
+    }
+    fbTemplateSetOptionsScope(yaf_tmpl.tombstoneRecordTemplate, 2);
+#if YAF_ENABLE_METADATA_EXPORT
+    if (!fbSessionAddTemplateWithMetadata(session, FALSE, YAF_TOMBSTONE_FLOW_TID,
+                                          yaf_tmpl.tombstoneRecordTemplate,
+                                          YAF_TOMBSTONE_NAME, NULL, err))
+    {
+        return NULL;
+    }
+#else
+    if (!fbSessionAddTemplate(session, FALSE, YAF_TOMBSTONE_FLOW_TID,
+                              yaf_tmpl.tombstoneRecordTemplate, err))
+    {
+        return NULL;
+    }
+#endif
+    if (!fbSessionAddTemplate(session, TRUE, YAF_TOMBSTONE_FLOW_TID,
+                              yaf_tmpl.tombstoneRecordTemplate, err))
+    {
+        return NULL;
+    }
+
+    /* Create the Tombstone Access SubTemplate */
+    yaf_tmpl.tombstoneAccessTemplate = fbTemplateAlloc(model);
+    if (!fbTemplateAppendSpecArray(yaf_tmpl.tombstoneAccessTemplate,
+                                   yaf_tombstone_access_spec, 0, err))
+    {
+        return NULL;
+    }
+#if YAF_ENABLE_METADATA_EXPORT
+    if (!fbSessionAddTemplateWithMetadata(session, FALSE, YAF_TOMBSTONE_ACCESS_TID,
+                                          yaf_tmpl.tombstoneAccessTemplate,
+                                          YAF_TOMBSTONE_ACCESS_NAME, NULL, err))
+    {
+        return NULL;
+    }
+#else
+    if (!fbSessionAddTemplate(session, FALSE, YAF_TOMBSTONE_ACCESS_TID,
+                              yaf_tmpl.tombstoneAccessTemplate, err))
+    {
+        return NULL;
+    }
+#endif
+    if (!fbSessionAddTemplate(session, TRUE, YAF_TOMBSTONE_ACCESS_TID,
+                              yaf_tmpl.tombstoneAccessTemplate, err))
     {
         return NULL;
     }
@@ -1264,7 +1368,7 @@ static fbSession_t *yfInitExporterSpreadSession(
 
     /* Scope fields are exporterIPv4Address and exportingProcessID */
     fbTemplateSetOptionsScope(yaf_tmpl.ipfixStatsTemplate, 2);
-    if (!fbSessionAddTemplate(session, TRUE, YAF_OPTIONS_TID,
+    if (!fbSessionAddTemplate(session, TRUE, YAF_STAT_OPTN_FLOW_TID,
                               yaf_tmpl.ipfixStatsTemplate, err))
     {
         return NULL;
@@ -1272,20 +1376,84 @@ static fbSession_t *yfInitExporterSpreadSession(
 
 #if YAF_ENABLE_METADATA_EXPORT
     if (!fbSessionAddTemplatesMulticastWithMetadata(session, spread->groups, FALSE,
-                                        YAF_OPTIONS_TID,
+                                        YAF_STAT_OPTN_FLOW_TID,
                                         yaf_tmpl.ipfixStatsTemplate,
-                                        YAF_OPTIONS_NAME, NULL, err))
+                                        YAF_STATS_OPTION_NAME, NULL, err))
     {
         return NULL;
     }
 #else
     if (!fbSessionAddTemplatesMulticast(session, spread->groups, FALSE,
-                                        YAF_OPTIONS_TID,
+                                        YAF_STAT_OPTN_FLOW_TID,
                                         yaf_tmpl.ipfixStatsTemplate, err))
     {
         return NULL;
     }
 #endif
+
+    /* Create the Tombstone Record Template */
+    yaf_tmpl.tombstoneRecordTemplate = fbTemplateAlloc(model);
+    if (!fbTemplateAppendSpecArray(yaf_tmpl.tombstoneRecordTemplate,
+                                   yaf_tombstone_option_spec, 0, err))
+    {
+        return NULL;
+    }
+    fbTemplateSetOptionsScope(yaf_tmpl.tombstoneRecordTemplate, 2);
+    if (!fbSessionAddTemplate(session, TRUE, YAF_TOMBSTONE_FLOW_TID,
+                              yaf_tmpl.tombstoneRecordTemplate, err))
+    {
+        return NULL;
+    }
+
+#if YAF_ENABLE_METADATA_EXPORT
+    if (!fbSessionAddTemplatesMulticastWithMetadata(session, spread->groups, FALSE,
+                                        YAF_TOMBSTONE_FLOW_TID,
+                                        yaf_tmpl.tombstoneRecordTemplate,
+                                        YAF_TOMBSTONE_NAME, NULL, err))
+    {
+        return NULL;
+    }
+#else
+    if (!fbSessionAddTemplatesMulticast(session, spread->groups, FALSE,
+                                        YAF_TOMBSTONE_FLOW_TID,
+                                        yaf_tmpl.tombstoneRecordTemplate, err))
+    {
+        return NULL;
+    }
+#endif
+
+
+    /* Create the Tombstone Access SubTemplate */
+    yaf_tmpl.tombstoneAccessTemplate = fbTemplateAlloc(model);
+    if (!fbTemplateAppendSpecArray(yaf_tmpl.tombstoneAccessTemplate,
+                                   yaf_tombstone_access_spec, 0, err))
+    {
+        return NULL;
+    }
+    if (!fbSessionAddTemplate(session, TRUE, YAF_TOMBSTONE_ACCESS_TID,
+                              yaf_tmpl.tombstoneAccessTemplate, err))
+    {
+        return NULL;
+    }
+#if YAF_ENABLE_METADATA_EXPORT
+    if (!fbSessionAddTemplatesMulticastWithMetadata(session, spread->groups, FALSE, 
+                                        YAF_TOMBSTONE_ACCESS_TID,
+                                        yaf_tmpl.tombstoneAccessTemplate,
+                                        YAF_TOMBSTONE_ACCESS_NAME, NULL, err))
+    {
+        return NULL;
+    }
+#else
+    if (!fbSessionAddTemplatesMulticast(session, spread->groups, FALSE, 
+                                        YAF_TOMBSTONE_ACCESS_TID,
+                                        yaf_tmpl.tombstoneAccessTemplate, err))
+    {
+        return NULL;
+    }
+#endif
+
+
+
 
     /* Flow Stats Template */
     yaf_tmpl.fstatsTemplate = yfAddTemplateSpread(session, yaf_flow_stats_spec,
@@ -1679,7 +1847,7 @@ static gboolean yfSetExportTemplate(
         return FALSE;
     }
 
-    // printf("yfSetExportTemplate: %x, %s\n", tid, template_name->str);
+    /*  printf("yfSetExportTemplate: %x, %s\n", tid, template_name->str); */
 #if YAF_ENABLE_METADATA_EXPORT
     if (!fbSessionAddTemplateWithMetadata(session, FALSE, tid, tmpl,
                                           template_name->str, NULL, err))
@@ -1816,6 +1984,29 @@ fBuf_t *yfWriterForSpec(
     return NULL;
 }
 
+/**
+ *yfWriteOptionsDataFlows
+ *
+ *
+ */
+gboolean yfWriteOptionsDataFlows(
+    void               *yfContext,
+    uint32_t           pcap_drop,
+    GTimer             *timer,
+    GError             **err)
+{
+    yfContext_t         *ctx = (yfContext_t *)yfContext;
+
+    if(!yfWriteStatsFlow(yfContext, pcap_drop, timer, err)){
+        return FALSE;
+    }
+    if(!ctx->cfg->no_tombstone){
+        if(!yfWriteTombstoneFlow(yfContext, err)){
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
 
 /**
  *yfWriteStatsFlow
@@ -1885,8 +2076,17 @@ gboolean yfWriteStatsFlow(
     rec.meanPacketRate = rec.packetTotalCount / g_timer_elapsed(timer, NULL);
 
     rec.systemInitTimeMilliseconds = ctx->yaf_start_time;
+
+    g_debug("YAF statistics: Flows: %llu Packets: %llu Dropped: %lu Ignored: %lu "
+            "Out of Sequence: %"PRIu64" Expired Frags: %u Assembled Frags: %u",
+            (long long unsigned int)rec.exportedFlowTotalCount,
+            (long long unsigned int)rec.packetTotalCount,
+            rec.droppedPacketTotalCount, rec.ignoredPacketTotalCount,
+            rec.notSentPacketTotalCount, rec.expiredFragmentCount,
+            rec.assembledFragmentCount);
+
     /* Set Internal Template for Buffer to Options TID */
-    if (!fBufSetInternalTemplate(fbuf, YAF_OPTIONS_TID, err))
+    if (!fBufSetInternalTemplate(fbuf, YAF_STAT_OPTN_FLOW_TID, err))
         return FALSE;
 
 #if HAVE_SPREAD
@@ -1897,7 +2097,7 @@ gboolean yfWriteStatsFlow(
 #endif
 
     /* Set Export Template for Buffer to Options TMPL */
-    if (!yfSetExportTemplate(fbuf, YAF_OPTIONS_TID, err)) {
+    if (!yfSetExportTemplate(fbuf, YAF_STAT_OPTN_FLOW_TID, err)) {
         return FALSE;
     }
 
@@ -1910,6 +2110,83 @@ gboolean yfWriteStatsFlow(
     if (!fBufEmit(fbuf, err)) {
         return FALSE;
     }
+
+    /* Set Internal TID Back to Flow Record */
+    if (!fBufSetInternalTemplate(fbuf, YAF_FLOW_FULL_TID, err)) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/**
+ *yfWriteTombstoneFlow
+ *
+ *
+ */
+gboolean yfWriteTombstoneFlow(
+    void               *yfContext,
+    GError             **err)
+{
+    yfTombstoneRecord_t     rec;
+    yfContext_t             *ctx = (yfContext_t *)yfContext;
+    fBuf_t                  *fbuf = ctx->fbuf;
+    static uint32_t         tombstoneId = 0;
+    yfTombstoneAccess_t     *accessListPtr;
+
+
+#if HAVE_SPREAD
+    fbSpreadParams_t    *spParam = &(ctx->cfg->spreadparams);
+#endif
+
+    if (!fbuf) {
+        g_set_error(err, YAF_ERROR_DOMAIN, YAF_ERROR_IO,
+                    "Error Writing Stats Message: No fbuf [output] Available");
+        return FALSE;
+    }
+
+    /* Set Internal Template for Buffer to Options TID */
+    if (!fBufSetInternalTemplate(fbuf, YAF_TOMBSTONE_FLOW_TID, err))
+        return FALSE;
+
+#if HAVE_SPREAD
+    if (ctx->cfg->spreadGroupIndex) {
+        fBufSetSpreadExportGroup(fbuf, spParam->groups,
+                                 ctx->cfg->numSpreadGroups, err);
+    }
+#endif
+
+    /* Set Export Template for Buffer to Options TMPL */
+    if (!yfSetExportTemplate(fbuf, YAF_TOMBSTONE_FLOW_TID, err)) {
+        return FALSE;
+    }
+
+    rec.tombstoneId = tombstoneId++;
+    rec.exporterConfiguredId = ctx->cfg->tombstone_configured_id;
+    rec.exporterUniqueId = ctx->cfg->tombstone_unique_id;
+    accessListPtr = (yfTombstoneAccess_t *)fbSubTemplateListInit(
+                                    &(rec.accessList), 0, 
+                                    YAF_TOMBSTONE_ACCESS_TID, 
+                                    yaf_tmpl.tombstoneAccessTemplate, 1);
+
+    accessListPtr->exportingProcessId = 1;
+    accessListPtr->observationTimeSeconds = (int)time(NULL);
+
+    /* Append Record */
+    if (!fBufAppend(fbuf, (uint8_t *)&rec, sizeof(rec), err)) {
+        return FALSE;
+    }
+
+    /* emit buffer */
+    if (!fBufEmit(fbuf, err)) {
+        return FALSE;
+    }
+
+    g_debug("Sent Tombstone record: exporterId: %d:%d, tombstoneId: %d", 
+        rec.exporterConfiguredId, rec.exporterUniqueId, 
+        rec.tombstoneId);
+
+    fbSubTemplateListClear(&(rec.accessList));
 
     /* Set Internal TID Back to Flow Record */
     if (!fBufSetInternalTemplate(fbuf, YAF_FLOW_FULL_TID, err)) {
@@ -2554,9 +2831,12 @@ gboolean yfWriterClose(
  *
  */
 static void yfTemplateCallback(
-    fbSession_t     *session,
-    uint16_t        tid,
-    fbTemplate_t    *tmpl)
+    fbSession_t           *session,
+    uint16_t               tid,
+    fbTemplate_t          *tmpl,
+    void                  *app_ctx,
+    void                 **tmpl_ctx,
+    fbTemplateCtxFree_fn  *fn)
 {
     uint16_t ntid;
 
@@ -2695,7 +2975,7 @@ static fbSession_t *yfInitCollectorSession(
     /* Done. Return the session. */
 
     /** Add the template callback so we don't try to decode DPI */
-    fbSessionAddTemplateCallback(session, yfTemplateCallback);
+    fbSessionAddNewTemplateCallback(session, yfTemplateCallback, NULL);
 
     return session;
 }

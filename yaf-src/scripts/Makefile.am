@@ -3,7 +3,7 @@
 ## Makefile.am (source)
 ## autotools build system for YAF
 ## ------------------------------------------------------------------------
-## Copyright (C) 2006-2015 Carnegie Mellon University. All Rights Reserved.
+## Copyright (C) 2006-2018 Carnegie Mellon University. All Rights Reserved.
 ## ------------------------------------------------------------------------
 ## Authors: Emily Sarneso
 ## ------------------------------------------------------------------------
@@ -61,6 +61,17 @@ yafzcbalance_SOURCES = yafzcbalance.c
 yafzcbalance_LDFLAGS = -L../airframe/src -lairframe @GLIB_LIBS@ -lpthread
 yafzcbalance_CFLAGS = @GLIB_CFLAGS@
 
-noinst_HEADERS = ipfixDumpPrint.h
+noinst_HEADERS = ipfixDumpPrint.h infomodel.h
 
+BUILT_SOURCES = infomodel.c infomodel.h
+nodist_ipfixDump_SOURCES = infomodel.c infomodel.h
+CLEANFILES += infomodel.c infomodel.h
 
+RUN_MAKE_INFOMODEL = $(AM_V_GEN) \
+ srcdir=$(top_builddir) ; \
+ test -f $(top_builddir)/make-infomodel || srcdir=$(top_srcdir) ; \
+ $(PERL) $${srcdir}/make-infomodel --package ipfixDump --dir-name=$(top_builddir)/infomodel $(INFOMODEL_REGISTRY_PREFIXES)
+
+infomodel.c : infomodel.h
+infomodel.h : $(top_builddir)/make-infomodel Makefile
+	$(RUN_MAKE_INFOMODEL)

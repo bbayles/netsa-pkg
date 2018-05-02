@@ -534,9 +534,27 @@ fBuf_t *yfWriterForSpread(
 #endif /* HAVE_SPREAD */
 
 /**
- * Write an options data record to an IPFIX Message buffer.  To turn
- * off stats output - use --nostats. Sets the internal template to the option
- * template, builds the record, and sends it - then sets the internal
+ * A wrapper that calls both yfWriteStatsFlow and yfWriteDataFlow with
+ * appropriate condition checking.
+ *
+ * @param yfContext Context pointer for the yaf state, used to get the
+ *                  fbuf pointer.
+ * @param pcap_drop Number of packets dropped reported by libpcap
+ * @param timer     Pointer to yafstats GTimer
+ * @param err       an error description; required.
+ * @return          TRUE on success, FALSE otherwise.
+ *
+ */
+gboolean yfWriteOptionsDataFlows(
+    void               *yfContext,
+    uint32_t           pcap_drop,
+    GTimer             *timer,
+    GError             **err);
+
+/**
+ * Write a statistics options data record to an IPFIX Message buffer.  To turn
+ * off stats output - use --nostats. Sets the internal template to the stats
+ * option template, builds the record, and sends it - then sets the internal
  * template back to the full flow record.
  *
  * @param yfContext Context pointer for the yaf state, used to get the
@@ -551,6 +569,21 @@ gboolean yfWriteStatsFlow(
     void *yfContext,
     uint32_t pcap_drop,
     GTimer *timer,
+    GError **err);
+
+/**
+ * Write a tombstone options data record to an IPFIX Message buffer.  Sets the
+ * internal template to the tombstone option template, builds the record, and
+ * sends it - then sets the internal template back to the full flow record.
+ *
+ * @param yfContext Context pointer for the yaf state, used to get the
+ *                  fbuf pointer.
+ * @param err       an error description; required.
+ * @return          TRUE on success, FALSE otherwise.
+ *
+ */
+gboolean yfWriteTombstoneFlow(
+    void *yfContext,
     GError **err);
 
 /**

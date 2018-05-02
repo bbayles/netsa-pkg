@@ -407,7 +407,7 @@ gboolean yfPcapxMain(
 
         if (!ctx->cfg->nostats) {
             if (g_timer_elapsed(stimer, NULL) > ctx->cfg->stats) {
-                if (!yfWriteStatsFlow(ctx,
+                if (!yfWriteOptionsDataFlows(ctx,
                                     (uint32_t)(yaf_nt_dropped+yaf_nt_dev_drop),
                                       yfStatGetTimer(), &(ctx->err)))
                 {

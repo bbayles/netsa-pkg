@@ -95,7 +95,7 @@ sub add_footer
 {
     return <<EOF;
       </div><!-- l-content -->
-      <div id="l-footer">&copy; 2006-2016 Carnegie Mellon University</div>
+      <div id="l-footer">&copy; 2006-2018 Carnegie Mellon University</div>
     </div><!-- p-body -->
 </body>
 EOF

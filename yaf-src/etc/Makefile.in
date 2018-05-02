@@ -99,11 +99,12 @@ am__aclocal_m4_deps =  \
 	$(top_srcdir)/m4/ax_check_ltdl.m4 \
 	$(top_srcdir)/m4/ax_compare_version.m4 \
 	$(top_srcdir)/m4/ax_prog_doxygen.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltdl.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/m4/spread.m4 $(top_srcdir)/m4/yafsummary.m4 \
-	$(top_srcdir)/acinclude.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/infomodel.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltdl.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/m4/spread.m4 \
+	$(top_srcdir)/m4/yafsummary.m4 $(top_srcdir)/acinclude.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__dist_sysconf_DATA_DIST) \
@@ -132,8 +133,8 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-am__dist_sysconf_DATA_DIST = yafApplabelRules.conf yafDPIRules.conf \
-	dhcp_fingerprints.conf p0f.fp
+am__dist_sysconf_DATA_DIST = yafApplabelRules.conf yaf.conf \
+	yafDPIRules.conf dhcp_fingerprints.conf p0f.fp
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -228,6 +229,10 @@ GLIB_MKENUMS = @GLIB_MKENUMS@
 GOBJECT_QUERY = @GOBJECT_QUERY@
 GREP = @GREP@
 INCLTDL = @INCLTDL@
+INFOMODEL_REGISTRIES = @INFOMODEL_REGISTRIES@
+INFOMODEL_REGISTRY_INCLUDES = @INFOMODEL_REGISTRY_INCLUDES@
+INFOMODEL_REGISTRY_INCLUDE_FILES = @INFOMODEL_REGISTRY_INCLUDE_FILES@
+INFOMODEL_REGISTRY_PREFIXES = @INFOMODEL_REGISTRY_PREFIXES@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -263,6 +268,7 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERL = @PERL@
 PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
@@ -279,6 +285,7 @@ SPREAD_LDFLAGS = @SPREAD_LDFLAGS@
 SPREAD_LIBS = @SPREAD_LIBS@
 STRIP = @STRIP@
 VERSION = @VERSION@
+XSLTPROC = @XSLTPROC@
 YAF_HAS_DAG = @YAF_HAS_DAG@
 YAF_HAS_NAPATECH = @YAF_HAS_NAPATECH@
 YAF_HAS_NETRONOME = @YAF_HAS_NETRONOME@
@@ -362,7 +369,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 version_info = @version_info@
 EXTRA_DIST = yaf.conf.in init.d/yaf.in yafApplabelRules.conf yaf.init
-dist_sysconf_DATA = yafApplabelRules.conf $(am__append_1) \
+dist_sysconf_DATA = yafApplabelRules.conf yaf.conf $(am__append_1) \
 	$(am__append_2)
 all: all-am
 

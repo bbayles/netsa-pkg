@@ -3,6 +3,13 @@
  * This is a generated file.  Please modify 'configure.ac'
  */
 
+/**
+ * @file
+ *
+ *  Fixbuf's version information
+ *
+ */
+
 #ifndef __FB_VERSION_H__
 #define __FB_VERSION_H__
 

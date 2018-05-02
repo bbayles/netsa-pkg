@@ -1,5 +1,29 @@
 #!/usr/bin/perl
 
+## libfixbuf 2.0
+##
+## Copyright 2018 Carnegie Mellon University. All Rights Reserved.
+##
+## NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
+## ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS"
+## BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY KIND,
+## EITHER EXPRESSED OR IMPLIED, AS TO ANY MATTER INCLUDING, BUT NOT
+## LIMITED TO, WARRANTY OF FITNESS FOR PURPOSE OR MERCHANTABILITY,
+## EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE
+## MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+## ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR
+## COPYRIGHT INFRINGEMENT.
+##
+## Released under a GNU-Lesser GPL 3.0-style license, please see
+## License.txt or contact permission@sei.cmu.edu for full terms.
+##
+## [DISTRIBUTION STATEMENT A] This material has been approved for
+## public release and unlimited distribution.  Please see Copyright
+## notice for non-US Government use and distribution.
+##
+## Carnegie Mellon® and CERT® are registered in the U.S. Patent and
+## Trademark Office by Carnegie Mellon University.
+
 $project = $ARGV[0] or die;
 $license = $ARGV[1] or die;
 if ($ARGV[2])
@@ -16,7 +40,7 @@ print <<HEAD;
            xmlns="http://www.w3.org/1999/xhtml"
            xmlns:xi="http://www.w3.org/2001/XInclude">
 HEAD
-    
+
 $ul = 0;
 $li = 0;
 
@@ -66,20 +90,20 @@ RELHEAD3
     }
     # Otherwise, assume items are delimited by \n
     else
-    {            
+    {
         while ($notes =~m@(.*?)\n+@msg)
         {
             print "\t\t<li>$1</li>\n";
-        }            
+        }
     }
 
     print <<RELTAIL;
              </ul>
         </p:notes>
-    </p:release>        
+    </p:release>
 RELTAIL
 ;
-    
+
 }
 print <<TAIL;
 </p:project>

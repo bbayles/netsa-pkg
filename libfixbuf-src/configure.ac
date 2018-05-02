@@ -3,37 +3,58 @@ dnl ------------------------------------------------------------------------
 dnl configure.ac
 dnl autotools build system for libfixbuf
 dnl ------------------------------------------------------------------------
-dnl Copyright (C) 2005-2015 Carnegie Mellon University. All Rights Reserved.
+dnl libfixbuf 2.0
+dnl
+dnl Copyright 2018 Carnegie Mellon University. All Rights Reserved.
+dnl
+dnl NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
+dnl ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS"
+dnl BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY KIND,
+dnl EITHER EXPRESSED OR IMPLIED, AS TO ANY MATTER INCLUDING, BUT NOT
+dnl LIMITED TO, WARRANTY OF FITNESS FOR PURPOSE OR MERCHANTABILITY,
+dnl EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE
+dnl MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+dnl ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR
+dnl COPYRIGHT INFRINGEMENT.
+dnl
+dnl Released under a GNU-Lesser GPL 3.0-style license, please see
+dnl License.txt or contact permission@sei.cmu.edu for full terms.
+dnl
+dnl [DISTRIBUTION STATEMENT A] This material has been approved for
+dnl public release and unlimited distribution.  Please see Copyright
+dnl notice for non-US Government use and distribution.
+dnl
+dnl Carnegie Mellon® and CERT® are registered in the U.S. Patent and
+dnl Trademark Office by Carnegie Mellon University.
 dnl ------------------------------------------------------------------------
-dnl Authors: Brian Trammell, Dan Ruef <druef@cert.org>, Chris Inacio 
+dnl Authors: Brian Trammell, Dan Ruef <druef@cert.org>, Chris Inacio
 dnl <inacio@cert.org>
-dnl ------------------------------------------------------------------------
-dnl GNU Lesser GPL Rights pursuant to Version 2.1, February 1999
-dnl Government Purpose License Rights (GPLR) pursuant to DFARS 252.227-7013
 dnl ------------------------------------------------------------------------
 
 dnl RCSIDENT("$Id: configure.in 18509 2012-08-23 19:13:27Z ecoff_svn $")
 
-AC_INIT([libfixbuf], [1.8.0], [netsa-help@cert.org], [libfixbuf])
+AC_INIT([libfixbuf], [2.0.0], [netsa-help@cert.org], [libfixbuf])
 AC_CONFIG_AUX_DIR([autoconf])
-AC_COPYRIGHT([Copyright (C) 2006-2015 by Carnegie Mellon University
-GNU Public License (GPL) Rights pursuant to Version 2, June 1991
-Government Purpose License Rights (GPLR) pursuant to DFARS 252.227-7013])
+AC_COPYRIGHT([Copyright (C) 2006-2018 by Carnegie Mellon University
+GNU Public License (GPL) Rights pursuant to Version 3, June 2007])
 
 AM_INIT_AUTOMAKE([1.6.3 foreign])
 
 dnl change this version number every new release. (1:0:0 starts at 1.3.0)
 dnl the first number should be changed if the interface has changed
 dnl the second number should be changed for bug fixes, small changes
-dnl the third number should be changed if the first number changes and 
+dnl the third number should be changed if the first number changes and
 dnl the release is backwards compatible with the previous release.
 
-LIBCOMPAT="5:0:2"
+LIBCOMPAT="6:0:0"
 
 AC_REVISION($Revision: 18509 $)
 AM_CONFIG_HEADER(include/fixbuf/config.h)
 AC_CONFIG_MACRO_DIR([m4])
 AM_PROG_LIBTOOL
+
+AM_MAINTAINER_MODE([enable])
+AM_MISSING_PROG(XSLTPROC, xsltproc)
 
 AC_PROG_CC
 AC_PROG_CXX
@@ -127,6 +148,22 @@ AC_SEARCH_LIBS([nanosleep], [rt])
 AC_SEARCH_LIBS([inet_ntoa], [nsl])
 AC_SEARCH_LIBS([socket], [socket])
 
+dnl ----------------------------------------------------------------------
+dnl Aborting on defaulted size specifications
+dnl ----------------------------------------------------------------------
+fb_abort_on_default_sizespec=1
+AC_ARG_ENABLE([abort-on-default-sizespec],
+    [AS_HELP_STRING([--disable-abort-on-default-sizespec],
+        [disable abort when using defaulted (zero-sized) information element specifications for internal templates.  This will cause fBufSetInternalTemplate() to return an error instead.])[]dnl
+    ],[
+        if test "x$enableval" = "xno"
+        then
+          fb_abort_on_default_sizespec=0
+        fi
+    ])
+AC_DEFINE_UNQUOTED([FB_ABORT_ON_DEFAULTED_LENGTH],
+                   [$fb_abort_on_default_sizespec],
+                   [Define to 1 to enable aborts of defaulted spec lengths])
 
 dnl ----------------------------------------------------------------------
 dnl Check for SCTP support
@@ -155,7 +192,7 @@ dnl look for libsctp
 
 dnl look for SCTP header files
     AC_CHECK_HEADER(netinet/sctp.h,[
-        AC_DEFINE(FB_INCLUDE_SCTP_H, 1, 
+        AC_DEFINE(FB_INCLUDE_SCTP_H, 1,
                  [Define to 1 to use sctp.h header])
         AC_SUBST(FIXBUF_REQ_SCTPDEV, [1])
     ], [], [AC_INCLUDES_DEFAULT([
@@ -168,7 +205,7 @@ dnl look for SCTP header files
 ])])
 
     AC_CHECK_HEADER(netinet/sctp_uio.h,[
-        AC_DEFINE(FB_INCLUDE_SCTP_UIO_H, 1, 
+        AC_DEFINE(FB_INCLUDE_SCTP_UIO_H, 1,
                  [Define to 1 to use sctp_uio.h header])
     ])
 fi
@@ -222,6 +259,12 @@ AC_PATH_SPREAD([4.1])
 AC_SUBST(LIBCOMPAT)
 AC_SUBST(RPM_CONFIG_FLAGS)
 
+dnl ----------------------------------------------------------------------
+dnl Determine infomodel information
+dnl ----------------------------------------------------------------------
+INFOMODEL_AC_COLLECT_REGISTRIES([src/infomodel])
+AC_PATH_PROG([PERL], [perl])
+
 dnl automake 1.9 doesn't substitute these automatically, so we do it ourselves
 dnl just in case
 AC_SUBST([abs_top_srcdir])
@@ -232,6 +275,7 @@ PACKAGE_VERSION_SPLIT
 AC_OUTPUT([
     Makefile
     src/Makefile
+    src/infomodel/Makefile
     include/Makefile
     include/fixbuf/version.h
     libfixbuf.pc

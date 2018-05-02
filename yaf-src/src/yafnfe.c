@@ -243,7 +243,7 @@ gboolean yfNFEMain(
             if (!ctx->cfg->nostats) {
                 if (g_timer_elapsed(stimer, NULL) > ctx->cfg->stats) {
                     yaf_nfe_dropped = nfe_pc_get_drop(ps->nfe_ring);
-                    if (!yfWriteStatsFlow(ctx, (uint32_t)yaf_nfe_dropped,
+                    if (!yfWriteOptionsDataFlows(ctx, (uint32_t)yaf_nfe_dropped,
                                           yfStatGetTimer(), &(ctx->err)))
                     {
                         ok = FALSE;

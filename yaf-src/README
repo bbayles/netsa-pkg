@@ -48,7 +48,7 @@ YAF requires glib 2.4.7 or later; glib is available at
 http://www.gtk.org. Build and install glib before building YAF. Note that 
 glib is also included in many operating environments or ports collections.
 
-YAF requires libfixbuf version 1.7.0 or later; libfixbuf is available at
+YAF requires libfixbuf version 2.0.0 or later; libfixbuf is available at
 http://tools.netsa.cert.org/fixbuf. Build and install libfixbuf before
 building YAF. 
 

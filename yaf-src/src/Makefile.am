@@ -3,7 +3,7 @@
 ## Makefile.am (source)
 ## autotools build system for YAF
 ## ------------------------------------------------------------------------
-## Copyright (C) 2006-2015 Carnegie Mellon University. All Rights Reserved.
+## Copyright (C) 2006-2018 Carnegie Mellon University. All Rights Reserved.
 ## ------------------------------------------------------------------------
 ## Authors: Brian Trammell 
 ## ------------------------------------------------------------------------
@@ -83,9 +83,21 @@ yafcollect_LDADD = libyaf.la @GLIB_LDADD@
 yafcollect_LDFLAGS =  -L../airframe/src -lairframe @GLIB_LIBS@ @libfixbuf_LIBS@
 yafcollect_CFLAGS = @GLIB_CFLAGS@ @libfixbuf_CFLAGS@
 
-noinst_HEADERS = yafdag.h yafcap.h yafpcapx.h yafstat.h yafout.h yaflush.h yafctx.h yafapplabel.h applabel/payloadScanner.h applabel/portHash.h yafnfe.h yafpfring.h
+noinst_HEADERS = yafdag.h yafcap.h yafpcapx.h yafstat.h yafout.h yaflush.h yafctx.h yafapplabel.h applabel/payloadScanner.h applabel/portHash.h yafnfe.h yafpfring.h infomodel.h
 
 if P0FENABLE
 noinst_HEADERS += applabel/p0f/p0ftcp.h applabel/p0f/yfp0f.h
 endif
 
+BUILT_SOURCES = infomodel.c infomodel.h
+nodist_libyaf_la_SOURCES = infomodel.c infomodel.h
+CLEANFILES += infomodel.c infomodel.h
+
+RUN_MAKE_INFOMODEL = $(AM_V_GEN) \
+ srcdir=$(top_builddir) ; \
+ test -f $(top_builddir)/make-infomodel || srcdir=$(top_srcdir) ; \
+ $(PERL) $${srcdir}/make-infomodel --package $(PACKAGE) --dir-name=$(top_builddir)/infomodel $(INFOMODEL_REGISTRY_PREFIXES)
+
+infomodel.c : infomodel.h
+infomodel.h : $(top_builddir)/make-infomodel Makefile
+	$(RUN_MAKE_INFOMODEL)

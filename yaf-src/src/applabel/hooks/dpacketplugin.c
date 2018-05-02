@@ -7,7 +7,7 @@
  * in ipfix template format.  See yafdpi(1)
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2016 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2006-2018 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
@@ -70,8 +70,10 @@
 
 #if YAF_ENABLE_HOOKS
 
+#include "../../../infomodel/yaf_dpi.i"
+
 /* for reading files */
-//#define MAX_PAYLOAD_RULES       1024
+/* #define MAX_PAYLOAD_RULES       1024 */
 #define LINE_BUF_SIZE           4096
 /* pcre rule limit */
 #define NUM_SUBSTRING_VECTS     60
@@ -462,10 +464,10 @@ fbInfoModel_t *ypGetDPIInfoModel()
     static fbInfoModel_t *yaf_dpi_model = NULL;
     if (!yaf_dpi_model) {
         yaf_dpi_model = fbInfoModelAlloc();
-        fbInfoModelAddElementArray(yaf_dpi_model, yaf_dpi_info_elements);
+        fbInfoModelAddElementArray(yaf_dpi_model,
+                                   infomodel_array_static_yaf_dpi);
     }
 
-    (void)yaf_info_elements;
     return yaf_dpi_model;
 }
 
@@ -1642,7 +1644,7 @@ gboolean ypFlowWrite(
  */
 fbInfoElement_t *ypGetInfoModel()
 {
-    return yaf_dpi_info_elements;
+    return infomodel_array_static_yaf_dpi;
 }
 
 /**

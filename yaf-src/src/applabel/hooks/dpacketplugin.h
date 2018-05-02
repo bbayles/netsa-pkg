@@ -6,7 +6,7 @@
  * header file for dpacketplugin.c
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2016 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2006-2018 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
@@ -87,7 +87,6 @@
 /** we obviously need some yaf details -- we're a plugin to it afterall! */
 #include <yaf/yafcore.h>
 #include <yaf/decode.h>
-#include <yaf/CERT_IE.h>
 #include <yaf/yafhooks.h>
 #include "payloadScanner.h"
 #include <pcre.h>
@@ -294,8 +293,8 @@ typedef struct yfEnIPFlow_st {
 } yfEnIPFlow_t;
 
 static fbInfoElementSpec_t yaf_tftp_spec[] = {
-    {"tftpFilename",          0, 0 },
-    {"tftpMode",              0, 0 },
+    {"tftpFilename",          FB_IE_VARLEN, 0 },
+    {"tftpMode",              FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -305,9 +304,9 @@ typedef struct yfTFTPFlow_st {
 } yfTFTPFlow_t;
 
 static fbInfoElementSpec_t yaf_slp_spec[] = {
-    {"basicList",             0, 0 },
-    {"slpVersion",            0, 0 },
-    {"slpMessageType",        0, 0 },
+    {"basicList",             FB_IE_VARLEN, 0 },
+    {"slpVersion",            1, 0 },
+    {"slpMessageType",        1, 0 },
     {"paddingOctets",         6, 1 },
     FB_IESPEC_NULL
 };
@@ -320,26 +319,26 @@ typedef struct yfSLPFlow_st {
 } yfSLPFlow_t;
 
 static fbInfoElementSpec_t yaf_http_spec[] = {
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -369,11 +368,11 @@ typedef struct yfHTTPFlow_st {
 
 
 static fbInfoElementSpec_t yaf_ftp_spec[] = {
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -387,13 +386,13 @@ typedef struct yfFTPFlow_st {
 } yfFTPFlow_t;
 
 static fbInfoElementSpec_t yaf_imap_spec[] = {
-    {"basicList",        0, 0 },
-    {"basicList",        0, 0 },
-    {"basicList",        0, 0 },
-    {"basicList",        0, 0 },
-    {"basicList",        0, 0 },
-    {"basicList",        0, 0 },
-    {"basicList",        0, 0 },
+    {"basicList",        FB_IE_VARLEN, 0 },
+    {"basicList",        FB_IE_VARLEN, 0 },
+    {"basicList",        FB_IE_VARLEN, 0 },
+    {"basicList",        FB_IE_VARLEN, 0 },
+    {"basicList",        FB_IE_VARLEN, 0 },
+    {"basicList",        FB_IE_VARLEN, 0 },
+    {"basicList",        FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -410,18 +409,18 @@ typedef struct yfIMAPFlow_st {
 
 
 static fbInfoElementSpec_t yaf_rtsp_spec[] = {
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -443,13 +442,13 @@ typedef struct yfRTSPFlow_st {
 
 
 static fbInfoElementSpec_t yaf_sip_spec[] = {
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -467,17 +466,17 @@ typedef struct yfSIPFlow_st {
 
 
 static fbInfoElementSpec_t yaf_smtp_spec[] = {
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
-    {"basicList",         0, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
+    {"basicList",         FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -497,8 +496,8 @@ typedef struct yfSMTPFlow_st {
 } yfSMTPFlow_t;
 
 static fbInfoElementSpec_t yaf_nntp_spec[] = {
-    {"basicList",       0, 0 },
-    {"basicList",       0, 0 },
+    {"basicList",       FB_IE_VARLEN, 0 },
+    {"basicList",       FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -514,7 +513,7 @@ typedef struct yfNNTPFlow_st {
  */
 
 static fbInfoElementSpec_t yaf_dns_spec[] = {
-    {"subTemplateList",    0, 0 },
+    {"subTemplateList",    FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -524,15 +523,15 @@ typedef struct yfDNSFlow_st {
 
 
 static fbInfoElementSpec_t yaf_dnsQR_spec[] = {
-    {"subTemplateList",     0, 0 }, /*based on type of RR */
-    {"dnsQName",            0, 0 },
-    {"dnsTTL",              0, 0 },
-    {"dnsQRType",           0, 0 },
-    {"dnsQueryResponse",    0, 0 },  /*Q(0) or R(1) - uint8*/
-    {"dnsAuthoritative",    0, 0 }, /* authoritative response (1)*/
-    {"dnsNXDomain",         0, 0 }, /* nxdomain (1) */
-    {"dnsRRSection",        0, 0 }, /*0, 1, 2, 3 (q, ans, auth, add'l) */
-    {"dnsID",               0, 0 },
+    {"subTemplateList",     FB_IE_VARLEN, 0 }, /*based on type of RR */
+    {"dnsQName",            FB_IE_VARLEN, 0 },
+    {"dnsTTL",              4, 0 },
+    {"dnsQRType",           2, 0 },
+    {"dnsQueryResponse",    1, 0 },  /*Q(0) or R(1) - uint8*/
+    {"dnsAuthoritative",    1, 0 }, /* authoritative response (1)*/
+    {"dnsNXDomain",         1, 0 }, /* nxdomain (1) */
+    {"dnsRRSection",        1, 0 }, /*0, 1, 2, 3 (q, ans, auth, add'l) */
+    {"dnsID",               2, 0 },
     {"paddingOctets",       4, 1 },
     FB_IESPEC_NULL
 };
@@ -552,7 +551,7 @@ typedef struct yfDNSQRFlow_st {
 
 
 static fbInfoElementSpec_t yaf_dnsA_spec[] = {
-    {"sourceIPv4Address",         0, 0 },
+    {"sourceIPv4Address",         4, 0 },
     FB_IESPEC_NULL
 };
 
@@ -561,7 +560,7 @@ typedef struct yfDNSAFlow_st {
 } yfDNSAFlow_t;
 
 static fbInfoElementSpec_t yaf_dnsAAAA_spec[] = {
-    {"sourceIPv6Address",         0, 0 },
+    {"sourceIPv6Address",         16, 0 },
     FB_IESPEC_NULL
 };
 
@@ -570,7 +569,7 @@ typedef struct yfDNSAAAAFlow_st {
 } yfDNSAAAAFlow_t;
 
 static fbInfoElementSpec_t yaf_dnsCNAME_spec[] = {
-    {"dnsCName",                  0, 0 },
+    {"dnsCName",                  FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -579,8 +578,8 @@ typedef struct yfDNSCNameFlow_st {
 } yfDNSCNameFlow_t;
 
 static fbInfoElementSpec_t yaf_dnsMX_spec[] = {
-    {"dnsMXExchange",             0, 0 },
-    {"dnsMXPreference",           0, 0 },
+    {"dnsMXExchange",             FB_IE_VARLEN, 0 },
+    {"dnsMXPreference",           2, 0 },
     {"paddingOctets",             6, 1 },
     FB_IESPEC_NULL
 };
@@ -592,7 +591,7 @@ typedef struct yfDNSMXFlow_st {
 } yfDNSMXFlow_t;
 
 static fbInfoElementSpec_t yaf_dnsNS_spec[] = {
-    {"dnsNSDName",                0, 0 },
+    {"dnsNSDName",                FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -601,7 +600,7 @@ typedef struct yfDNSNSFlow_st {
 } yfDNSNSFlow_t;
 
 static fbInfoElementSpec_t yaf_dnsPTR_spec[] = {
-    {"dnsPTRDName",               0, 0 },
+    {"dnsPTRDName",               FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -610,7 +609,7 @@ typedef struct yfDNSPTRFlow_st {
 } yfDNSPTRFlow_t;
 
 static fbInfoElementSpec_t yaf_dnsTXT_spec[] = {
-    {"dnsTXTData",                0, 0 },
+    {"dnsTXTData",                FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -619,13 +618,13 @@ typedef struct yfDNSTXTFlow_st {
 } yfDNSTXTFlow_t;
 
 static fbInfoElementSpec_t yaf_dnsSOA_spec[] = {
-    {"dnsSOAMName",               0, 0 },
-    {"dnsSOARName",               0, 0 },
-    {"dnsSOASerial",              0, 0 },
-    {"dnsSOARefresh",             0, 0 },
-    {"dnsSOARetry",               0, 0 },
-    {"dnsSOAExpire",              0, 0 },
-    {"dnsSOAMinimum",             0, 0 },
+    {"dnsSOAMName",               FB_IE_VARLEN, 0 },
+    {"dnsSOARName",               FB_IE_VARLEN, 0 },
+    {"dnsSOASerial",              4, 0 },
+    {"dnsSOARefresh",             4, 0 },
+    {"dnsSOARetry",               4, 0 },
+    {"dnsSOAExpire",              4, 0 },
+    {"dnsSOAMinimum",             4, 0 },
     {"paddingOctets",             4, 1 },
     FB_IESPEC_NULL
 };
@@ -642,10 +641,10 @@ typedef struct yfDNSSOAFlow_st {
 } yfDNSSOAFlow_t;
 
 static fbInfoElementSpec_t yaf_dnsSRV_spec[] = {
-    {"dnsSRVTarget",              0, 0 },
-    {"dnsSRVPriority",            0, 0 },
-    {"dnsSRVWeight",              0, 0 },
-    {"dnsSRVPort",                0, 0 },
+    {"dnsSRVTarget",              FB_IE_VARLEN, 0 },
+    {"dnsSRVPriority",            2, 0 },
+    {"dnsSRVWeight",              2, 0 },
+    {"dnsSRVPort",                2, 0 },
     {"paddingOctets",             2, 1 },
     FB_IESPEC_NULL
 };
@@ -660,10 +659,10 @@ typedef struct yfDNSSRVFlow_st {
 
 
 static fbInfoElementSpec_t yaf_dnsDS_spec[] = {
-    {"dnsDigest",                 0, 0 },
-    {"dnsKeyTag",                 0, 0 },
-    {"dnsAlgorithm",              0, 0 },
-    {"dnsDigestType",             0, 0 },
+    {"dnsDigest",                 FB_IE_VARLEN, 0 },
+    {"dnsKeyTag",                 2, 0 },
+    {"dnsAlgorithm",              1, 0 },
+    {"dnsDigestType",             1, 0 },
     {"paddingOctets",             4, 1 },
     FB_IESPEC_NULL
 };
@@ -678,15 +677,15 @@ typedef struct yfDNSDSFlow_st {
 
 
 static fbInfoElementSpec_t yaf_dnsSig_spec[] = {
-    {"dnsSigner",                 0, 0 },
-    {"dnsSignature",              0, 0 },
-    {"dnsSignatureInception",     0, 0 },
-    {"dnsSignatureExpiration",    0, 0 },
-    {"dnsTTL",                    0, 0 },
-    {"dnsKeyTag",                 0, 0 },
-    {"dnsTypeCovered",            0, 0 },
-    {"dnsAlgorithm",              0, 0 },
-    {"dnsLabels",                 0, 0 },
+    {"dnsSigner",                 FB_IE_VARLEN, 0 },
+    {"dnsSignature",              FB_IE_VARLEN, 0 },
+    {"dnsSignatureInception",     4, 0 },
+    {"dnsSignatureExpiration",    4, 0 },
+    {"dnsTTL",                    4, 0 },
+    {"dnsKeyTag",                 2, 0 },
+    {"dnsTypeCovered",            2, 0 },
+    {"dnsAlgorithm",              1, 0 },
+    {"dnsLabels",                 1, 0 },
     {"paddingOctets",             6, 1 },
     FB_IESPEC_NULL
 };
@@ -705,7 +704,7 @@ typedef struct yfDNSRRSigFlow_st {
 } yfDNSRRSigFlow_t;
 
 static fbInfoElementSpec_t yaf_dnsNSEC_spec[] = {
-    {"dnsHashData",               0, 0 },
+    {"dnsHashData",               FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -714,10 +713,10 @@ typedef struct yfDNSNSECFlow_st {
 } yfDNSNSECFlow_t;
 
 static fbInfoElementSpec_t yaf_dnsKey_spec[] = {
-    {"dnsPublicKey",              0, 0 },
-    {"dnsFlags",                  0, 0 },
-    {"protocolIdentifier",        0, 0 },
-    {"dnsAlgorithm",              0, 0 },
+    {"dnsPublicKey",              FB_IE_VARLEN, 0 },
+    {"dnsFlags",                  2, 0 },
+    {"protocolIdentifier",        1, 0 },
+    {"dnsAlgorithm",              1, 0 },
     {"paddingOctets",             4, 1 },
     FB_IESPEC_NULL
 };
@@ -731,10 +730,10 @@ typedef struct yfDNSKeyFlow_st {
 } yfDNSKeyFlow_t;
 
 static fbInfoElementSpec_t yaf_dnsNSEC3_spec[] = {
-    {"dnsSalt",                   0, 0 },
-    {"dnsHashData",               0, 0 },
-    {"dnsIterations",             0, 0 },
-    {"dnsAlgorithm",              0, 0 },
+    {"dnsSalt",                   FB_IE_VARLEN, 0 },
+    {"dnsHashData",               FB_IE_VARLEN, 0 },
+    {"dnsIterations",             2, 0 },
+    {"dnsAlgorithm",              1, 0 },
     {"paddingOctets",             5, 1 },
     FB_IESPEC_NULL
 };
@@ -759,13 +758,13 @@ typedef struct yf_asn_tlv_st {
 } yf_asn_tlv_t;
 
 static fbInfoElementSpec_t yaf_ssl_spec[] = {
-    {"basicList",                 0, 0 }, /*list of ciphers 32bit */
-    {"sslServerCipher",           0, 0 }, /*cipher suite in server hello */
-    {"sslClientVersion",          0, 0 }, /* protocol version, 2 ssl, 3 tls */
-    {"sslCompressionMethod",      0, 0 }, /*compression method in serv hello*/
-    {"sslRecordVersion",          0, 0 }, /* message version */
-    {"subTemplateList",           0, 0 }, /* list of certs */
-    {"sslServerName",             0, 0 },
+    {"basicList",                 FB_IE_VARLEN, 0 }, /*list of ciphers 32bit */
+    {"sslServerCipher",           4, 0 }, /*cipher suite in server hello */
+    {"sslClientVersion",          1, 0 }, /* protocol version, 2 ssl, 3 tls */
+    {"sslCompressionMethod",      1, 0 }, /*compression method in serv hello*/
+    {"sslRecordVersion",          2, 0 }, /* message version */
+    {"subTemplateList",           FB_IE_VARLEN, 0 }, /* list of certs */
+    {"sslServerName",             FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -781,18 +780,18 @@ typedef struct yfSSLFlow_st {
 
 
 static fbInfoElementSpec_t yaf_cert_spec[] = {
-    {"subTemplateList",             0, 0 },
-    {"subTemplateList",             0, 0 },
-    {"subTemplateList",             0, 0 },
-    {"sslCertSignature",            0, 0 },
-    {"sslCertSerialNumber",         0, 0 },
-    {"sslCertValidityNotBefore",    0, 0 },
-    {"sslCertValidityNotAfter",     0, 0 },
-    {"sslPublicKeyAlgorithm",       0, 0 },
-    {"sslPublicKeyLength",          0, 0 },
-    {"sslCertVersion",              0, 0 },
+    {"subTemplateList",             FB_IE_VARLEN, 0 },
+    {"subTemplateList",             FB_IE_VARLEN, 0 },
+    {"subTemplateList",             FB_IE_VARLEN, 0 },
+    {"sslCertSignature",            FB_IE_VARLEN, 0 },
+    {"sslCertSerialNumber",         FB_IE_VARLEN, 0 },
+    {"sslCertValidityNotBefore",    FB_IE_VARLEN, 0 },
+    {"sslCertValidityNotAfter",     FB_IE_VARLEN, 0 },
+    {"sslPublicKeyAlgorithm",       FB_IE_VARLEN, 0 },
+    {"sslPublicKeyLength",          2, 0 },
+    {"sslCertVersion",              1, 0 },
     {"paddingOctets",               5, 1 },
-    {"sslCertificateHash",          0, 0 },
+    {"sslCertificateHash",          FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -812,8 +811,8 @@ typedef struct yfSSLCertFlow_st {
 } yfSSLCertFlow_t;
 
 static fbInfoElementSpec_t yaf_subssl_spec[] = {
-    {"sslObjectValue",              0, 0 },
-    {"sslObjectType",               0, 0 },
+    {"sslObjectValue",              FB_IE_VARLEN, 0 },
+    {"sslObjectType",               1, 0 },
     {"paddingOctets",               7, 1 },
     FB_IESPEC_NULL
 };
@@ -835,8 +834,8 @@ struct yfSSLFullCert_st {
  */
 
 static fbInfoElementSpec_t yaf_mysql_spec[] = {
-    {"subTemplateList",            0, 0 },
-    {"mysqlUsername",              0, 0 },
+    {"subTemplateList",            FB_IE_VARLEN, 0 },
+    {"mysqlUsername",              FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -846,8 +845,8 @@ typedef struct yfMySQLFlow_st {
 } yfMySQLFlow_t;
 
 static fbInfoElementSpec_t yaf_mysql_txt_spec[] = {
-    {"mysqlCommandText",           0, 0 },
-    {"mysqlCommandCode",           0, 0 },
+    {"mysqlCommandText",           FB_IE_VARLEN, 0 },
+    {"mysqlCommandCode",           1, 0 },
     {"paddingOctets",              7, 1 },
     FB_IESPEC_NULL
 };
@@ -867,7 +866,7 @@ typedef struct yfDNP3Flow_st {
 } yfDNP3Flow_t;
 
 static fbInfoElementSpec_t yaf_dnp_spec[] = {
-    {"subTemplateList",     0, 0 },
+    {"subTemplateList",     FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -880,11 +879,11 @@ typedef struct yfDNP3Rec_st {
 } yfDNP3Rec_t;
 
 static fbInfoElementSpec_t yaf_dnp_rec_spec[] = {
-    {"dnp3SourceAddress",        0, 0 },
-    {"dnp3DestinationAddress",   0, 0 },
-    {"dnp3Function",             0, 0 },
+    {"dnp3SourceAddress",        2, 0 },
+    {"dnp3DestinationAddress",   2, 0 },
+    {"dnp3Function",             1, 0 },
     {"paddingOctets",            3, 1 },
-    {"dnp3ObjectData",           0, 0 },
+    {"dnp3ObjectData",           FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
@@ -894,8 +893,8 @@ typedef struct yfRTPFlow_st {
 } yfRTPFlow_t;
 
 static fbInfoElementSpec_t yaf_rtp_spec[] = {
-    {"rtpPayloadType",           0, 0 },
-    {"reverseRtpPayloadType",    0, 0 },
+    {"rtpPayloadType",           1, 0 },
+    {"reverseRtpPayloadType",    1, 0 },
     FB_IESPEC_NULL
 };
 

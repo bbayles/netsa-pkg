@@ -7,7 +7,7 @@
  * within the fixbuf structure
  *
  * ------------------------------------------------------------------------
- * Copyright (C) 2008-2015 Carnegie Mellon University. All Rights Reserved.
+ * Copyright (C) 2008-2018 Carnegie Mellon University. All Rights Reserved.
  * ------------------------------------------------------------------------
  * Authors: Emily Sarneso <ecoff@cert.org>
  * ------------------------------------------------------------------------
@@ -15,46 +15,27 @@
  * Use of the libfixbuf system and related source code is subject to the terms
  * of the following licenses:
  *
- * GNU Lesser GPL (LGPL) Rights pursuant to Version 2.1, February 1999
- * Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
+ * Copyright 2018 Carnegie Mellon University. All Rights Reserved.
  *
- * NO WARRANTY
+ * NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
+ * ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS"
+ * BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY KIND,
+ * EITHER EXPRESSED OR IMPLIED, AS TO ANY MATTER INCLUDING, BUT NOT
+ * LIMITED TO, WARRANTY OF FITNESS FOR PURPOSE OR MERCHANTABILITY,
+ * EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE
+ * MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ * ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR
+ * COPYRIGHT INFRINGEMENT.
  *
- * ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
- * PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
- * PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
- * "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
- * KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
- * LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
- * MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
- * OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
- * SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
- * TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
- * WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
- * LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
- * CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
- * CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
- * DELIVERABLES UNDER THIS LICENSE.
+ * Released under a GNU-Lesser GPL 3.0-style license, please see
+ * License.txt or contact permission@sei.cmu.edu for full terms.
  *
- * Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
- * Mellon University, its trustees, officers, employees, and agents from
- * all claims or demands made against them (and any related losses,
- * expenses, or attorney's fees) arising out of, or relating to Licensee's
- * and/or its sub licensees' negligent use or willful misuse of or
- * negligent conduct or willful misconduct regarding the Software,
- * facilities, or other rights or assistance granted by Carnegie Mellon
- * University under this License, including, but not limited to, any
- * claims of product liability, personal injury, death, damage to
- * property, or violation of any laws or regulations.
+ * [DISTRIBUTION STATEMENT A] This material has been approved for
+ * public release and unlimited distribution.  Please see Copyright
+ * notice for non-US Government use and distribution.
  *
- * Carnegie Mellon University Software Engineering Institute authored
- * documents are sponsored by the U.S. Department of Defense under
- * Contract FA8721-05-C-0003. Carnegie Mellon University retains
- * copyrights in all material produced under this contract. The U.S.
- * Government retains a non-exclusive, royalty-free license to publish or
- * reproduce these documents, or allow others to do so, for U.S.
- * Government purposes only pursuant to the copyright license under the
- * contract clause at 252.227.7013.
+ * Carnegie Mellon® and CERT® are registered in the U.S. Patent and
+ * Trademark Office by Carnegie Mellon University.
  *
  * @OPENSOURCE_HEADER_END@
  * ------------------------------------------------------------------------
@@ -255,41 +236,41 @@
 
 
 static fbInfoElementSpec_t sflow_spec[] = {
-    { "sourceIPv6Address",              0, 0 },
-    { "destinationIPv6Address",         0, 0 },
-    { "ipNextHopIPv6Address",           0, 0 },
-    { "bgpNextHopIPv6Address",          0, 0 },
-    { "collectorIPv6Address",           0, 0 },
-    { "collectionTimeMilliseconds",     0, 0 },
-    { "systemInitTimeMilliseconds",     0, 0 },
-    { "collectorIPv4Address",           0, 0 },
-    { "protocolIdentifier",             0, 0 },
-    { "ipClassOfService",               0, 0 },
-    { "sourceIPv4PrefixLength",         0, 0 },
-    { "destinationIPv4PrefixLength",    0, 0 },
-    { "sourceIPv4Address",              0, 0 },
-    { "destinationIPv4Address",         0, 0 },
+    { "sourceIPv6Address",              16, 0 },
+    { "destinationIPv6Address",         16, 0 },
+    { "ipNextHopIPv6Address",           16, 0 },
+    { "bgpNextHopIPv6Address",          16, 0 },
+    { "collectorIPv6Address",           16, 0 },
+    { "collectionTimeMilliseconds",     8, 0 },
+    { "systemInitTimeMilliseconds",     8, 0 },
+    { "collectorIPv4Address",           4, 0 },
+    { "protocolIdentifier",             1, 0 },
+    { "ipClassOfService",               1, 0 },
+    { "sourceIPv4PrefixLength",         1, 0 },
+    { "destinationIPv4PrefixLength",    1, 0 },
+    { "sourceIPv4Address",              4, 0 },
+    { "destinationIPv4Address",         4, 0 },
     { "octetTotalCount",                4, 0 },
     { "packetTotalCount",               4, 0 },
-    { "ingressInterface",               0, 0 },
-    { "egressInterface",                0, 0 },
-    { "sourceMacAddress",               0, 0 },
-    { "destinationMacAddress",          0, 0 },
-    { "ipNextHopIPv4Address",           0, 0 },
-    { "bgpSourceAsNumber",              0, 0 },
-    { "bgpDestinationAsNumber",         0, 0 },
-    { "bgpNextHopIPv4Address",          0, 0 },
-    { "samplingPacketInterval",         0, 0 },
-    { "samplingPopulation",             0, 0 },
+    { "ingressInterface",               4, 0 },
+    { "egressInterface",                4, 0 },
+    { "sourceMacAddress",               6, 0 },
+    { "destinationMacAddress",          6, 0 },
+    { "ipNextHopIPv4Address",           4, 0 },
+    { "bgpSourceAsNumber",              4, 0 },
+    { "bgpDestinationAsNumber",         4, 0 },
+    { "bgpNextHopIPv4Address",          4, 0 },
+    { "samplingPacketInterval",         4, 0 },
+    { "samplingPopulation",             4, 0 },
     { "droppedPacketTotalCount",        4, 0 },
     { "selectorId",                     4, 0 },
-    { "vlanId",                         0, 0 },
-    { "sourceTransportPort",            0, 0 },
-    { "destinationTransportPort",       0, 0 },
+    { "vlanId",                         2, 0 },
+    { "sourceTransportPort",            2, 0 },
+    { "destinationTransportPort",       2, 0 },
     { "tcpControlBits",                 2, 0 },
-    { "dot1qVlanId",                    0, 0 },
-    { "postDot1qVlanId",                0, 0 },
-    { "dot1qPriority",                  0, 0 },
+    { "dot1qVlanId",                    2, 0 },
+    { "postDot1qVlanId",                2, 0 },
+    { "dot1qPriority",                  1, 0 },
     FB_IESPEC_NULL
 };
 
@@ -346,19 +327,19 @@ typedef struct fbSFlowRecord_st{
 } fbSFlowRecord_t;
 
 static fbInfoElementSpec_t sflow_ctr_spec[] = {
-    { "collectorIPv6Address",             0, 0 },
-    { "collectionTimeMilliseconds",       0, 0 },
-    { "systemInitTimeMilliseconds",       0, 0 },
-    { "collectorIPv4Address",             0, 0 },
-    { "ingressInterface",                 0, 0 },
-    { "octetTotalCount",                  0, 0 },
-    { "ingressInterfaceType",             0, 0 },
+    { "collectorIPv6Address",             16, 0 },
+    { "collectionTimeMilliseconds",       8, 0 },
+    { "systemInitTimeMilliseconds",       8, 0 },
+    { "collectorIPv4Address",             4, 0 },
+    { "ingressInterface",                 4, 0 },
+    { "octetTotalCount",                  8, 0 },
+    { "ingressInterfaceType",             4, 0 },
     { "packetTotalCount",                 4, 0 },
     { "ingressMulticastPacketTotalCount", 4, 0 },
     { "ingressBroadcastPacketTotalCount", 4, 0 },
     { "notSentPacketTotalCount",          4, 0 },
     { "droppedPacketTotalCount",          4, 0 },
-    { "postOctetTotalCount",              0, 0 },
+    { "postOctetTotalCount",              8, 0 },
     { "ignoredPacketTotalCount",          4, 0 },
     { "postPacketTotalCount",             4, 0 },
     { "egressBroadcastPacketTotalCount",  4, 0 },

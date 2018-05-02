@@ -3,7 +3,7 @@
  ** IPFIX Transport Session state container
  **
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2015 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2006-2018 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Brian Trammell
  ** ------------------------------------------------------------------------
@@ -11,52 +11,34 @@
  ** Use of the libfixbuf system and related source code is subject to the terms
  ** of the following licenses:
  **
- ** GNU Lesser GPL (LGPL) Rights pursuant to Version 2.1, February 1999
- ** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
+ ** Copyright 2018 Carnegie Mellon University. All Rights Reserved.
  **
- ** NO WARRANTY
+ ** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
+ ** ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS"
+ ** BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY KIND,
+ ** EITHER EXPRESSED OR IMPLIED, AS TO ANY MATTER INCLUDING, BUT NOT
+ ** LIMITED TO, WARRANTY OF FITNESS FOR PURPOSE OR MERCHANTABILITY,
+ ** EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE
+ ** MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ ** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR
+ ** COPYRIGHT INFRINGEMENT.
  **
- ** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
- ** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
- ** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
- ** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
- ** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
- ** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
- ** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
- ** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
- ** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
- ** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
- ** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
- ** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
- ** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
- ** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
- ** DELIVERABLES UNDER THIS LICENSE.
+ ** Released under a GNU-Lesser GPL 3.0-style license, please see
+ ** License.txt or contact permission@sei.cmu.edu for full terms.
  **
- ** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
- ** Mellon University, its trustees, officers, employees, and agents from
- ** all claims or demands made against them (and any related losses,
- ** expenses, or attorney's fees) arising out of, or relating to Licensee's
- ** and/or its sub licensees' negligent use or willful misuse of or
- ** negligent conduct or willful misconduct regarding the Software,
- ** facilities, or other rights or assistance granted by Carnegie Mellon
- ** University under this License, including, but not limited to, any
- ** claims of product liability, personal injury, death, damage to
- ** property, or violation of any laws or regulations.
+ ** [DISTRIBUTION STATEMENT A] This material has been approved for
+ ** public release and unlimited distribution.  Please see Copyright
+ ** notice for non-US Government use and distribution.
  **
- ** Carnegie Mellon University Software Engineering Institute authored
- ** documents are sponsored by the U.S. Department of Defense under
- ** Contract FA8721-05-C-0003. Carnegie Mellon University retains
- ** copyrights in all material produced under this contract. The U.S.
- ** Government retains a non-exclusive, royalty-free license to publish or
- ** reproduce these documents, or allow others to do so, for U.S.
- ** Government purposes only pursuant to the copyright license under the
- ** contract clause at 252.227.7013.
+ ** Carnegie Mellon® and CERT® are registered in the U.S. Patent and
+ ** Trademark Office by Carnegie Mellon University.
  **
  ** @OPENSOURCE_HEADER_END@
  ** ------------------------------------------------------------------------
  */
 
 #define _FIXBUF_SOURCE_
+#define DEFINE_TEMPLATE_METADATA_SPEC
 #include <fixbuf/private.h>
 
 
@@ -77,12 +59,10 @@ struct fbSession_st {
 
     uint16_t                    *tmpl_pair_array;
     uint16_t                    num_tmpl_pairs;
-    /* Initial callback function to allow an application to assign template
-       pairs for transcoding purposes. */
+    /* Callback function to allow an application to assign template
+       pairs for transcoding purposes, and to add context to a
+       particular template */
     fbNewTemplateCallback_fn    new_template_callback;
-    /* Callback added to allow application to add context to a particular
-       template */
-    fbTemplateCtxCallback2_fn   tmpl_ctx_callback;
     void                        *tmpl_app_ctx;
 
     /* If TRUE, options records will be exported for enterprise-specific IEs */
@@ -281,6 +261,7 @@ gboolean fbSessionWriteTypeMetadata(
         if (!fbInfoElementWriteOptionsRecord(
             session->tdyn_buf,
             ie,
+            session->info_element_metadata_tid,
             session->info_element_metadata_tid,
             &child_err))
         {
@@ -597,103 +578,22 @@ uint16_t fbSessionAddTemplateWithMetadata(
     return tid;
 }
 
-
-
-
-
-
-void fbSessionAddTemplateCallback(
-    fbSession_t                *session,
-    fbNewTemplateCallback_fn    callback)
-{
-    session->new_template_callback = callback;
-}
-
-fbNewTemplateCallback_fn    fbSessionTemplateCallback(
+fbNewTemplateCallback_fn fbSessionNewTemplateCallback(
     fbSession_t *session)
 {
     return session->new_template_callback;
 }
 
-/**
- * This function is used by fbSessionAddTemplateCtxWrapper().  It
- * wraps an old-style fbTemplateCtxFree_fn into an
- * fbTemplateCtxFree2_fn.  It works by having
- * fbSessionTemplateCallbackWrapper() set the template's app_ctx to the
- * old-style function, setting the free callback to this function, and
- * this function call's the free function stashed in the app_ctx.
- */
-static void fbTemplateCtxFreeWrapper(
-    void           *tmpl_ctx,
-    void           *app_ctx)
-{
-    fbTemplateCtxFree_fn free_fn = (fbTemplateCtxFree_fn)app_ctx;
-    free_fn(tmpl_ctx);
-}
-
-/**
- * This function is used by fbSessionAddTemplateCtxCallback().  It
- * wraps an fbTemplateCtxCallback_fn into an
- * fbTemplateCtxCallback2_fn.  It works by having
- * fbSessionAddTemplateCtxCallback() stash the old-style callback
- * function in the app_ctx pointer, setting the actual callback to
- * this function.  This function then wraps and calls the old-style
- * callback.
- */
-static void fbSessionTemplateCallbackWrapper(
-    fbSession_t           *session,
-    uint16_t              tid,
-    fbTemplate_t          *tmpl,
-    void                  *app_ctx,
-    void                  **tmpl_ctx,
-    fbTemplateCtxFree2_fn *free_fn)
-{
-    /* Place to stash the old-style free function */
-    fbTemplateCtxFree_fn wrapped_free_fn = NULL;
-
-    /* Retrieve the old-style callback and call it. */
-    fbTemplateCtxCallback_fn wrapped_fn = (fbTemplateCtxCallback_fn)app_ctx;
-    wrapped_fn(session, tid, tmpl, tmpl_ctx, &wrapped_free_fn);
-
-    if (wrapped_free_fn == NULL) {
-        /* If the user provided no free function, propagate that */
-        *free_fn = NULL;
-    } else {
-        /* If the user provided an old-style free function, stash it
-         * in the template's app_ctx, and set the free_function to our
-         * wrapper free function. */
-        *free_fn = fbTemplateCtxFreeWrapper;
-        tmpl->app_ctx = (void *)wrapped_free_fn;
-    }
-}
-
-
-void fbSessionAddTemplateCtxCallback2(
+void fbSessionAddNewTemplateCallback(
     fbSession_t                 *session,
-    fbTemplateCtxCallback2_fn    callback,
+    fbNewTemplateCallback_fn    callback,
     void                        *app_ctx)
 {
-    session->tmpl_ctx_callback = callback;
+    session->new_template_callback = callback;
     session->tmpl_app_ctx = app_ctx;
 }
 
-void fbSessionAddTemplateCtxCallback(
-    fbSession_t                 *session,
-    fbTemplateCtxCallback_fn     callback)
-{
-    /* Set the callback to the fbTemplateCtxCallback_fn wrapper
-     * callback, and set the old-style callback as its argument */
-    session->tmpl_ctx_callback = fbSessionTemplateCallbackWrapper;
-    session->tmpl_app_ctx = (void *)callback;
-}
-
-fbTemplateCtxCallback2_fn fbSessionTemplateCtxCallback(
-    fbSession_t *session)
-{
-    return session->tmpl_ctx_callback;
-}
-
-void *fbSessionTemplateCtxCallbackAppCtx(
+void *fbSessionNewTemplateCallbackAppCtx(
     fbSession_t *session)
 {
     return session->tmpl_app_ctx;
@@ -1716,7 +1616,6 @@ fbSession_t     *fbSessionClone(
        access to the session until after we call fBufNext and by that
        time it's too late and we've already missed some templates */
     session->new_template_callback = base->new_template_callback;
-    session->tmpl_ctx_callback = base->tmpl_ctx_callback;
     session->tmpl_app_ctx = base->tmpl_app_ctx;
 
     /* copy collector reference */

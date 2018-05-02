@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This file was generated using the maint/update-cert-ies.sh script -->
+<?xml-stylesheet type="text/xsl" href="ipfix.xsl"?><registry xmlns="http://www.iana.org/assignments" xmlns:cert="http://www.cert.org/ipfix" id="cert-ipfix">
+  <title>CERT IPFIX Registry</title>
+  <created>2017-11-28</created>
+  <updated>2018-01-11</updated>
+  <registry id="cert-information-elements">
+    <title>CERT Enterprise IPFIX Elements (PEN 6871)</title>
+    <record>
+      <name>dhcpFingerPrint</name>
+      <dataType>string</dataType>
+      <group>yaf-dhcp</group>
+      <cert:reversible>true</cert:reversible>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>242</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The DHCP fingerprint.  This will be the description of the
+          OS.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dhcpVendorCode</name>
+      <dataType>string</dataType>
+      <group>yaf-dhcp</group>
+      <cert:reversible>true</cert:reversible>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>243</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The DHCP vendor class ID found in Option 60 of the DHCP
+          packet.  This field may help further identify the operating
+          system of the sender.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dhcpOption</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dhcp</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>297</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The list of requested parameters found in DHCP Option 55.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+  </registry>
+  <people>
+    <person id="Michael_Duggan">
+      <name>Michael Duggan</name>
+      <uri>mailto:mwd@cert.org</uri>
+      <updated>2017-11-28</updated>
+    </person>
+  </people>
+</registry>

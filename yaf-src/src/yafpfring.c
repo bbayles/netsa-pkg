@@ -368,7 +368,7 @@ gboolean yfPfRingMain(
 
         if (!ctx->cfg->nostats) {
             if (g_timer_elapsed(stimer, NULL) > ctx->cfg->stats) {
-                if (!yfWriteStatsFlow(ctx, pf->stat.drop, yfStatGetTimer(),
+                if (!yfWriteOptionsDataFlows(ctx, pf->stat.drop, yfStatGetTimer(),
                                       &(ctx->err)))
                 {
                     ok = FALSE;
@@ -477,7 +477,7 @@ gboolean yfPfRingZCMain(
       if (!ctx->cfg->nostats) {
           if (g_timer_elapsed(stimer, NULL) > ctx->cfg->stats) {
 
-              if (!yfWriteStatsFlow(ctx, zc->stat.drop, yfStatGetTimer(),
+              if (!yfWriteOptionsDataFlows(ctx, zc->stat.drop, yfStatGetTimer(),
                                     &(ctx->err)))
               {
                   ok = FALSE;

@@ -4,7 +4,7 @@
  * \brief This dumps an ipfix file to outspec or stdout.
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2016 Carnegie Mellon University.
+ ** Copyright (C) 2006-2018 Carnegie Mellon University.
  ** All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Author: Emily Sarneso <ecoff@cert.org>
@@ -62,7 +62,13 @@
 #include <glib.h>
 #include "ipfixDumpPrint.h"
 #include <yaf/yafcore.h>
-#include <yaf/CERT_IE.h>
+
+#if !YAF_ENABLE_HOOKS
+#define INFOMODEL_EXCLUDE_yaf_dpi 1
+#define INFOMODEL_EXCLUDE_yaf_dhcp 1
+#endif
+
+#include "infomodel.h"
 
 static char                   *inspec = NULL;
 static char                   *outspec = NULL;
@@ -73,12 +79,17 @@ static gboolean               dump_data = FALSE;
 gboolean                      dump_stats = FALSE;
 static FILE                   *outfile = NULL;
 static FILE                   *infile = NULL;
-static int                    msg_tmpl_count = 0;
+
 static int                    msg_count = 0;
+static int                    msg_rec_count = 0;
+static int                    msg_rec_length = 0;
+static int                    msg_tmpl_count = 0;
+static int                    tmpl_count = 0;
+static gboolean               eom = TRUE;
 
 int                           id_tmpl_stats[65536];
-int                           max_tmpl_id = 0;
-int                           min_tmpl_id = 0;
+static int                    max_tmpl_id = 0;
+static int                    min_tmpl_id = 0;
 
 static GOptionEntry id_core_option[] = {
     {"in", 'i', 0, G_OPTION_ARG_STRING, &inspec,
@@ -101,8 +112,8 @@ static GOptionEntry id_core_option[] = {
 
 static fbInfoElementSpec_t simple_spec[] = {
     /* TCP-specific information */
-    { "sourceIPv4Address",                  0, 0 },
-    { "destinationIPv4Address",             0, 0 },
+    { "sourceIPv4Address",                  4, 0 },
+    { "destinationIPv4Address",             4, 0 },
     FB_IESPEC_NULL
 };
 
@@ -114,7 +125,7 @@ typedef struct simpleSpec_st {
 
 
 static void idPrintVersion() {
-    fprintf(stderr,"ipfixDump version %s (c) 2016 Carnegie Mellon "
+    fprintf(stderr,"ipfixDump version %s (c) 2018 Carnegie Mellon "
           "University.\n", VERSION);
     fprintf(stderr,"GNU General Public License (GPL) Rights "
             "pursuant to Version 2, June 1991\n");
@@ -167,10 +178,7 @@ static void idParseOptions (
     }
 
     if (dump_stats) {
-        int i;
-        for (i = 0; i < 65536; i++) {
-            id_tmpl_stats[i] = 0;
-        }
+        memset(id_tmpl_stats, 0, sizeof(id_tmpl_stats));
         dump_data = TRUE;
     }
 
@@ -195,37 +203,73 @@ static void idParseOptions (
 }
 
 static void templateFree(
-    void       *ctx)
+    void       *ctx,
+    void       *app_ctx)
 {
+    (void)app_ctx;
     free(ctx);
 }
 
+/* print statistics for the current message if the msg_count is
+ * non-zero */
+static void idCloseMessage(
+    void)
+{
+    if (msg_count) {
+        if (!dump_stats) {
+            if (msg_rec_count) {
+                fprintf(outfile, "*** Msg Stats: %d Data Records "
+                        "(length: %d) ***\n\n",
+                        msg_rec_count, msg_rec_length);
+            }
+            if (msg_tmpl_count) {
+                fprintf(outfile, "*** Msg Stats: %d Template Records *** "
+                        "\n\n", msg_tmpl_count);
+            }
+        }
+        tmpl_count += msg_tmpl_count;
+    }
+}
+
+
+/* close the current message, print the header for the new message,
+ * and reset the message counters */
+static void idNewMessage(
+    fBuf_t              *fbuf)
+{
+    idCloseMessage();
+
+    if (!dump_stats) {
+        idPrintHeader(outfile, fbuf);
+    }
+
+    eom = FALSE;
+    /* reset msg counters */
+    msg_rec_count = 0;
+    msg_rec_length = 0;
+    msg_tmpl_count = 0;
+    ++msg_count;
+}
+
+
 static void idTemplateCallback(
-    fbSession_t          *session,
-    uint16_t             tid,
-    fbTemplate_t         *tmpl,
-    void                 **ctx,
-    fbTemplateCtxFree_fn *fn)
+    fbSession_t           *session,
+    uint16_t              tid,
+    fbTemplate_t          *tmpl,
+    void                  *app_ctx,
+    void                  **ctx,
+    fbTemplateCtxFree_fn  *fn)
 {
     GError *err = NULL;
     uint16_t len = 0;
     tmplContext_t *myctx = malloc(sizeof(tmplContext_t));
-    uint32_t obdomain;
     uint16_t ntid = 0;
     /* get infomodel from session -
        give it to idPrintTmpl to add up length
        (should use type instead of length?) */
 
-    obdomain = fbSessionGetDomain(session);
-
-    if (!msg_count) {
-        /* this is the first one */
-        if (!dump_stats) {
-            fprintf(outfile, "--- Message Header ---\n");
-            /*fprintf(outfile, "export time: %u\n", fBufGetExportTime(fbuf));*/
-            fprintf(outfile, "observation domain id: %u\n\n", obdomain);
-        }
-        msg_count++;
+    if (eom) {
+        idNewMessage((fBuf_t *)app_ctx);
     }
 
     len = idPrintTemplate(outfile, tmpl, ctx, tid, dump_data);
@@ -268,16 +312,12 @@ main (int argc, char *argv[])
     fbTemplate_t  *tmpl = NULL;
     GError        *err = NULL;
     gboolean      rc;
-    gboolean      eom = TRUE;
     fbSession_t  *session = NULL;
     tmplContext_t *tctx;
     uint16_t      tid, ntid;
     uint8_t       *buffer = NULL;
     size_t        buf_len;
     int           rec_count = 0;
-    int           tmpl_count = 0;
-    int           msg_rec_count = 0;
-    int           msg_rec_length = 0;
     char          str_prefix[10];
 
     idParseOptions(&argc, &argv);
@@ -285,11 +325,7 @@ main (int argc, char *argv[])
     model = fbInfoModelAlloc();
 
     if (yaf) {
-        fbInfoModelAddElementArray(model, yaf_info_elements);
-#if YAF_ENABLE_HOOKS
-        fbInfoModelAddElementArray(model, yaf_dpi_info_elements);
-        fbInfoModelAddElementArray(model, yaf_dhcp_info_elements);
-#endif
+        infomodelAddGlobalElements(model);
     }
 
     /* Create New Session */
@@ -309,8 +345,6 @@ main (int argc, char *argv[])
         exit(-1);
     }
 
-    fbSessionAddTemplateCtxCallback(session, idTemplateCallback);
-
     /* Allocate FP Collector */
     collector = fbCollectorAllocFP(NULL, infile);
 
@@ -319,15 +353,15 @@ main (int argc, char *argv[])
 
     fBufSetAutomaticMode(fbuf, FALSE);
 
+    fbSessionAddNewTemplateCallback(session, idTemplateCallback, fbuf);
+
     memset(str_prefix, 0, 10);
 
-    while (1) {
-
-
+    for (;;) {
         tmpl = fBufNextCollectionTemplate(fbuf, &ntid, &err);
         if (!tmpl) {
             /* If no template - no message */
-            if (!strncmp(err->message, "End of file", strlen("End of file"))) {
+            if (g_error_matches(err, FB_ERROR_DOMAIN, FB_ERROR_EOF)) {
                 fBufFree(fbuf);
                 g_clear_error(&err);
                 eom = TRUE;
@@ -342,29 +376,8 @@ main (int argc, char *argv[])
             continue;
         }
 
-        if (eom && msg_count) {
-            /* new msg */
-            msg_count++;
-
-            if (!dump_stats) {
-                if (msg_rec_count) {
-                    fprintf(outfile, "*** Msg Stats: %d Data Records "
-                            "(length: %d) ***\n\n",
-                            msg_rec_count, msg_rec_length);
-                }
-                if (msg_tmpl_count) {
-                    fprintf(outfile, "*** Msg Stats: %d Template Records *** "
-                            "\n\n", msg_tmpl_count);
-                }
-                idPrintHeader(outfile, fbuf);
-            }
-
-            eom = FALSE;
-            /* reset msg counters */
-            msg_rec_count = 0;
-            msg_rec_length = 0;
-            tmpl_count += msg_tmpl_count;
-            msg_tmpl_count = 0;
+        if (eom) {
+            idNewMessage(fbuf);
         }
 
         id_tmpl_stats[ntid] += 1;
@@ -383,7 +396,7 @@ main (int argc, char *argv[])
         rc = fBufNext(fbuf, buffer, &buf_len, &err);
 
         if (FALSE == rc) {
-            if (!strncmp(err->message, "End of file", strlen("End of file"))) {
+            if (g_error_matches(err, FB_ERROR_DOMAIN, FB_ERROR_EOF)) {
                 eom = TRUE;
                 fprintf(stderr, "END OF FILE\n");
                 fBufFree(fbuf);
@@ -402,8 +415,11 @@ main (int argc, char *argv[])
         }
 
         rec_count++;
-
         msg_rec_count++;
+
+        /* FIXME: When record contains varlen or list elements,
+         * 'buf_len' is the size of the fbVarfield_t or fb*List_t
+         * structure and not the number of octets in that field. */
         msg_rec_length += buf_len;
 
         if (!dump_tmpl) {
@@ -414,24 +430,9 @@ main (int argc, char *argv[])
 
     }
 
-    if (eom && msg_count) {
-        /* new msg */
-        msg_count++;
-
-        if (!dump_stats) {
-            if (msg_rec_count) {
-                fprintf(outfile, "*** Msg Stats: %d Data Records "
-                        "(length: %d) ***\n\n",
-                        msg_rec_count, msg_rec_length);
-            }
-            if (msg_tmpl_count) {
-                fprintf(outfile, "*** Msg Stats: %d Template Records *** "
-                        "\n\n", msg_tmpl_count);
-            }
-        }
-        tmpl_count += msg_tmpl_count;
+    if (eom) {
+        idCloseMessage();
     }
-
 
     fbInfoModelFree(model);
 

@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<registry id="cert"
+          xmlns="http://www.iana.org/assignments"
+          xmlns:cert="http://www.cert.org/ipfix">
+  <registry id="cert-information-elements">
+    <title>CERT elements</title>
+
+    <record>
+      <name>templateName</name>
+      <dataType>string</dataType>
+      <group>yaf</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>1000</elementId>
+      <status>current</status>
+      <revision>0</revision>
+    </record>
+
+    <record>
+      <name>templateDescription</name>
+      <dataType>string</dataType>
+      <group>yaf</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>1001</elementId>
+      <status>current</status>
+      <revision>0</revision>
+    </record>
+
+  </registry>
+</registry>
+

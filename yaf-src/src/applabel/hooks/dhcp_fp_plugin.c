@@ -9,7 +9,7 @@
  * dhcp_fingerprints.conf
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2016 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2006-2018 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
@@ -91,9 +91,10 @@
 /** we obviously need some yaf details -- we're a plugin to it afterall! */
 #include <yaf/yafcore.h>
 #include <yaf/decode.h>
-#include <yaf/CERT_IE.h>
 #include <yaf/yafhooks.h>
 #include <pcre.h>
+
+#include "../../../infomodel/yaf_dhcp.i"
 
 #define DHCP_APPLABEL           67
 #define MAGICCOOKIE             0x63825363
@@ -114,18 +115,18 @@ static struct yfHookMetaData metaData = {
 };
 
 static fbInfoElementSpec_t yaf_dhcp_fp_spec[] = {
-    {"dhcpFingerPrint",             0, 0 },
-    {"dhcpVendorCode",              0, 0 },
-    {"reverseDhcpFingerPrint",      0, DHCP_REV },
-    {"reverseDhcpVendorCode",       0, DHCP_REV },
+    {"dhcpFingerPrint",             FB_IE_VARLEN, 0 },
+    {"dhcpVendorCode",              FB_IE_VARLEN, 0 },
+    {"reverseDhcpFingerPrint",      FB_IE_VARLEN, DHCP_REV },
+    {"reverseDhcpVendorCode",       FB_IE_VARLEN, DHCP_REV },
     FB_IESPEC_NULL
 };
 
 static fbInfoElementSpec_t yaf_dhcp_options_spec[] = {
-    {"basicList",                   0, 0 },
-    {"dhcpVendorCode",              0, 0 },
-    {"basicList",                   0, DHCP_REV},
-    {"reverseDhcpVendorCode",       0, DHCP_REV },
+    {"basicList",                   FB_IE_VARLEN, 0 },
+    {"dhcpVendorCode",              FB_IE_VARLEN, 0 },
+    {"basicList",                   FB_IE_VARLEN, DHCP_REV},
+    {"reverseDhcpVendorCode",       FB_IE_VARLEN, DHCP_REV },
     FB_IESPEC_NULL
 };
 
@@ -246,11 +247,10 @@ fbInfoModel_t *ypGetDHCPInfoModel()
     static fbInfoModel_t *yaf_dhcp_model = NULL;
     if (!yaf_dhcp_model) {
         yaf_dhcp_model = fbInfoModelAlloc();
-        fbInfoModelAddElementArray(yaf_dhcp_model, yaf_dhcp_info_elements);
+        fbInfoModelAddElementArray(yaf_dhcp_model,
+                                   infomodel_array_static_yaf_dhcp);
     }
 
-    (void)yaf_dpi_info_elements;
-    (void)yaf_info_elements;
     return yaf_dhcp_model;
 }
 
@@ -888,7 +888,7 @@ gboolean ypFlowWrite(
  */
 fbInfoElement_t *ypGetInfoModel()
 {
-    return yaf_dhcp_info_elements;
+    return infomodel_array_static_yaf_dhcp;
 }
 
 /**

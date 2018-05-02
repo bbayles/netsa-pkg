@@ -1,0 +1,2573 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This file was generated using the maint/update-cert-ies.sh script -->
+<?xml-stylesheet type="text/xsl" href="ipfix.xsl"?><registry xmlns="http://www.iana.org/assignments" xmlns:cert="http://www.cert.org/ipfix" id="cert-ipfix">
+  <title>CERT IPFIX Registry</title>
+  <created>2017-11-28</created>
+  <updated>2018-01-11</updated>
+  <registry id="cert-information-elements">
+    <title>CERT Enterprise IPFIX Elements (PEN 6871)</title>
+    <record>
+      <name>httpServerString</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>110</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Server Response-header field. Contains information
+          about the software used to handle the HTTP Request.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpUserAgent</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>111</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP User-Agent Request-header field. Contains information
+          about the user agent originating the request.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpGet</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>112</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Method Command. Retrieves information identified by the
+          following Request-URI.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpConnection</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>113</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Connection header fields. Contains options that are
+          desired for a particular connection.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpVersion</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>114</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Version Number.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpReferer</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>115</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Referer request-header field. Address (URI) of the
+          resource which the Request-URI was obtained.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpLocation</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>116</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Location response-header field. Used to redirect the
+          recipient to a location to complete a request or identify a
+          new resource.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpHost</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>117</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Host Request-header. The Internet host and port number
+          of the resource being requested.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpContentLength</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>118</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Content-Length header. Indicates the size of the
+          entity-body.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpAge</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>119</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Age response-header. Argument is the sender's estimate
+          of the time elapsed since the response.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpAccept</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>120</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Accept request-header field. Used to specify certain
+          media types that are acceptable for the response.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpAcceptLanguage</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>121</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Accept-Language Request-Header field. Restricts the set
+          of natural languages that preferred.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpContentType</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>122</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Content Type entity-header field. Indicates the media
+          type of the entity-body.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpResponse</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>123</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Response Status Code. Usually a three-digit number
+          followed by text.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>pop3TextMessage</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>124</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          POP3 Command and Replies. Contains any command or reply
+          message found in POP3 payload data.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>ircTextMessage</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>125</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          IRC Chat or Join Message.  This field contains any IRC
+          Command and the following arguments.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>tftpFilename</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>126</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          TFTP Name of File being transferred.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>tftpMode</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>127</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Contains the mode of transfer. (netascii, octet, mail)
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>slpVersion</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>128</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SLP Version Number.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>slpMessageType</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>129</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SLP Message Type. This value should be between 1 and 11 and
+          describes the type of SLP message.
+        </paragraph>
+      </description>
+      <range>1-11</range>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>slpString</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>130</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Contains the text elements found in an SLP Service Request.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>ftpReturn</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>131</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          FTP Commands or Replies.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>ftpUser</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>132</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          FTP User Command Argument. This command will normally be the
+          first command transmitted by the user.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>ftpPass</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>133</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          FTP Password Command Argument. This command must be preceded
+          by the user name command, and is usually required to
+          complete authentication.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>ftpType</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>134</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          FTP Data Representation Type.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>ftpRespCode</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>135</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          FTP Reply. This consists of a three digit number followed by
+          some text.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>imapCapability</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>136</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          IMAP Capability Command and Response.  Captures the listing
+          of capabilities that the server supports.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>imapLogin</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>137</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          IMAP Login Command.  Arguments are user name and password.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>imapStartTLS</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>138</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          IMAP STARTTLS Command.  Captures this command only as no
+          arguments or responses are related.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>imapAuthenticate</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>139</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          IMAP Authenticate Command. Captures the authentication
+          mechanism name of the server following this command.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>imapCommand</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>140</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Captures a variety of IMAP Commands and their arguments.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>imapExists</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>141</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          IMAP Exists Response.  Reports the number of messages in the
+          mailbox.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>imapRecent</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>142</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          IMAP Recent Response.  Reports the number of message with
+          the Recent flag set.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspURL</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>143</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP URL.  Captures the address of the network resources
+          requested.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspVersion</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>144</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP Version Number.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspReturnCode</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>145</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP Status-Line.  Captures the RTSP Protocol version,
+          numeric status code, and the textual phrase associated with
+          the numeric code.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspContentLength</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>146</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP Content-Length Header Field.  Contains the length of
+          the content of the method.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspCommand</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>147</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP Command.  Captures the method to be performed and the
+          Request-URI associated with the method.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspContentType</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>148</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP Content Type.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspTransport</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>149</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP Transport request header field.  Captures the transport
+          protocol used and the parameters that follow.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspCSeq</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>150</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP CSeq field.  Contains the sequence number for an RTSP
+          request-response pair.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspLocation</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>151</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP Location header field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspPacketsReceived</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>152</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP User Agent field.  Contains information about the user
+          agent originating the request.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspUserAgent</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>153</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP User Agent field.  Contains information about the user
+          agent originating the request.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtspJitter</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>154</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          RTSP Jitter Value.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sipInvite</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>155</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SIP Invite Method.  Contains the SIP address and SIP Version
+          Number.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sipCommand</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>156</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SIP Command.  Contains a SIP Method, SIP address, and SIP
+          Version Number.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sipVia</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>157</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SIP Via contains the SIP Version Number and the address the
+          sender is expecting to receive responses.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sipMaxForwards</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>158</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SIP Max Forwards contains the limit of number of hops a
+          request can make on the way to its destination.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sipAddress</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>159</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SIP Address contains the argument of the To, From, or
+          Contact Header Fields.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sipContentLength</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>160</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SIP Content Length header field.  Contains the byte count of
+          the message byte.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sipUserAgent</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>161</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SIP User Agent Header Field.  Contains information about the
+          User Agent Client originating the request.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>smtpHello</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>162</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SMTP Hello or Extend Hello command.  Captures the command
+          and the domain name of the SMTP client.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>smtpFrom</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>163</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SMTP Mail Command.  Contains the reverse-path of the sender
+          mailbox.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>smtpTo</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>164</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The SMTP Recipient (RCPT) Command.  Captures the command and
+          the forward-path of the recipient of the mail data.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>smtpContentType</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>165</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SMTP Content Type Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>smtpSubject</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>166</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SMTP Subject.  Contains the subject of the mail data.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>smtpFilename</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>167</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SMTP Filename.  Contains the name of the file attached to
+          the mail message.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>smtpContentDisposition</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>168</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SMTP Content-Disposition Header field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>smtpResponse</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>169</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SMTP Replies.  Consists of a three digit number followed by
+          text.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>smtpEnhanced</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>170</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Enhanced SMTP.  Contains the ESMTP command with the
+          following argument.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sshVersion</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>171</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SSH Version Number
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>nntpResponse</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>172</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          NNTP Reply.  This consists of a three digit status code and
+          text message.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>nntpCommand</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>173</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          NNTP Command. Contains an NNTP Command and following
+          argument(s).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsQueryResponse</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>174</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          DNS Query/Response header field.  This corresponds with the
+          DNS header one bit field, QR.  If the message is a query
+          (0), or a response (1).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsQRType</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>175</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          DNS Query/Response Type.  This corresponds with the QTYPE
+          field in the DNS Question Section or the TYPE field in the
+          DNS Resource Record Section.  This field determines the type
+          of subTemplateList found in this record.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsAuthoritative</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>176</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          DNS Authoritative header field.  This corresponds with the
+          DNS header one bit field, AA.  This bit is only valid in
+          responses (when dnsQueryResponse is 1), and specifies that
+          the responding name server is an authority for the domain
+          name in the question section.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsNXDomain</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>177</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          DNS NXDomain or Response Code (RCODE).  This corresponds
+          with the DNS RCODE header field.  This field will be set to
+          3 for a Name Error, 2 for a Server Failure, 1 for a Format
+          Error, and 0 for No Error. See <xref type="uri" data="http://www.iana.org/assignments/dns-parameters">dns-parameters</xref>
+          for other valid values.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsRRSection</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>178</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          DNS Resource Record Section Field.  This field will be set
+          to 0 if the information is from the Question Section, 1 for
+          the Answer Section, 2 for the Name Server Section, and 3 for
+          the Additional Section.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsQName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>179</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A DNS Query or Response Name.  This field corresponds with
+          the QNAME field in the DNS Question Section or the NAME
+          field in the DNS Resource Record Section.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsCName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>180</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A domain-name which specificies the canonical or primary
+          name for the owner.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsMXPreference</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>181</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to the DNS MX Preference field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsMXExchange</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>182</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to the DNS MX Exchange field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsNSDName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>183</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          An authoritative name server domain-name.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsPTRDName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>184</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to DNS PTR PTRDNAME Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCipher</name>
+      <dataType>unsigned32</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>185</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          sslCipher is a CipherSuite suggested by the client in the
+          ClientHello Message.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslClientVersion</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>186</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          sslClientVersion is the version it supports contained in the
+          initial ClientHello message.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslServerCipher</name>
+      <dataType>unsigned32</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>187</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          sslServerCipher is the CipherSuite chosen by the server in
+          the ServerHello message.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCompressionMethod</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>188</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          sslCompressionMethod is the compression method chosen by the
+          server in the ServerHello message.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertVersion</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>189</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Certificate Version. This is the value contained in the
+          certificate v1(0), v2(1), v3(2).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertSignature</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>190</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The signature contained in a SSL certificate. This is
+          typically the hashing algorithm identifier.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertIssuerCountryName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>191</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertIssuerOrgName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>192</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertIssuerOrgUnitName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>193</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertIssuerZipCode</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>194</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertIssuerState</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>195</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertIssuerCommonName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>196</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertIssuerLocalityName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>197</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertIssuerStreetAddress</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>198</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsTTL</name>
+      <dataType>unsigned32</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>199</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          DNS Time To Live.  This is an unsigned integer that
+          specifies the time interval, in seconds, that the resource
+          record may be cached for.  This will contain a value of zero
+          for DNS Queries.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertSubCountryName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>200</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertSubOrgName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>201</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertSubOrgUnitName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>202</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertSubZipCode</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>203</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertSubState</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>204</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertSubCommonName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>205</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertSubLocalityName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>206</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertSubStreetAddress</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>207</elementId>
+      <status>obsolete</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsTXTData</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>208</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to DNS TXT TXT-DATA field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSOASerial</name>
+      <dataType>unsigned32</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>209</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to DNS SOA SERIAL Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSOARefresh</name>
+      <dataType>unsigned32</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>210</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to DNS SOA REFRESH Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSOARetry</name>
+      <dataType>unsigned32</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>211</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to DNS SOA RETRY Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSOAExpire</name>
+      <dataType>unsigned32</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>212</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to DNS SOA EXPIRE Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSOAMinimum</name>
+      <dataType>unsigned32</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>213</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to DNS SOA MINIMUM Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSOAMName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>214</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to DNS SOA MNAME Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSOARName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>215</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to DNS SOA RNAME Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSRVPriority</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>216</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to the Priority Field in the DNS SRV Resource
+          Record.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSRVWeight</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>217</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to the Weight Field in the DNS SRV Resource
+          Record.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSRVPort</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>218</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to the Port Field in the DNS SRV Resource
+          Record.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSRVTarget</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>219</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Corresponds to the Target Field in the DNS SRV Resource
+          Record.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpCookie</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>220</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Cookie Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpSetCookie</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>221</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Set Cookie Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>smtpSize</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>222</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SMTP Size Header Field.  Contains the size in bytes of the
+          mail data.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>mysqlUsername</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>223</elementId>
+      <status>current</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>mysqlCommandCode</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>224</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          MySQL Command Code. This number should be between 0 and 28.
+        </paragraph>
+      </description>
+      <range>0-28</range>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>mysqlCommandText</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>225</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          MySQL Command Text.  For example, this can be a SELECT,
+          INSERT, DELETE statement.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsID</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>226</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          DNS Transaction ID.  This identifier is used by the
+          requester to match up replies to outstanding queries.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsAlgorithm</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>227</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Hash Algorithm field in the DNSSEC NSEC3 or NSEC3PARAM RR.
+          Values are described in <xref type="rfc" data="rfc5155"/>.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsKeyTag</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>228</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Key Tag field in the DS RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSigner</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>229</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Signer's Name field in the RRSIG RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSignature</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>230</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Signature field in the RRSIG RR. Contains the
+          cryptographic signature that covers the dnsQName field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsDigest</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>231</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The digest of the DNSKEY RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsPublicKey</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>232</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          DNSSEC uses public key cryptography to sign and authenticate
+          DNS resource record sets.  This field holds the public key.
+          The format depends on the algorithm of the key.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSalt</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>233</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Salt Field in the DNSSEC NSEC3 or NSEC3PARAM RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsHashData</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>234</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Next Hashed Owner Name in the DNSSEC NSEC3 RR.  This
+          will be empty for NSEC3PARAM records.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsIterations</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>235</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Iterations field in the DNSSEC NSEC3 or NSEC3PARAM RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSignatureExpiration</name>
+      <dataType>unsigned32</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>236</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Signature Inception field in a RRSIG RR.  The Expiration
+          and Inception fields specify a validity period for the
+          signature.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsSignatureInception</name>
+      <dataType>unsigned32</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>237</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Signature Expiration field in a RRSIG RR.  The
+          Expiration and Inception fields specify a validity period
+          for the signature.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsDigestType</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>238</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Digest Type field which identifes the algorithm used to
+          construct the digest.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsLabels</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>239</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Labels field in a RRSIG RR.  Specifies the number of
+          labels in the original RRSIG resource record owner name.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsTypeCovered</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>240</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Type Covered field in a RRSIG RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnsFlags</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <dataTypeSemantics>flags</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>241</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The flags field in the DNSKey Resource Record.  Certain bits
+          determine if the key is a zone key or should be used for a
+          secure entry point.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertSerialNumber</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>244</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Serial Number from the X.509 certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslObjectType</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>245</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          For the Issuer and Subject subTemplateLists, yaf only
+          parses objects that are members of the id-at arc
+          {joint-iso-ccitt(2) ds(5) 4}, pkcs-9 {iso(1) member-body (2)
+          us(840) rsadsi(113459) pkcs(1) 9}, and LDAP dc
+          0.9.2342.19200300.100.1.25.  This field will not contain the
+          full object identfier, it will just contain the member
+          id. For example, for an issuer common name, sslObjectType
+          will contain 3.  Below is a list of common objects in an
+          X.509 RelativeDistinguishedName Sequence for X.509
+          Certificates:
+        </paragraph>
+        <artwork>
+pkcs-9-emailAddress          {pkcs-9 1}
+id-at-commonName             {id-at 3}
+id-at-countryName            {id-at 6}
+id-at-localityName           {id-at 7}
+id-at-stateOrProvinceName    {id-at 8}
+id-at-streetAddress          {id-at 9}
+id-at-organizationName       {id-at 10}
+id-at-organizationalUnitName {id-at 11}
+id-at-title                  {id-at 12}
+id-at-postalCode             {id-at 17}
+0.9.2342.19200300.100.1.25   {dc 25}
+id-at-name                   {id-at 41}
+</artwork>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslObjectValue</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>246</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The bit strings associated with sslObjectType.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertValidityNotBefore</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>247</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The notBefore field in the Validity Sequence of the X.509
+          Certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertValidityNotAfter</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>248</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The notAfter field in the Validity Sequence of the X.509
+          Certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslPublicKeyAlgorithm</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>249</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The algorithm, encoded in ASN.1, in the SubjectPublicKeyInfo
+          Sequence of the X.509 Certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslPublicKeyLength</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>250</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The length of the public key in the X.509 Certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>smtpDate</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>251</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          SMTP Date Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpAuthorization</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>252</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Authorization Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpVia</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>253</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Via Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpX-Forwarded-For</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>254</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP X-Forwarded-For Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpExpires</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>255</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Expires Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpRefresh</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>256</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Refresh Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpIMEI</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>257</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP International Mobile Station Equipment Identity ID.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpIMSI</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>258</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP International Mobile Subscriber Identity
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpMSISDN</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>259</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP MSISDN number, a telephone number for the SIM card in a
+          mobile/cellular phone.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpSubscriber</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>260</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Mobile Subscriber Information.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpAcceptCharset</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>261</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Accept Charset Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpAcceptEncoding</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>262</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Accept Encoding Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpAllow</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>263</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Allow Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpDate</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>264</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Date Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpExpect</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>265</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Expect Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpFrom</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>266</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP From Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpProxyAuthentication</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>267</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Proxy Authentication Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpUpgrade</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>268</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Upgrade Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpWarning</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>269</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Warning Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpDNT</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>270</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP DNT Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpX-Forwarded-Proto</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>271</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP X-Forwarded-Proto Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpX-Forwarded-Host</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>272</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP X-Forwarded-Host Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpX-Forwarded-Server</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>273</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP X-Forwarded-Server Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpX-DeviceID</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>274</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP X-Device ID Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpX-Profile</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>275</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP X-Profile Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpLastModified</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>276</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Last Modified Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpContentEncoding</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>277</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Content Encoding Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpContentLanguage</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>278</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Content Language Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpContentLocation</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>279</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP Content Location Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>httpX-UA-Compatible</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>280</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          HTTP X-UA-Compatible Header Field.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnp3SourceAddress</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>281</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The DNP3 Source Address found in the Data Link Layer of the
+          DNP Header.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnp3DestinationAddress</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>282</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The DNP3 Destination Address found in the Data Link Layer of
+          the DNP Header.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnp3Function</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>283</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The DNP3 Function Code found in the first byte of the
+          Application Layer.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>dnp3ObjectData</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>284</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The pattern captured from the DNP3 regular expression.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>modbusData</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>285</elementId>
+      <status>current</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>ethernetIPData</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>286</elementId>
+      <status>current</status>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>rtpPayloadType</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:reversible>true</cert:reversible>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>287</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The payload type in the RTP header of the first payload in
+          the forward direction.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslRecordVersion</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>288</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          sslRecordVersion is the version of ssl or tls that was used
+          in the flow.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslServerName</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>294</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The server name from the SSL/TLS Client Hello. This is
+          typically the name of the server that the client is
+          connecting to.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertificateHash</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>295</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The hash of the X.509 certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+    </record>
+    <record>
+      <name>sslCertificate</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>296</elementId>
+      <status>current</status>
+      <revision>0</revision>
+    </record>
+  </registry>
+  <people>
+    <person id="Michael_Duggan">
+      <name>Michael Duggan</name>
+      <uri>mailto:mwd@cert.org</uri>
+      <updated>2017-11-28</updated>
+    </person>
+  </people>
+</registry>

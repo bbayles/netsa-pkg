@@ -459,7 +459,8 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  =    @abs_top_srcdir@/include/fixbuf
+INPUT                  =    @abs_top_builddir@/include/fixbuf \
+                            @abs_top_srcdir@/include/fixbuf
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -480,7 +481,7 @@ RECURSIVE              = NO
 # excluded from the INPUT source files. This way you can easily exclude a 
 # subdirectory from a directory tree whose root is specified with the INPUT tag.
 
-EXCLUDE                = @abs_top_srcdir@/include/fixbuf/config.h \
+EXCLUDE                = @abs_top_builddir@/include/fixbuf/config.h \
                          @abs_top_srcdir@/include/fixbuf/autoinc.h
 
 # The EXCLUDE_SYMLINKS tag can be used select whether or not files or 

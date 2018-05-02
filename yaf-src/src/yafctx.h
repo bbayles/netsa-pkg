@@ -84,6 +84,9 @@ typedef struct yfConfig_st {
     gboolean        deltaMode;
     gboolean        no_output;
     gboolean        tmpl_metadata;
+    gboolean        no_tombstone;
+    uint16_t        tombstone_configured_id;
+    uint16_t        tombstone_unique_id;
     uint32_t        ingressInt;
     uint32_t        egressInt;
     uint64_t        stats;
@@ -104,9 +107,9 @@ typedef struct yfConfig_st {
 } yfConfig_t;
 
 #ifdef HAVE_SPREAD
-#define YF_CONFIG_INIT {NULL, NULL, NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, 0, 0, 0, 0, 0, 5, 0, 0, FB_CONNSPEC_INIT, FALSE, FB_SPREADPARAMS_INIT, NULL, 0, 0}
+#define YF_CONFIG_INIT {NULL, NULL, NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, FB_CONNSPEC_INIT, FALSE, FB_SPREADPARAMS_INIT, NULL, 0, 0}
 #else
-#define YF_CONFIG_INIT {NULL, NULL, NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, 0, 0, 0, 0, 0, 5, 0, 0, FB_CONNSPEC_INIT}
+#define YF_CONFIG_INIT {NULL, NULL, NULL, NULL, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, FB_CONNSPEC_INIT}
 #endif
 
 typedef struct yfContext_st {
