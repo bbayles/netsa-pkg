@@ -9,9 +9,9 @@
  *
  * @ href="http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol"
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Ecoff <ecoff@cert.org>
+ ** Authors: Emily Ecoff
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -105,7 +105,7 @@ mysqlplugin_LTX_ycMYSQLScanScan(
     yfFlow_t       *flow,
     yfFlowVal_t    *val)
 {
-    uint16_t payloadOffset = 0;
+    uint32_t offset = 0;
     uint32_t fillerOffset = 0;
     int      i = 0;
     uint8_t  packetNumber;
@@ -118,29 +118,29 @@ mysqlplugin_LTX_ycMYSQLScanScan(
 
     packetLength = ((*(uint32_t *)payload)) & 0x00FFFFFF;
 
-    payloadOffset += 3;
-    if (packetLength < 49 || payloadOffset > payloadSize ||
+    offset += 3;
+    if (packetLength < 49 || offset > payloadSize ||
         packetLength > payloadSize)
     {
         return 0;
     }
 
-    packetNumber = *(payload + payloadOffset);
+    packetNumber = *(payload + offset);
 
-    payloadOffset++;
+    offset++;
 
     if (packetNumber != 0 && packetNumber != 1) {
         return 0;
     }
 
-    if (payloadOffset > payloadSize) {
+    if (offset > payloadSize) {
         return 0;
     }
 
     if (packetNumber == 0) {
         /* Server Greeting */
-        /*protoVersion = *(payload + payloadOffset);*/
-        payloadOffset++;
+        /*protoVersion = *(payload + offset);*/
+        offset++;
 
         /* Version would be here - str until null*/
 
@@ -160,77 +160,77 @@ mysqlplugin_LTX_ycMYSQLScanScan(
     } else {
         /* Client Authentication */
         /* Client Capabilities && Extended Capabilities*/
-        payloadOffset += 4;
+        offset += 4;
 
         /* Max Packet Size + 1 for Charset*/
-        payloadOffset += 5;
+        offset += 5;
 
-        if ((size_t)payloadOffset + 23 > payloadSize) {
+        if ((size_t)offset + 23 > payloadSize) {
             return 0;
         }
 
         for (i = 0; i < 23; i++) {
-            temp = *(payload + payloadOffset);
+            temp = *(payload + offset);
             if (temp != 0) {
                 return 0;
             }
-            payloadOffset++;
+            offset++;
         }
 
 #if YAF_ENABLE_HOOKS
         /* Here's the Username */
         i = 0;
-        while ((payloadOffset < packetLength) &&
-               ((size_t)payloadOffset + i < payloadSize))
+        while ((offset < packetLength) &&
+               ((size_t)offset + i < payloadSize))
         {
-            if (*(payload + payloadOffset + i)) {
+            if (*(payload + offset + i)) {
                 i++;
             } else {
                 break;
             }
         }
 
-        yfHookScanPayload(flow, payload, i, NULL, payloadOffset, 223,
+        yfHookScanPayload(flow, payload, i, NULL, offset, 223,
                           MYSQL_PORT_NUMBER);
 
         /* Rest of pkt is password. Add 4 for pkt len & pkt num*/
-        payloadOffset = packetLength + 4;
+        offset = packetLength + 4;
 
         if (packetLength > payloadSize) {
             return MYSQL_PORT_NUMBER;
         }
 
         /* Check for more packets */
-        while (payloadOffset < payloadSize) {
+        while (offset < payloadSize) {
             packetLength =
-                (*(uint32_t *)(payload + payloadOffset)) & 0x00FFFFFF;
+                (*(uint32_t *)(payload + offset)) & 0x00FFFFFF;
 
             if (packetLength > payloadSize) {
                 return MYSQL_PORT_NUMBER;
             }
 
-            payloadOffset += 4; /* add one for packet number */
+            offset += 4; /* add one for packet number */
 
-            if (payloadOffset > payloadSize || packetLength == 0) {
+            if (offset > payloadSize || packetLength == 0) {
                 return MYSQL_PORT_NUMBER;
             }
 
-            packetNumber = *(payload + payloadOffset);
+            packetNumber = *(payload + offset);
 
-            payloadOffset++;
+            offset++;
 
             /* The text of the command follows */
             i = (packetLength - 1);
 
-            if ((size_t)payloadOffset + i > payloadSize) {
+            if ((size_t)offset + i > payloadSize) {
                 return MYSQL_PORT_NUMBER;
             }
 
-            yfHookScanPayload(flow, payload, i, NULL, payloadOffset,
+            yfHookScanPayload(flow, payload, i, NULL, offset,
                               packetNumber,
                               MYSQL_PORT_NUMBER);
 
-            payloadOffset += i;
+            offset += i;
         }
 
 #endif /* if YAF_ENABLE_HOOKS */

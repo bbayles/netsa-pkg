@@ -3,9 +3,9 @@
 ** Keeps a child process running.
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
-** Authors: Tony Cebzanov <toyc@cert.org>
+** Authors: Tony Cebzanov
 ** ------------------------------------------------------------------------
 ** @OPENSOURCE_HEADER_START@
 ** Use of the YAF system and related source code is subject to the terms
@@ -61,16 +61,15 @@
 #include <airframe/airopt.h>
 #include <airframe/logconfig.h>
 
-uint32_t       ad_retry_min        = 30;
-uint32_t       ad_retry_max        = 0;
-gboolean       ad_nodaemon         = FALSE;
-pid_t          ad_pid              = 0;
-char          *ad_pidfile          = NULL;
-pid_t          ad_cpid              = 0;
-char          *ad_cpidfile          = NULL;
+static uint32_t       ad_retry_min        = 30;
+static uint32_t       ad_retry_max        = 0;
+static gboolean       ad_nodaemon         = FALSE;
+static pid_t          ad_pid              = 0;
+static char          *ad_pidfile          = NULL;
+static char          *ad_cpidfile         = NULL;
 
 
-AirOptionEntry ad_options[]  = {
+static AirOptionEntry ad_options[]  = {
     AF_OPTION( "retry", 'r', 0, AF_OPT_TYPE_INT, &ad_retry_min,
                "Retry delay in seconds", "sec" ),
     AF_OPTION( "retry-max", 'R', 0, AF_OPT_TYPE_INT, &ad_retry_max,
@@ -137,7 +136,7 @@ on_child_exit(
 }
 
 
-gboolean
+static gboolean
 daemonize(
     void)
 {

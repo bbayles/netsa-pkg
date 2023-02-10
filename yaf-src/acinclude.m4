@@ -5,7 +5,7 @@
 # Description
 #	Some more portability tests for running YAF on different platforms.
 #
-# Copyright (C) 2008-2021 Carnegie Mellon University. All rights Reserved.
+# Copyright (C) 2008-2023 Carnegie Mellon University. All rights Reserved.
 #
 # GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
 # Government Purpose License Rights (GPLR) pursuant to DFARS 252.227-7013

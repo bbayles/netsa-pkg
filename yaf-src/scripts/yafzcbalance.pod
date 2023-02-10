@@ -109,15 +109,11 @@ If present, print version and copyright information to standard error and exit.
 In the following examples, the dollar sign ("$") represents the shell
 prompt.  The text after the dollar sign represents the command line.
 
-=over 1
-
  $ yafzcbalance --in zc:p6p1,zc:p6p1 -c 99 -n 2 -d -l /var/log/yafzcbalance.log
 
  $ yaf --in 99:0 --live zc --out localhost --ipfix tcp --ipfix-port=18000 --silk
 
  $ yaf --in 99:1 --live zc --out localhost --ipfix tcp --ipfix-port=18001 --silk
-
-=back
 
 =head1 Known Issues
 

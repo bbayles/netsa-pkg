@@ -5,9 +5,9 @@
  * Decoder based on RFC 4511.
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2014-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2014-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Sarneso <ecoff@cert.org>
+ ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -113,7 +113,7 @@ ldapplugin_LTX_ycLdapScanScan(
     yfFlow_t       *flow,
     yfFlowVal_t    *val)
 {
-    uint16_t     offset = 0;
+    uint32_t     offset = 0;
     uint16_t     min_length = 7;
     unsigned int i;
     uint64_t     num_packets = val->pkt;

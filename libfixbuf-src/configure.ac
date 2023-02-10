@@ -6,7 +6,7 @@ dnl ------------------------------------------------------------------------
 dnl @OPENSOURCE_LICENSE_START@
 dnl libfixbuf 2.0
 dnl
-dnl Copyright 2018-2020 Carnegie Mellon University. All Rights Reserved.
+dnl Copyright 2018-2023 Carnegie Mellon University. All Rights Reserved.
 dnl
 dnl NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
 dnl ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS"
@@ -31,13 +31,12 @@ dnl
 dnl DM18-0325
 dnl @OPENSOURCE_LICENSE_END@
 dnl ------------------------------------------------------------------------
-dnl Authors: Brian Trammell, Dan Ruef <druef@cert.org>, Chris Inacio
-dnl <inacio@cert.org>
+dnl Authors: Brian Trammell, Dan Ruef, Chris Inacio
 dnl ------------------------------------------------------------------------
 
-AC_INIT([libfixbuf], [2.4.1], [netsa-help@cert.org], [libfixbuf], [http://tools.netsa.cert.org/fixbuf/])
+AC_INIT([libfixbuf], [2.4.2], [netsa-help@cert.org], [libfixbuf], [http://tools.netsa.cert.org/fixbuf2/])
 AC_CONFIG_AUX_DIR([autoconf])
-AC_COPYRIGHT([Copyright (C) 2006-2020 by Carnegie Mellon University
+AC_COPYRIGHT([Copyright (C) 2006-2023 by Carnegie Mellon University
 GNU Public License (GPL) Rights pursuant to Version 3, June 2007])
 
 AM_INIT_AUTOMAKE([1.6.3 foreign nostdinc])

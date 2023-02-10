@@ -7,7 +7,7 @@
 * Use the getFlowKeyHash program to calculate the flow key hash.
 *
 ** ------------------------------------------------------------------------
-** Copyright (C) 2006-2021 Carnegie Mellon University.
+** Copyright (C) 2006-2023 Carnegie Mellon University.
 ** All Rights Reserved.
 **
 ** ------------------------------------------------------------------------
@@ -94,7 +94,7 @@ static char        *out_file = NULL;
 static char        *flowkeyhash = NULL;
 static char        *flowstarttime = NULL;
 static char        *flowendtime = NULL;
-static char        *pcap = NULL;
+static char        *pcap_glob = NULL;
 static char       **pcap_array = NULL;
 static char        *caplist = NULL;
 static char        *metalist = NULL;
@@ -109,7 +109,7 @@ static int          timewindow = 0;
 static GOptionEntry md_core_option[] = {
     {"pcap-meta-file", 'f', 0, G_OPTION_ARG_STRING, &meta_file,
      "Pcap meta file (pattern) created by YAF. Required.", "file" },
-    {"pcap", 'p', 0, G_OPTION_ARG_STRING, &pcap,
+    {"pcap", 'p', 0, G_OPTION_ARG_STRING, &pcap_glob,
      "Pcap file (pattern) to read if full path \n\t\t\t\t"
      "is not specified in pcap_meta_file.", "file"},
     {"caplist", 'c', 0, G_OPTION_ARG_STRING, &caplist,
@@ -167,7 +167,7 @@ typedef struct simpleFlow_st {
 } simpleFlow_t;
 
 
-gboolean
+static gboolean
 collectIPFIX(
     simpleFlow_t  *rec,
     GError       **err)
@@ -388,7 +388,7 @@ yfMetaParseOptions(
         globfree(&gbuf);
     }
 
-    if (pcap == NULL && !caplist) {
+    if (pcap_glob == NULL && !caplist) {
         /* is env variable set? */
         const char *env = getenv(YAF_CAPLIST);
         if (env) {
@@ -413,13 +413,13 @@ yfMetaParseOptions(
         }
         fclose(fp);
         fp = NULL;
-    } else if (pcap) {
+    } else if (pcap_glob) {
         glob_t gbuf;
         int    grc;
 
-        grc = glob(pcap, 0, NULL, &gbuf);
+        grc = glob(pcap_glob, 0, NULL, &gbuf);
         if (grc == GLOB_NOMATCH) {
-            fprintf(stderr, "No match for %s. No such file(s).\n", pcap);
+            fprintf(stderr, "No match for %s. No such file(s).\n", pcap_glob);
             exit(-1);
         }
         pcap_array = (char **)calloc(MAX_LINE, sizeof(char *));
@@ -428,6 +428,8 @@ yfMetaParseOptions(
             pcap_files_num++;
         }
         globfree(&gbuf);
+        g_free(pcap_glob);
+        pcap_glob = NULL;
     }
 }
 

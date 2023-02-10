@@ -3,9 +3,9 @@
 ** YAF Netronome support
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
-** Authors: Emily Sarneso <ecoff@cert.org>
+** Authors: Emily Sarneso
 ** ------------------------------------------------------------------------
 ** @OPENSOURCE_HEADER_START@
 ** Use of the YAF system and related source code is subject to the terms

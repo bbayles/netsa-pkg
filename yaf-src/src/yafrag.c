@@ -3,7 +3,7 @@
 ** YAF Active Fragment Table
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Brian Trammell
 ** ------------------------------------------------------------------------
@@ -122,7 +122,7 @@ struct yfFragTabStatsDescrip_st {
     const char  *descrip_peak;
 };
 
-struct yfFragTabStatsDescrip_st yfFragTabStatsDescrip;
+static struct yfFragTabStatsDescrip_st yfFragTabStatsDescrip;
 
 struct yfFragTab_st {
     /* State */

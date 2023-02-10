@@ -6,9 +6,9 @@
  * @brief this is a protocol classifier for the simple mail transport protocol (SMTP)
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Chris Inacio <inacio@cert.org>
+ ** Authors: Chris Inacio
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -170,10 +170,10 @@ smtpplugin_LTX_ycSMTPScanScan(
          * which case it equals msgSplit[i].
          * hdrEnd[i] is the blank line beween the msg's header and body.
          */
-        int msgSplits[1 + SMTP_MAX_EMAILS];
-        int msgData[SMTP_MAX_EMAILS];
-        int msgBegin[SMTP_MAX_EMAILS];
-        int hdrEnd[SMTP_MAX_EMAILS];
+        uint32_t msgSplits[1 + SMTP_MAX_EMAILS];
+        uint32_t msgData[SMTP_MAX_EMAILS];
+        uint32_t msgBegin[SMTP_MAX_EMAILS];
+        uint32_t hdrEnd[SMTP_MAX_EMAILS];
         int msgIndex = 0;
         int tmprc;
         int i;
@@ -376,7 +376,7 @@ ycSMTPScanInit(
     const char  smtpStringStartTLS[] = "(?im)^STARTTLS\\r\\n";
     /* limit responses to the 220 welcome banner and error codes */
     const char  smtpStringResponse[] =
-        "(?m)^((?:220|[45][0-5][0-9])[- ][\\t -~]*)\r\n";
+        "(?m)^((?:220|[45][0-5][0-9])[- ][\\t -~]*)\\r\\n";
 
     const char  smtpStringTo[] =
         "(?im)^RCPT TO: ?<?(" EMAIL_ADDR ")>?(?: |\\r\\n)";
@@ -396,7 +396,7 @@ ycSMTPScanInit(
         ")";
 
     const char  smtpStringURL[] =
-        "https?://(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&/=]*)";
+        "https?://(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&/=]*)";
 
     const char  smtpStringEnhanced[] = "(ESMTP [_a-zA-Z0-9., @#]+)\\b";
 #endif  /* YAF_ENABLE_HOOKS */

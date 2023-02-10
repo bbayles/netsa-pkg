@@ -3,7 +3,7 @@
 ** Multiple I/O common command-line processing convenience module
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Brian Trammell
 ** ------------------------------------------------------------------------
@@ -87,7 +87,6 @@ uint32_t mio_ov_pcaplen  = 0;
 uint32_t mio_ov_pcapto   = 1000;
 char    *mio_ov_port    = NULL;
 MIOType  mio_ov_filetype = MIO_T_FP;
-uint32_t mio_ov_serial   = 0;
 
 static MIOSourceFileConfig mio_icfg_f;
 static MIOSinkFileConfig   mio_ocfg_f;
@@ -100,18 +99,18 @@ static MIOSourcePCapLiveConfig mio_icfg_pl;
 #endif
 
 #if 1
-AirOptionEntry mio_oe_in[] = {
+static AirOptionEntry mio_oe_in[] = {
     AF_OPTION( "in", 'i', 0, AF_OPT_TYPE_STRING, &mio_ov_in,
                "Input specifier", "inspec" ),
     AF_OPTION_END
 };
-AirOptionEntry mio_oe_out[] = {
+static AirOptionEntry mio_oe_out[] = {
     AF_OPTION( "out", 'o', 0, AF_OPT_TYPE_STRING, &mio_ov_out,
                "Output specifier", "outspec" ),
     AF_OPTION_END
 };
 
-AirOptionEntry mio_oe_fr[] = {
+static AirOptionEntry mio_oe_fr[] = {
     AF_OPTION( "nextdir", 'n', 0, AF_OPT_TYPE_STRING, &mio_ov_nextdir,
                "Directory to move good input to (or 'delete')", "dir" ),
     AF_OPTION( "faildir", 'x', 0, AF_OPT_TYPE_STRING, &mio_ov_faildir,
@@ -124,7 +123,7 @@ AirOptionEntry mio_oe_fr[] = {
 };
 
 #if HAVE_LIBPCAP
-AirOptionEntry mio_oe_pcap[] = {
+static AirOptionEntry mio_oe_pcap[] = {
     AF_OPTION( "live", 'P', 0, AF_OPT_TYPE_NONE, &mio_ov_live,
                "Live packet capture from interface in -i", NULL ),
     AF_OPTION( "bpf", 'F', 0, AF_OPT_TYPE_STRING, &mio_ov_bpf,

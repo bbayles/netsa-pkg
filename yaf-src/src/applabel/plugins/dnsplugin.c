@@ -12,9 +12,9 @@
  * correct in ID'ing the packets
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Chris Inacio <inacio@cert.org>
+ ** Authors: Chris Inacio
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -128,7 +128,7 @@ YC_SCANNER_PROTOTYPE(dnsplugin_LTX_ycDnsScanScan);
 static uint16_t
 ycDnsScanCheckResourceRecord(
     const uint8_t  *payload,
-    unsigned int   *offset,
+    uint32_t       *offset,
     unsigned int    payloadSize);
 
 #endif /* ifdef PAYLOAD_INSPECTION */
@@ -161,16 +161,16 @@ dnsplugin_LTX_ycDnsScanScan(
     int             argc,
     char           *argv[],
     const uint8_t  *payload,
-    unsigned int    payloadSize,
+    uint32_t        payloadSize,
     yfFlow_t       *flow,
     yfFlowVal_t    *val)
 {
     unsigned int loop = 0;
     uint16_t     msglen;
-    uint16_t     firstpkt = payloadSize;
+    uint32_t     firstpkt = payloadSize;
     ycDnsScanMessageHeader_t header;
     gboolean     netbios = FALSE;
-    unsigned int payloadOffset;
+    uint32_t     offset;
     uint16_t     qtype = 0;
 #if YAF_ENABLE_HOOKS
     unsigned int recordCount = 0;
@@ -254,35 +254,35 @@ dnsplugin_LTX_ycDnsScanScan(
 #ifdef PAYLOAD_INSPECTION
     /* parse through the rest of the DNS message, only the header is fixed
      * in size */
-    payloadOffset = sizeof(ycDnsScanMessageHeader_t);
+    offset = sizeof(ycDnsScanMessageHeader_t);
     /* the the query entries */
 
-    if (payloadOffset >= payloadSize) {
+    if (offset >= payloadSize) {
         return 0;
     }
     /*fprintf(stderr,"dns qdcount %d, ancount %d, nscount %d, arcount
      * %d\n",header.qdcount,header.ancount,header.nscount, header.arcount);*/
 
     for (loop = 0; loop < header.qdcount; loop++) {
-        uint8_t  sizeOct = *(payload + payloadOffset);
+        uint8_t  sizeOct = *(payload + offset);
         uint16_t qclass;
         uint8_t  comp = 0;            /* turn on if something is compressed */
 
-        while (0 != sizeOct && payloadOffset < payloadSize) {
+        while (0 != sizeOct && offset < payloadSize) {
             if (DNS_NAME_COMPRESSION == (sizeOct & DNS_NAME_COMPRESSION)) {
-                payloadOffset += sizeof(uint16_t);
+                offset += sizeof(uint16_t);
                 /* compression happened so we don't need add 1 later */
                 comp = 1;
             } else {
-                payloadOffset += sizeOct + 1;
+                offset += sizeOct + 1;
             }
-            if (payloadOffset >= payloadSize) {
+            if (offset >= payloadSize) {
                 return 0;
             }
-            sizeOct = *(payload + payloadOffset);
+            sizeOct = *(payload + offset);
         }
 
-        if (payloadOffset >= payloadSize) {
+        if (offset >= payloadSize) {
             /* this is either a DNS fragment, or a malformed DNS */
             /*fprintf(stderr, " <dns exit 5> ");*/
             return 0;
@@ -290,21 +290,21 @@ dnsplugin_LTX_ycDnsScanScan(
 
         /* get past the terminating 0 length in the name if NO COMPRESSION*/
         if (!comp) {
-            payloadOffset++;
+            offset++;
         }
 
-        if ((payloadOffset + 2) > payloadSize) {
+        if ((offset + 2) > payloadSize) {
             return 0;
         }
 
         /* check the query type */
 #if HAVE_ALIGNED_ACCESS_REQUIRED
-        qtype = ((*(payload + payloadOffset)) << 8) |
-            ((*(payload + payloadOffset + 1)) );
+        qtype = ((*(payload + offset)) << 8) |
+            ((*(payload + offset + 1)) );
 
         qtype = ntohs(qtype);
 #else /* if HAVE_ALIGNED_ACCESS_REQUIRED */
-        qtype = ntohs(*((uint16_t *)(payload + payloadOffset)));
+        qtype = ntohs(*((uint16_t *)(payload + offset)));
 #endif /* if HAVE_ALIGNED_ACCESS_REQUIRED */
         if (qtype == 0) {
             return 0;
@@ -324,19 +324,19 @@ dnsplugin_LTX_ycDnsScanScan(
             netbios = TRUE;
         }
 
-        payloadOffset += sizeof(uint16_t);
+        offset += sizeof(uint16_t);
 
-        if ((payloadOffset + 2) > payloadSize) {
+        if ((offset + 2) > payloadSize) {
             return 0;
         }
 
         /* check the class code */
 #if HAVE_ALIGNED_ACCESS_REQUIRED
-        qclass = ((*(payload + payloadOffset)) << 8) |
-            ((*(payload + payloadOffset + 1)) );
+        qclass = ((*(payload + offset)) << 8) |
+            ((*(payload + offset + 1)) );
         qclass = ntohs(qclass);
 #else
-        qclass = ntohs(*((uint16_t *)(payload + payloadOffset)));
+        qclass = ntohs(*((uint16_t *)(payload + offset)));
 #endif /* if HAVE_ALIGNED_ACCESS_REQUIRED */
 
         if (qclass > 4 && qclass != 255) {
@@ -350,9 +350,9 @@ dnsplugin_LTX_ycDnsScanScan(
             }
         }
 
-        payloadOffset += sizeof(uint16_t);
+        offset += sizeof(uint16_t);
 
-        if (payloadOffset > payloadSize) {
+        if (offset > payloadSize) {
             return 0;
         }
     }
@@ -361,7 +361,7 @@ dnsplugin_LTX_ycDnsScanScan(
     for (loop = 0; loop < header.ancount; loop++) {
         uint16_t rc;
 
-        rc = ycDnsScanCheckResourceRecord(payload, &payloadOffset,
+        rc = ycDnsScanCheckResourceRecord(payload, &offset,
                                           payloadSize);
         if (0 == rc) {
             return rc;
@@ -387,7 +387,7 @@ dnsplugin_LTX_ycDnsScanScan(
     /* check each record for the name server resource record count */
     for (loop = 0; loop < header.nscount; loop++) {
         uint16_t rc;
-        rc = ycDnsScanCheckResourceRecord(payload, &payloadOffset,
+        rc = ycDnsScanCheckResourceRecord(payload, &offset,
                                           payloadSize);
         if (0 == rc) {
             return 0;
@@ -410,7 +410,7 @@ dnsplugin_LTX_ycDnsScanScan(
     /* check each record for the additional record count */
     for (loop = 0; loop < header.arcount; loop++) {
         uint16_t rc;
-        rc = ycDnsScanCheckResourceRecord(payload, &payloadOffset,
+        rc = ycDnsScanCheckResourceRecord(payload, &offset,
                                           payloadSize);
         if (0 == rc) {
             return 0;
@@ -548,7 +548,7 @@ static
 uint16_t
 ycDnsScanCheckResourceRecord(
     const uint8_t  *payload,
-    unsigned int   *offset,
+    uint32_t       *offset,
     unsigned int    payloadSize)
 {
     uint16_t nameSize;

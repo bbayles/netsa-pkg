@@ -6,9 +6,9 @@
  * http://www.modbus.org/docs/Modbus_Application_Protocol_V1_1b3.pdf
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2014-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2014-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Sarneso <ecoff@cert.org>
+ ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -117,7 +117,7 @@ modbusplugin_LTX_ycModbusScanScan(
     yfFlow_t       *flow,
     yfFlowVal_t    *val)
 {
-    uint16_t     offset = 0, total_offset = 0;
+    uint32_t     offset = 0, total_offset = 0;
     uint64_t     num_packets = val->pkt;
     uint8_t      function, exception;
     unsigned int packets = 0;

@@ -1,31 +1,17 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>YAF - Documentation</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-
-        <link rel="stylesheet" type="text/css" href="../site/style.css" />
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 
 </head>
+
 <body>
-    <div id="p-body">
-      <div id="l-header">
-        <img src="../site/sei-logo.png" id="l-sei-logo"
-            alt="Software Engineering Institute | Carnegie Mellon&copy;" />
-        <div id="l-netsa-logo"><a id="l-netsa-name" href="../index.html"><b>CERT NetSA Security Suite</b></a></div>
-        <div id="l-netsa-motto">Monitoring for Large-Scale Networks</div>
-        <h1 class="l-page-title">YAF</h1>
-        <span id="l-subtitle">Documentation</span>
-      </div><!-- l-header -->
-      <div id="l-content">
-        <div id="l-sidebar">
-          <div class="p-sidebar-section">
-            <h1><a href="index.html">YAF</a></h1>
-            <ul>
-              <li><a href="docs.html">Documentation</a></li>
-              <li><a href="download.html">Downloads</a></li>
-            </ul>
-          </div><!-- p-sidebar-section -->
-        </div><!-- l-sidebar -->
-<h1><a name="name">NAME</a></h1><p><b>yaf</b> - Yet Another Flowmeter</p>
+
+<h1 id="NAME">NAME</h1>
+
+<p><b>yaf</b> - Yet Another Flowmeter</p>
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
@@ -55,7 +41,8 @@
             [--max-payload PAYLOAD_OCTETS] [--udp-payload]
             [--max-export PAYLOAD_OCTETS]
             [--max-flows FLOW_TABLE_MAX]
-            [--export-payload] [--silk] [--udp-uniflow PORT]
+            [--export-payload] [--payload-applabel-select LABELS]
+            [--silk] [--udp-uniflow PORT]
             [--uniflow] [--mac] [--force-ip6-export]
             [--observation-domain DOMAIN_ID] [--entropy]
             [--applabel] [--applabel-rules RULES_FILE]
@@ -84,7 +71,7 @@
 
 <p><b>yaf</b> also supports experimental partial payload capture, specifically for banner-grabbing applications and protocol verification purposes.</p>
 
-<p>The output of <b>yaf</b> is designed to be collected and manipulated by flow processing toolchains supporting IPFIX. The <b>yafscii(1)</b> tool, which is installed as part of <b>yaf</b>, can also be used to print <b>yaf</b> output in a human-readable format somewhat reminiscient of <b>tcpdump(1)</b>. <b>yaf</b> output can also be analyzed using the SiLK suite, and the <b>nafalize(1)</b> tool, both available from the CERT NetSA group.</p>
+<p>The output of <b>yaf</b> is designed to be collected and manipulated by flow processing toolchains supporting IPFIX. The <a href="yafscii.html"><b>yafscii(1)</b></a> tool, which is installed as part of <b>yaf</b>, can also be used to print <b>yaf</b> output in a human-readable format somewhat reminiscient of <b>tcpdump(1)</b>. <b>yaf</b> output can also be analyzed using the SiLK suite, and the <b>nafalize(1)</b> tool, both available from the CERT NetSA group.</p>
 
 <h1 id="OPTIONS">OPTIONS</h1>
 
@@ -129,7 +116,7 @@
 <dt id="live-LIVE_TYPE"><b>--live</b> <i>LIVE_TYPE</i></dt>
 <dd>
 
-<p>If present, capture packets from an interface named in the <i>INPUT_SPECIFIER</i>. <i>LIVE_TYPE</i> is one of <b>pcap</b> for packet capture via libpcap, <b>pfring</b> for packet capture via libpfring, or <b>dag</b> for packet capture via an Endace DAG interface using libdag, or <b>napatech</b> for packet capture via a Napatech Adapter, or <b>netronome</b> for packet capture via a Netronome NFE card, or <b>zc</b> for packet capture via PF_RING ZC. &lt;pfring&gt; is only available if <b>yaf</b> was built with PF_RING support. See the <b>yafzcbalance(1)</b> man page for using <b>yaf</b> with PF_RING ZC. <b>dag</b> is only available if <b>yaf</b> was built with Endace DAG support. <b>napatech</b> is only available if <b>yaf</b> was built with Napatech API support. If <i>LIVE_TYPE</i> is <b>napatech</b>, the <i>INPUT_SPECIFIER</i> given to <b>--in</b> should be in the form nt3g[&lt;streamID&gt;:&lt;ports&gt;]. StreamID and Ports are optional. StreamID if given, is the ID that the traffic stream will be assigned to on the incoming ports. Ports may be a comma-separated list of ports to listen on. If [ports] is not specified, the default is to listen on All ports. StreamID defaults to 0. <b>netronome</b> is only available if <b>yaf</b> was built with Netronome API support. If <i>LIVE_TYPE</i> is <b>netronome</b>, the <i>INPUT_SPECIFIER</i> given to <b>--in</b> should be in the form &lt;device&gt;:&lt;ring&gt; where device is the NFE card ID, typically 0. Ring is the capture ring ID which is configured via a modprobe configuration file and resides in /etc/modprobe.d/pcd.conf.</p>
+<p>If present, capture packets from an interface named in the <i>INPUT_SPECIFIER</i>. <i>LIVE_TYPE</i> is one of <b>pcap</b> for packet capture via libpcap, <b>pfring</b> for packet capture via libpfring, or <b>dag</b> for packet capture via an Endace DAG interface using libdag, or <b>napatech</b> for packet capture via a Napatech Adapter, or <b>netronome</b> for packet capture via a Netronome NFE card, or <b>zc</b> for packet capture via PF_RING ZC. &lt;pfring&gt; is only available if <b>yaf</b> was built with PF_RING support. See the <a href="yafzcbalance.html"><b>yafzcbalance(1)</b></a> man page for using <b>yaf</b> with PF_RING ZC. <b>dag</b> is only available if <b>yaf</b> was built with Endace DAG support. <b>napatech</b> is only available if <b>yaf</b> was built with Napatech API support. If <i>LIVE_TYPE</i> is <b>napatech</b>, the <i>INPUT_SPECIFIER</i> given to <b>--in</b> should be in the form nt3g[&lt;streamID&gt;:&lt;ports&gt;]. StreamID and Ports are optional. StreamID if given, is the ID that the traffic stream will be assigned to on the incoming ports. Ports may be a comma-separated list of ports to listen on. If [ports] is not specified, the default is to listen on All ports. StreamID defaults to 0. <b>netronome</b> is only available if <b>yaf</b> was built with Netronome API support. If <i>LIVE_TYPE</i> is <b>netronome</b>, the <i>INPUT_SPECIFIER</i> given to <b>--in</b> should be in the form &lt;device&gt;:&lt;ring&gt; where device is the NFE card ID, typically 0. Ring is the capture ring ID which is configured via a modprobe configuration file and resides in /etc/modprobe.d/pcd.conf.</p>
 
 </dd>
 <dt id="export-interface"><b>--export-interface</b></dt>
@@ -376,13 +363,19 @@
 <dt id="export-payload"><b>--export-payload</b></dt>
 <dd>
 
-<p>If present, export at most <i>PAYLOAD_OCTETS</i> (the argument to <b>--max-payload</b>) octets from the start of each direction of each flow. Non-TCP flows will only export payload from the first packet. By default, <b>yaf</b> will not export flow payload.</p>
+<p>If present, export payload from each direction of each flow. The amount of payload exported for each direction is the smaller of the arguments to <b>--max-payload</b> and <b>--max-export</b>. Non-TCP flows will only export payload from the first packet. By default, <b>yaf</b> will not export flow payload. See also <b>--payload-applabel-select</b>.</p>
+
+</dd>
+<dt id="payload-applabel-select-APPLABEL_LIST"><b>--payload-applabel-select</b> <i>APPLABEL_LIST</i></dt>
+<dd>
+
+<p>Enable payload export (as <b>--export-payload</b>) but only for the application labels specified in <i>APPLABEL_LIST</i>, a comma separated list of applabel values.</p>
 
 </dd>
 <dt id="max-export-MAX_PAY_OCTETS"><b>--max-export</b> <i>MAX_PAY_OCTETS</i></dt>
 <dd>
 
-<p>If present, export at most <i>MAX_PAY_OCTETS</i> from the start of each direction of each flow. <i>MAX_PAY_OCTETS</i> can be less than or equal to the value given to <b>--max-payload</b>. By default, <i>MAX_PAY_OCTETS</i> is the value given to <b>--max-payload</b> if <b>--export-payload</b> is also present.</p>
+<p>If present, export at most <i>MAX_PAY_OCTETS</i> from the start of each direction of each flow. <i>MAX_PAY_OCTETS</i> must not be more than the argument to <b>--max-payload</b>. By default, <i>MAX_PAY_OCTETS</i> is the value given to <b>--max-payload</b> if <b>--export-payload</b> is also present.</p>
 
 </dd>
 <dt id="uniflow"><b>--uniflow</b></dt>
@@ -1227,7 +1220,7 @@
 
 <h2 id="Hooks-Templates">Hooks Templates</h2>
 
-<p><b>yaf</b> can export other templates within the subTemplateMultiList if plugins are enabled in <b>yaf</b>. See <b>yafdpi(1)</b> for descriptions of the <b>yaf</b> Deep Packet Inspection Information Elements. See <b>yafdhcp(1)</b> for descriptions of the DHCP Fingerprint Information Elements.</p>
+<p><b>yaf</b> can export other templates within the subTemplateMultiList if plugins are enabled in <b>yaf</b>. See <a href="yafdpi.html"><b>yafdpi(1)</b></a> for descriptions of the <b>yaf</b> Deep Packet Inspection Information Elements. See <a href="yafdhcp.html"><b>yafdhcp(1)</b></a> for descriptions of the DHCP Fingerprint Information Elements.</p>
 
 <h2 id="Flow-Statistics-Template">Flow Statistics Template</h2>
 
@@ -1599,7 +1592,7 @@
 
 <p>YAF will not rotate output files if it is not seeing any flow data. However, it will continue to write process statistics messages at the configured interval time to the most recent output file.</p>
 
-<p>When using PF_RING ZC with <b>yaf</b>, a load balancing program is required. See <b>yafzcbalance(1)</b> for more information.</p>
+<p>When using PF_RING ZC with <b>yaf</b>, a load balancing program is required. See <a href="yafzcbalance.html"><b>yafzcbalance(1)</b></a> for more information.</p>
 
 <p>When running <b>yaf</b> with --live=pfring or --live=zc, the call to receive packets is blocking so <b>yaf</b> will not export statistics messages or respond to SIGUSR1 signals unless it is receiving data.</p>
 
@@ -1613,20 +1606,9 @@
 
 <h1 id="SEE-ALSO">SEE ALSO</h1>
 
-<p><b>yafscii(1)</b>, <b>tcpdump(1)</b>, <b>pcap(3)</b>, <b>nafalize(1)</b>, <b>yafzcbalance(1)</b>, Spread Documentation at www.spread.org, libp0f at <a href="https://tools.netsa.cert.org/p0f/libp0f.html">https://tools.netsa.cert.org/p0f/libp0f.html</a>, and the following IETF Internet RFCs: Specification of the IPFIX Protocol for the Exchange of IP Traffic Flow Information <b>RFC 5101</b>, Information Model for IP Flow Information Export <b>RFC 5102</b>, Bidirectional Flow Export using IPFIX <b>RFC 5103</b>, Export of Structured Data in IPFIX <b>RFC 6313</b></p>
+<p><a href="yafscii.html"><b>yafscii(1)</b></a>, <b>tcpdump(1)</b>, <b>pcap(3)</b>, <b>nafalize(1)</b>, <a href="yafzcbalance.html"><b>yafzcbalance(1)</b></a>, Spread Documentation at www.spread.org, libp0f at <a href="https://tools.netsa.cert.org/p0f/libp0f.html">https://tools.netsa.cert.org/p0f/libp0f.html</a>, and the following IETF Internet RFCs: Specification of the IPFIX Protocol for the Exchange of IP Traffic Flow Information <b>RFC 5101</b>, Information Model for IP Flow Information Export <b>RFC 5102</b>, Bidirectional Flow Export using IPFIX <b>RFC 5103</b>, Export of Structured Data in IPFIX <b>RFC 6313</b></p>
 
-      </div><!-- l-content -->
-      <div id="l-footer">
-        &copy; 2006-2021 Carnegie Mellon University
-        <span id="l-contact">
-          <a href="https://www.sei.cmu.edu/legal/index.cfm">Legal</a> |
-          <a href="https://www.sei.cmu.edu/legal/privacy-notice/index.cfm">Privacy Notice</a> |
-          <img alt="email address" src="/site/contact_email.png" />
-        </span>
-      </div>
-    </div><!-- p-body -->
 </body>
-
 
 </html>
 

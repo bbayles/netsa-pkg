@@ -11,7 +11,7 @@ License: LGPLv3
 Source: https://tools.netsa.cert.org/releases/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}
 Vendor: https://tools.netsa.cert.org/
-URL: https://tools.netsa.cert.org/fixbuf/
+URL: https://tools.netsa.cert.org/fixbuf2/
 
 Requires: glib2 >= 2.18
 %if "x@FIXBUF_REQ_LIBSCTP@" == "x1"

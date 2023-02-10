@@ -15,19 +15,11 @@ DPI in B<yaf> is directly related to application labeling as it will only perfor
 
 In order to enable DPI in B<yaf> the following should be added to the command line:
 
-=over 2
-
 C<--plugin-name=/usr/local/lib/yaf/dpacketplugin.la>
-
-=back
 
 You can also add the option switch to specify which protocols to perform DPI:
 
-=over 2
-
 C<--plugin-opts="53 80 21">
-
-=back
 
 The above will perform DPI for DNS, HTTP, and FTP.
 
@@ -39,38 +31,26 @@ on these particular protocols.
 In order to perform DPI on DNSSEC resource records, add "DNSSEC" to the
 B<--plugin-opts> option:
 
-=over 2
-
 C<--plugin-opts=DNSSEC>
 
 C<--plugin-opts="DNSSEC 53">
-
-=back
 
 =head1 DPI CONFIG FILE FORMAT
 
 
 The yafDPIRules.conf file should be in the same location as the yafApplabelRules.conf file.  The file follows a similar format to yafApplabelRules.conf.  The file is a list of label, element pair statements.  A label statement begins with the keyword 'label', and has the following form:
 
-=over 2
-
 label E<lt>NE<gt> element E<lt>N2E<gt> E<lt>element-ruleE<gt>
 
-=back
-
-where E<lt>NE<gt> is the application label (usually the well-known port) found in the yafApplabelRules.conf file (an unsigned 16-bit decimal integer in the range 0 to 65535), E<lt>N2E<gt> is the Information Element ID found in the F</usr/local/yaf/CERT_IE.h> and below, and E<lt>element-ruleE<gt> is a PCRE regular expression and will be stored and associated with the ID number preceding it.  There can be multiple lines for a single application label, however each should have a different E<lt>N2E<gt>.  There should be parentheses around the substring you want to capture and store.  If there is more than 1 set of parentheses in the regular expression, the most outer set is the substring captured.  (See PCRE documentation for details on regular expressions and substring matching.)
+where E<lt>NE<gt> is the application label (usually the well-known port) found in the yafApplabelRules.conf file (an unsigned 16-bit decimal integer in the range 0 to 65535), E<lt>N2E<gt> is the Information Element ID found in the L<CERT IPFIX Registry|https://tools.netsa.cert.org/cert-ipfix-registry/cert_ipfix_formatted.html> and below, and E<lt>element-ruleE<gt> is a PCRE regular expression and will be stored and associated with the ID number preceding it.  There can be multiple lines for a single application label, however each should have a different E<lt>N2E<gt>.  There should be parentheses around the substring you want to capture and store.  If there is more than 1 set of parentheses in the regular expression, the most outer set is the substring captured.  (See PCRE documentation for details on regular expressions and substring matching.)
 
 =head2 User Defined Elements
 
 To define your own information elements, use the following form:
 
-=over 2
-
 label E<lt>NE<gt> user E<lt>EE<gt> name E<lt>element-nameE<gt> E<lt>element-ruleE<gt>
 
-=back
-
-where E<lt>NE<gt> is the application label found in yafApplabelRules.conf file. E<lt>EE<gt> is the Information Element ID in the range of 0 to 65535 to be given to the element upon export.  This number should be unique to this file and should NOT be defined in F</usr/local/yaf/CERT_IE.h>.  This element will be added to the template upon processing of this file, and must be added to the B<yaf> collecting process in order to properly decode the IPFIX message.  E<lt>element-nameE<gt> is the name you want to give to this IPFIX Information Element.  This name can consist of letters and numbers and underscores; it can not contain special characters or spaces.  E<lt>label-ruleE<gt> is the PCRE regular expression and will be stored and associated with the Information Element ID and name preceding it.  There is a limit of 30 additional fields per protocol that YAF will store and execute.  To find out if B<yaf> accepted your elements, run B<yaf> with --verbose.  All user elements will be exported using the CERT Private Enterprise Number (PEN) 6871.  ONLY user labels for protocols FTP, HTTP, IMAP, SMTP, RTSP, SSH, and SIP will be added.  Elements will be added to the template in the order they are
+where E<lt>NE<gt> is the application label found in yafApplabelRules.conf file. E<lt>EE<gt> is the Information Element ID in the range of 0 to 65535 to be given to the element upon export.  This number should be unique to this file and should NOT be defined in the CERT IPFIX Registry.  This element will be added to the template upon processing of this file, and must be added to the B<yaf> collecting process in order to properly decode the IPFIX message.  E<lt>element-nameE<gt> is the name you want to give to this IPFIX Information Element.  This name can consist of letters and numbers and underscores; it can not contain special characters or spaces.  E<lt>label-ruleE<gt> is the PCRE regular expression and will be stored and associated with the Information Element ID and name preceding it.  There is a limit of 30 additional fields per protocol that YAF will store and execute.  To find out if B<yaf> accepted your elements, run B<yaf> with --verbose.  All user elements will be exported using the CERT Private Enterprise Number (PEN) 6871.  ONLY user labels for protocols FTP, HTTP, IMAP, SMTP, RTSP, SSH, and SIP will be added.  Elements will be added to the template in the order they are
 listed in the yafDPIRules.conf file in the form of an fbBasicList_t.  By default,
 HTTP exports 20 basicLists, FTP exports 5 basicLists, IMAP exports 7 basicLists,
 RTSP exports 12 basicLists, SIP exports 7 basicLists, SMTP exports 11 basicLists,
@@ -83,11 +63,7 @@ It is acceptable to comment out any B<yaf> DPI rules. B<yaf> rules commented out
 Optionally, this file may contain two limit statements to configure the DPI plugin.
 A limit statement begins with the keyword 'limit', and has the following form:
 
-=over 2
-
 limit [field|total] E<lt>limit-valueE<gt>
-
-=back
 
 If the "field" label is present, the E<lt>limit-valueE<gt> will be the number of bytes B<yaf> will export for
 any given field in this file.  This does not affect the DNS Deep Packet Inspection or SSL Certificate Capture.
@@ -104,22 +80,14 @@ There are also 2 configuration parameters related to SSL export.  By default, B<
 parses the X.509 certificates and exports the information described below under SSL/TLS.
 If the following line is present:
 
-=over 2
-
 cert_export_enabled = 1
-
-=back
 
 B<yaf> will export the full X.509 certificate in the format described below under
 Full Certificate Export.  Setting
 this variable to 1 disables the traditional SSL certificate decode and export.  If the second
 configuration variable is present:
 
-=over 2
-
 cert_hash_enabled = 1
-
-=back
 
 B<yaf> will export the hash of the X.509 certificate as found in the certificate.
 This is typically the SHA-256 hash of the binary certificate but it can vary
@@ -136,8 +104,6 @@ certificate.
 
 Upon B<yaf> startup and capture, you will be able to see if the rule files and their regular expressions were accepted using the B<--verbose> flag.
 
-=over 2
-
 [2013-05-03 19:39:25] DPI Running for ALL Protocols
 
 [2013-05-03 19:39:25] Reading packets from packets.pcap
@@ -145,8 +111,6 @@ Upon B<yaf> startup and capture, you will be able to see if the rule files and t
 [2013-05-03 19:39:25] Initializing Rules from DPI File /usr/local/etc/yafDPIRules.conf
 
 [2013-05-03 19:39:25] DPI rule scanner accepted 63 rules from the DPI Rule File
-
-=back
 
 An unacceptable regular expression will be brought to your attention with the above statements.  If you choose certain protocols for inspection using the C<--plugin-opts> flag, only the appropriate rule statements will be loaded into the DPI Rule Scanner.
 
@@ -1415,7 +1379,7 @@ reverse direction.
 
 =head1 AUTHORS
 
-Emily Sarneso E<lt>ecoff@cert.orgE<gt> and the CERT Network Situational Awareness Group Engineering Team, http://www.cert.org/netsa
+Emily Sarneso and the CERT Network Situational Awareness Group Engineering Team  E<lt>netsa-help@cert.orgE<gt>, http://www.cert.org/netsa
 
 =head1 SEE ALSO
 

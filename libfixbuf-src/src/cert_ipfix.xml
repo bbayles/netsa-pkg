@@ -6,7 +6,7 @@
 
   <title>CERT IPFIX Registry</title>
   <created>2017-11-28</created>
-  <updated>2020-01-31</updated>
+  <updated>2022-11-01</updated>
 
   <registry id="cert-information-elements">
     <title>CERT Enterprise IPFIX Elements (PEN 6871)</title>
@@ -18,8 +18,7 @@
       <elementId>0</elementId>
       <description>
         <paragraph>
-          Reserved as per section 4 of <xref type="rfc"
-          data="rfc7012"/>.
+          Reserved as per section 4 of <xref type="rfc" data="rfc7012"/>.
         </paragraph>
       </description>
     </record>
@@ -186,26 +185,44 @@
       <revision>0</revision>
     </record>
 
-    <record>
-      <name>silkFlowType</name>
+    <record updated="2022-05-26">
+      <name>silkFlowtypeId</name>
       <dataType>unsigned8</dataType>
       <group>silk</group>
       <dataTypeSemantics>identifier</dataTypeSemantics>
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>30</elementId>
       <status>current</status>
-      <revision>0</revision>
+      <description>
+        <paragraph>
+          A value typically assigned by SiLK identifying the direction and related properties of the flow record.  The flowtype may also be represented by a silkFlowtypeName (CERT/938) or by the pair silkClassName (CERT/939) and silkTypeName (CERT/940).
+        </paragraph>
+        <paragraph>
+          Prior to 2022-05-26, this element was named "silkFlowType".
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2022-05-26</date>
     </record>
 
-    <record>
-      <name>silkFlowSensor</name>
+    <record updated="2022-05-26">
+      <name>silkSensorId</name>
       <dataType>unsigned16</dataType>
       <group>silk</group>
       <dataTypeSemantics>identifier</dataTypeSemantics>
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>31</elementId>
       <status>current</status>
-      <revision>0</revision>
+      <description>
+        <paragraph>
+          A value typically assigned by SiLK identifying the sensor where the flow record was collected.  The sensor may also be represented by a silkSensorName (CERT/941).
+        </paragraph>
+        <paragraph>
+          Prior to 2022-05-26, this element was named "silkFlowSensor".
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2022-05-26</date>
     </record>
 
     <record>
@@ -216,6 +233,11 @@
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>32</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          Aspects of a flow record assigned by the SiLK rwflowpack tool.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -250,6 +272,11 @@
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>35</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          The Shannon Entropy value for the payload, converted from a floating point (range 0.0 to 8.0) to an 8-bit unsigned integer.  Generally, numbers above 230 are compressed or encrypted, numbers centered around 140 are English text, and very low value may indicate zero-padding of packets (e.g. TLS).
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -356,8 +383,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          Total number of packet fragments that have been expired
-          since yaf start time.
+          Total number of packet fragments that have been expired since yaf start time.
         </paragraph>
       </description>
       <units>packets</units>
@@ -374,8 +400,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          Total number of packets that been assembled from a series of
-          fragments since yaf start time.
+          Total number of packets that been assembled from a series of fragments since yaf start time.
         </paragraph>
       </description>
       <units>packets</units>
@@ -391,8 +416,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The mean flow rate of the yaf flow sensor since yaf start
-          time, rounded to the nearest integer.
+          The mean flow rate of the yaf flow sensor since yaf start time, rounded to the nearest integer.
         </paragraph>
       </description>
       <units>flows</units>
@@ -408,8 +432,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The mean packet rate of the yaf flow sensor since yaf start
-          time, rounded to the nearest integer.
+          The mean packet rate of the yaf flow sensor since yaf start time, rounded to the nearest integer.
         </paragraph>
       </description>
       <units>packets</units>
@@ -426,8 +449,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          Total number of times the yaf flow table has been flushed
-          since yaf start time.
+          Total number of times the yaf flow table has been flushed since yaf start time.
         </paragraph>
       </description>
       <units>flows</units>
@@ -443,8 +465,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The maximum number of flows in the yaf flow table at any one
-          time since yaf start time.
+          The maximum number of flows in the yaf flow table at any one time since yaf start time.
         </paragraph>
       </description>
       <units>flows</units>
@@ -478,8 +499,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          p0f OS Fingerprint for the forward flow based on the SYN
-          packet and p0f SYN fingerprints.
+          p0f OS Fingerprint for the forward flow based on the SYN packet and p0f SYN fingerprints.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -1433,8 +1453,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          SMTP Replies.  Consists of a three digit number followed by
-          text.
+          SMTP Replies.  Consists of a three digit number followed by text.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -1496,8 +1515,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          NNTP Command. Contains an NNTP Command and following
-          argument(s).
+          NNTP Command. Contains an NNTP Command and following argument(s).
         </paragraph>
       </description>
       <revision>0</revision>
@@ -1512,9 +1530,9 @@
       <status>current</status>
       <description>
         <paragraph>
-          DNS Query/Response header field.  This corresponds with the
-          DNS header one bit field, QR.  If the message is a query
-          (0), or a response (1).
+          DNS Query/Response header field.  This corresponds with the DNS
+          header one bit field, QR.  If the message is a query (0), or a
+          response (1).
         </paragraph>
       </description>
       <revision>0</revision>
@@ -1529,10 +1547,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          DNS Query/Response Type.  This corresponds with the QTYPE
-          field in the DNS Question Section or the TYPE field in the
-          DNS Resource Record Section.  This field determines the type
-          of subTemplateList found in this record.
+          DNS Query/Response Type.  This corresponds with the QTYPE field in the DNS Question Section or the TYPE field in the DNS Resource Record Section.  This field determines the type of records in the DNS DPI subTemplateList.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -1547,11 +1562,10 @@
       <status>current</status>
       <description>
         <paragraph>
-          DNS Authoritative header field.  This corresponds with the
-          DNS header one bit field, AA.  This bit is only valid in
-          responses (when dnsQueryResponse is 1), and specifies that
-          the responding name server is an authority for the domain
-          name in the question section.
+          DNS Authoritative header field.  This corresponds with the DNS
+          header one bit field, AA.  This bit is only valid in responses (when
+          dnsQueryResponse is 1), and specifies that the responding name
+          server is an authority for the domain name in the question section.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -1586,10 +1600,10 @@
       <status>current</status>
       <description>
         <paragraph>
-          DNS Resource Record Section Field.  This field will be set
-          to 0 if the information is from the Question Section, 1 for
-          the Answer Section, 2 for the Name Server Section, and 3 for
-          the Additional Section.
+          DNS Resource Record Section Field.  This field will be set to 0 if
+          the information is from the Question Section, 1 for the Answer
+          Section, 2 for the Name Server Section, and 3 for the Additional
+          Section.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -1604,9 +1618,9 @@
       <status>current</status>
       <description>
         <paragraph>
-          A DNS Query or Response Name.  This field corresponds with
-          the QNAME field in the DNS Question Section or the NAME
-          field in the DNS Resource Record Section.
+          A DNS Query or Response Name.  This field corresponds with the QNAME
+          field in the DNS Question Section or the NAME field in the DNS
+          Resource Record Section.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -1621,8 +1635,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          A domain-name which specificies the canonical or primary
-          name for the owner.
+          A domain-name which specificies the canonical or primary name for the owner.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -1973,8 +1986,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          Organizational unit name {id-at 11} of the subject of an SSL
-          certificate.
+          Organizational unit name {id-at 11} of the subject of an SSL certificate.
         </paragraph>
       </description>
       <revision>1</revision>
@@ -2006,8 +2018,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          State or providence name {id-at 8} of the subject of an SSL
-          certificate.
+          State or providence name {id-at 8} of the subject of an SSL certificate.
         </paragraph>
       </description>
       <revision>1</revision>
@@ -2299,6 +2310,11 @@
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>223</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          The username seen when authenticating to a MySQL server.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -2327,8 +2343,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          MySQL Command Text.  For example, this can be a SELECT,
-          INSERT, DELETE statement.
+          MySQL Command Text.  For example, this can be a SELECT, INSERT, DELETE statement.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2343,8 +2358,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          DNS Transaction ID.  This identifier is used by the
-          requester to match up replies to outstanding queries.
+          DNS Transaction ID.  This identifier is used by the requester to match up replies to outstanding queries.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2359,8 +2373,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The Hash Algorithm field in the DNSSEC NSEC3 or NSEC3PARAM RR.
-          Values are described in <xref type="rfc" data="rfc5155"/>.
+          The Hash Algorithm field in various DNSSEC records.  Values are described in <xref type="rfc" data="rfc5155"/>.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2390,7 +2403,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The Signer's Name field in the RRSIG RR.
+          The Signer's Name field in the DNS RRSIG RR.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2405,8 +2418,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The Signature field in the RRSIG RR. Contains the
-          cryptographic signature that covers the dnsQName field.
+          The Signature field in the DNS RRSIG RR. Contains the cryptographic signature that covers the dnsQName (CERT/179) field.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2421,7 +2433,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The digest of the DNSKEY RR.
+          The digest of the DNS DNSKEY RR.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2468,8 +2480,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The Next Hashed Owner Name in the DNSSEC NSEC3 RR.  This
-          will be empty for NSEC3PARAM records.
+          The Next Hashed Owner Name in the DNSSEC NSEC3 RR and Next Domain Name field in the DNSNSEC RR.  This will be empty for NSEC3PARAM records.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2499,9 +2510,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The Signature Inception field in a RRSIG RR.  The Expiration
-          and Inception fields specify a validity period for the
-          signature.
+          The Signature Expiration field in a DNS RRSIG RR.  The Expiration and Inception fields specify a validity period for the signature.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2516,9 +2525,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The Signature Expiration field in a RRSIG RR.  The
-          Expiration and Inception fields specify a validity period
-          for the signature.
+          The Signature Inception field in a RRSIG RR.  The Expiration and Inception fields specify a validity period for the signature.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2533,8 +2540,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The Digest Type field which identifes the algorithm used to
-          construct the digest.
+          The Digest Type field in a DNS DS RR which identifes the algorithm used to construct the digest.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2549,8 +2555,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The Labels field in a RRSIG RR.  Specifies the number of
-          labels in the original RRSIG resource record owner name.
+          The Labels field in a DNS RRSIG RR.  Specifies the number of labels in the original RRSIG resource record owner name.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2565,7 +2570,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The Type Covered field in a RRSIG RR.
+          The Type Covered field in a DNS RRSIG RR.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2581,9 +2586,9 @@
       <status>current</status>
       <description>
         <paragraph>
-          The flags field in the DNSKey Resource Record.  Certain bits
-          determine if the key is a zone key or should be used for a
-          secure entry point.
+          The Flags field in the DNS DNSKEY Resource Record.  Certain bits
+          determine if the key is a zone key or should be used for a secure
+          entry point.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2599,8 +2604,7 @@
       <status>current</status>
       <description>
         <paragraph>
-          The DHCP fingerprint.  This will be the description of the
-          OS.
+          The DHCP fingerprint.  This will be the description of the OS.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2616,9 +2620,9 @@
       <status>current</status>
       <description>
         <paragraph>
-          The DHCP vendor class ID found in Option 60 of the DHCP
-          packet.  This field may help further identify the operating
-          system of the sender.
+          The DHCP vendor class ID found in Option 60 of the DHCP packet.
+          This field may help further identify the operating system of the
+          sender.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -2648,16 +2652,10 @@
       <status>current</status>
       <description>
         <paragraph>
-          For the Issuer and Subject subTemplateLists, yaf only
-          parses objects that are members of the id-at arc
-          {joint-iso-ccitt(2) ds(5) 4}, pkcs-9 {iso(1) member-body (2)
-          us(840) rsadsi(113459) pkcs(1) 9}, and LDAP dc
-          0.9.2342.19200300.100.1.25.  This field will not contain the
-          full object identfier, it will just contain the member
-          id. For example, for an issuer common name, sslObjectType
-          will contain 3.  Below is a list of common objects in an
-          X.509 RelativeDistinguishedName Sequence for X.509
-          Certificates:
+          The type of the value contained in the sslObjectValue (CERT/246) in a subrecord of the Issuer, Subject, or Extension subTemplateLists in an SSL record.
+        </paragraph>
+        <paragraph>
+          For the Issuer and Subject subTemplateLists, YAF only parses objects that are members of the id-at arc {joint-iso-ccitt(2) ds(5) 4}, pkcs-9 {iso(1) member-body (2) us(840) rsadsi(113459) pkcs(1) 9}, and LDAP dc 0.9.2342.19200300.100.1.25.  This field will not contain the full object identfier, it will just contain the member id. For example, for an issuer common name, sslObjectType will contain 3.  Below is a list of common objects in an X.509 RelativeDistinguishedName Sequence for X.509 Certificates:
         </paragraph>
         <artwork>
 pkcs-9-emailAddress          {pkcs-9 1}
@@ -2686,7 +2684,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          The bit strings associated with sslObjectType.
+          The bit string value associated with an sslObjectType (CERT/245) in a subrecord of the Issuer, Subject, or Extension subTemplateLists in an SSL record.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -3276,6 +3274,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>285</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          Data associated with the Modbus protocol, a widely used network messaging protocol used in industrial manufacturing.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3286,6 +3289,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>286</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          Data associated with EtherNet/IP (ENIP), a protocol used in industrial automation applications.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3329,6 +3337,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>289</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          The initial data sequence number found in the MPTCP Data Sequence Signal (DSS) Option of a flow.  (See Multipath TCP, <xref type="rfc" data="rfc8684"/>.)
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3340,6 +3353,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>290</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          The token used to identify an MPTCP connection over multiple subflows. This value is found in the MP_JOIN TCP Option for the initial SYN of a subflow.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3350,6 +3368,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>291</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          The maximum segment size reported in the Maximum Segment Size TCP Option captured from an MPTCP flow.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3361,6 +3384,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>292</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          The address identifier of the subflow found in the SYN/ACK of an MP_JOIN operation captured from an MPTCP flow.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3372,6 +3400,23 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>293</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          Various MPTCP Values:
+        </paragraph>
+        <paragraph>
+          Bit 1: Priority was changed during the life of the subflow (MP_PRIO was seen).
+        </paragraph>
+        <paragraph>
+          Bit 2: Subflow has priority at setup (backup flag was not set at initialization).
+        </paragraph>
+        <paragraph>
+          Bit 3: Subflow failed. (MP_FAIL option was seen).
+        </paragraph>
+        <paragraph>
+          Bit 4: Subflow experienced fast close. (MP_FASTCLOSE options was seen).
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3414,6 +3459,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>296</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          A binary dump of the full X.509 certificate.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3439,6 +3489,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>298</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          The SHA1 hash of a complete SSL certificate.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3449,6 +3504,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>299</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          The MD5 hash of a complete SSL certificate.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3460,6 +3520,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>300</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          The protocol as determined by analysis with nDPI, the ntop-maintained superset of the OpenDPI library.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3471,6 +3536,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>301</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          The subprotocol as determined by analysis with nDPI, the ntop-maintained superset of the OpenDPI library.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -3483,9 +3553,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          IPv4 address than a dns query resolved to in a resource record. It is
-          from the yaf-DNS template. Called rrIPv4 instead of sourceIPv4Address
-          for disambiguation purposes.
+          An IPv4 address that specifies an address for a DNS host name.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -3500,9 +3568,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          IPv6 address than a dns query resolved to in a resource record. It is
-          from the yaf-DNS template. Called rrIPv4 instead of sourceIPv4Address
-          for disambiguation purposes.
+          An IPv6 address that specifies an address for a DNS host name.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -3517,7 +3583,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          Protocol from a DNS-KEY record out of YAF.
+          The Protocol field from a DNS DNSKEY Resource Record.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -3533,9 +3599,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          Element holding an entire DNS A record, which is a sub template list
-          when emitted from YAF. This is used in Analysis Pipeline for fast
-          flux.
+          Element holding an entire DNS A record, which is a subTemplateList when emitted from YAF. This is used in Analysis Pipeline for fast flux.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -3551,9 +3615,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          Element holding an entire DNS AAAA record, which is a sub template
-          list when emitted from YAF. This is used in Analysis Pipeline for
-          fast flux.
+          Element holding an entire DNS AAAA record, which is a subTemplateList when emitted from YAF. This is used in Analysis Pipeline for fast flux.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -3569,8 +3631,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          Element holding an entire DNS resource record, which is a sub template
-          list when emitted from YAF. This is used in Analysis Pipeline.
+          Element holding an entire DNS resource record, which is a subTemplateList when emitted from YAF. This is used in Analysis Pipeline.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -3699,9 +3760,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          LDAP dc (domainComponent), 0.9.2342.19200300.100.1.25, holding one
-          component, a label, of the DNS name of the subject of an SSL
-          certificate.
+          LDAP dc (domainComponent), 0.9.2342.19200300.100.1.25, holding one component, a label, of the DNS name of the subject of an SSL certificate.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -3967,7 +4026,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          A basicList of smtpResponse elements.
+          A basicList of smtpResponse (CERT/169) elements.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -3983,7 +4042,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          A basicList of smtpTo elements.
+          A basicList of smtpTo (CERT/164) elements.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -3999,7 +4058,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          A basicList of smtpFrom elements.
+          A basicList of smtpFrom (CERT/163) elements.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -4015,7 +4074,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          A basicList of smtpFilename elements.
+          A basicList of smtpFilename (CERT/167) elements.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -4031,7 +4090,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          A basicList of smtpURL elements.
+          A basicList of smtpURL (CERT/329) elements.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -4048,7 +4107,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          A sub template list holding email data in smtpMessage templates.
+          A subTemplateList holding email data in smtpMessage templates.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -4065,18 +4124,2276 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          A sub template list holding email header data in smtpHeader templates.
+          A subTemplateList holding smtpKey (CERT/327), smtpValue (CERT/328) pairs describing email headers.
         </paragraph>
       </description>
       <revision>0</revision>
       <date>2020-01-31</date>
     </record>
 
-    <!-- 338-499 unassigned -->
+    <record>
+      <name>httpServerStringList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>338</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpServerString (CERT/110) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpUserAgentList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>339</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpUserAgent (CERT/111) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpGetList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>340</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpGet (CERT/112) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpConnectionList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>341</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpConnection (CERT/113) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpVersionList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>342</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpVersion (CERT/114) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpRefererList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>343</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpReferer (CERT/115) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpLocationList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>344</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpLocation (CERT/116) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpHostList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>345</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpHost (CERT/117) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpContentLengthList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>346</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpContentLength (CERT/118) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpAgeList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>347</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpAge (CERT/119) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpAcceptList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>348</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpAccept (CERT/120) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpAcceptLanguageList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>349</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpAcceptLanguage (CERT/121) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpContentTypeList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>350</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpContentType (CERT/122) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpResponseList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>351</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpResponse (CERT/123) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>pop3TextMessageList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>352</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of pop3TextMessage (CERT/124) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>ircTextMessageList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>353</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of ircTextMessage (CERT/125) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>slpStringList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>354</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of slpString (CERT/130) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>ftpReturnList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>355</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of ftpReturn (CERT/131) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>ftpUserList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>356</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of ftpUser (CERT/132) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>ftpPassList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>357</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of ftpPass (CERT/133) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>ftpTypeList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>358</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of ftpType (CERT/134) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>ftpRespCodeList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>359</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of ftpRespCode (CERT/135) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>imapCapabilityList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>360</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of imapCapability (CERT/136) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>imapLoginList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>361</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of imapLogin (CERT/137) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>imapStartTLSList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>362</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of imapStartTLS (CERT/138) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>imapAuthenticateList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>363</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of imapAuthenticate (CERT/139) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>imapCommandList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>364</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of imapCommand (CERT/140) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>imapExistsList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>365</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of imapExists (CERT/141) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>imapRecentList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>366</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of imapRecent (CERT/142) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspURLList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>367</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspURL (CERT/143) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspVersionList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>368</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspVersion (CERT/144) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspReturnCodeList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>369</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspReturnCode (CERT/145) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspContentLengthList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>370</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspContentLength (CERT/146) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspCommandList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>371</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspCommand (CERT/147) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspContentTypeList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>372</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspContentType (CERT/148) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspTransportList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>373</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspTransport (CERT/149) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspCSeqList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>374</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspCSeq (CERT/150) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspLocationList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>375</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspLocation (CERT/151) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspPacketsReceivedList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>376</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspPacketsReceived (CERT/152) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspUserAgentList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>377</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspUserAgent (CERT/153) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>rtspJitterList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>378</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of rtspJitter (CERT/154) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sipInviteList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>379</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sipInvite (CERT/155) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sipCommandList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>380</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sipCommand (CERT/156) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sipViaList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>381</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sipVia (CERT/157) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sipMaxForwardsList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>382</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sipMaxForwards (CERT/158) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sipAddressList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>383</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sipAddress (CERT/159) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sipContentLengthList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>384</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sipContentLength (CERT/160) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sipUserAgentList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>385</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sipUserAgent (CERT/161) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sshVersionList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>386</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sshVersion (CERT/171) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>nntpResponseList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>387</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of nntpResponse (CERT/172) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>nntpCommandList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>388</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of nntpCommand (CERT/173) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sslCipherList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>389</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCipher (CERT/185) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpCookieList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>390</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpCookie (CERT/220) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpSetCookieList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>391</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpSetCookie (CERT/221) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpAuthorizationList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>392</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpAuthorization (CERT/252) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpViaList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>393</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpVia (CERT/253) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record updated="2021-06-07">
+      <name>httpXForwardedForList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>394</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpX-Forwarded-For (CERT/254) elements.
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record>
+      <name>httpExpiresList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>395</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpExpires (CERT/255) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpRefreshList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>396</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpRefresh (CERT/256) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpIMEIList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>397</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpIMEI (CERT/257) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpIMSIList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>398</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpIMSI (CERT/258) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpMSISDNList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>399</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpMSISDN (CERT/259) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpSubscriberList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>400</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpSubscriber (CERT/260) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpAcceptCharsetList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>401</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpAcceptCharset (CERT/261) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpAllowList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>402</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpAllow (CERT/263) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpDateList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>403</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpDate (CERT/264) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpExpectList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>404</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpExpect (CERT/265) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpFromList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>405</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpFrom (CERT/266) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpProxyAuthenticationList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>406</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpProxyAuthentication (CERT/267) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpUpgradeList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>407</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpUpgrade (CERT/268) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpWarningList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>408</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpWarning (CERT/269) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpDNTList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>409</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpDNT (CERT/270) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record updated="2021-06-07">
+      <name>httpXForwardedProtoList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>410</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpX-Forwarded-Proto (CERT/271) elements.
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record updated="2021-06-07">
+      <name>httpXForwardedHostList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>411</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpX-Forwarded-Host (CERT/272) elements.
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record updated="2021-06-07">
+      <name>httpXForwardedServerList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>412</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpX-Forwarded-Server (CERT/273) elements.
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record updated="2021-06-07">
+      <name>httpXDeviceIdList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>413</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpX-DeviceID (CERT/274) elements.
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record updated="2021-06-07">
+      <name>httpXProfileList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>414</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpX-Profile (CERT/275) elements.
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record>
+      <name>httpLastModifiedList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>415</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpLastModified (CERT/276) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpContentEncodingList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>416</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpContentEncoding (CERT/277) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpContentLanguageList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>417</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpContentLanguage (CERT/278) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>httpContentLocationList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>418</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpContentLocation (CERT/279) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record updated="2021-06-07">
+      <name>httpXUaCompatibleList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>419</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of httpX-UA-Compatible (CERT/280) elements.
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record>
+      <name>modbusDataList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>420</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of modbusData (CERT/285) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record updated="2021-06-07">
+      <name>enipDataList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>421</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of ethernetIPData (CERT/286) elements.
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record>
+      <name>dhcpOptionList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dhcp</group>
+      <cert:reversible>true</cert:reversible>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>422</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of dhcpOption (CERT/297) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record updated="2021-06-07">
+      <name>dnsDNSKEYAlgorithm</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>423</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The cryptographic algorithm used for the public key in a DNS DNSKEY RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record>
+      <name>mysqlCommandTextCodeList</name>
+      <dataType>subTemplateList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>424</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A subTemplateList of mysqlCommandText (CERT/225) mysqlCommandCode (CERT/224) pairs.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sslCertList</name>
+      <dataType>subTemplateList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>425</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A subTemplateList of yaf_ssl_cert templates.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sslIssuerFieldList</name>
+      <dataType>subTemplateList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>426</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A subTemplateList containing pairs of sslObjectValue (CERT/246) and sslObjectType (CERT/245) values describing the issuer of an X.509 certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sslSubjectFieldList</name>
+      <dataType>subTemplateList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>427</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A subTemplateList containing pairs of sslObjectValue (CERT/246) and sslObjectType (CERT/245) values describing the subject of an X.509 certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sslExtensionFieldList</name>
+      <dataType>subTemplateList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>428</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A subTemplateList containing pairs of sslObjectValue (CERT/246) and sslObjectType (CERT/245) values describing some of the extensions present on an X.509 certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>sslBinaryCertificateList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>429</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCertificate (CERT/296) elements.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record>
+      <name>dnp3RecordList</name>
+      <dataType>subTemplateList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>430</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A subTemplateList holding the DNP3 values dnp3ObjectData (CERT/284), dnp3SourceAddress (CERT/281), dnp3DestinationAddress (CERT/282), and dnp3Function (CERT/283).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record updated="2021-06-07">
+      <name>dnsDetailRecordList</name>
+      <dataType>subTemplateList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>431</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A subTemplateList of yaf_dns_rr templates. The template used by this element varies depending on the type of DNS Resource Record specified in dnsQRType (CERT/175).
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record>
+      <name>yafDPIList</name>
+      <dataType>subTemplateList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>432</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A subTemplateList of deep packet inspection data generated by YAF. The template used by this element varies depending on the type of DPI data YAF collected for the record.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2020-05-29</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsDSAlgorithm</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>433</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Algorithm field in a DNS DS RR. It holds the algorithm used by the DNS DNSKEY RR to which this DS RR refers.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsDSKeyTag</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>434</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Key Tag field in a DNS DS RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSEC3Algorithm</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>435</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Algorithm field in a DNS NSEC3 RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSEC3Flags</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>436</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Flags field in a DNS NSEC3 RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSEC3Iterations</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>437</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Iterations field in a DNS NSEC3 RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSEC3NextHashedOwnerName</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>438</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Next Hashed Owner Name field in a DNS NSEC3 RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSEC3Salt</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>439</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Salt field in a DNS NSEC3 RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSEC3TypeBitMaps</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>440</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Type Bit Maps field in a DNS NSEC3 RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSEC3PARAMAlgorithm</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>441</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Algorithm field in a DNS NSEC3PARAM RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSEC3PARAMFlags</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>442</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Flags field in a DNS NSEC3PARAM RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSEC3PARAMIterations</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>443</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Iterations field in a DNS NSEC3PARAM RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSEC3PARAMSalt</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>444</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Salt field in a DNS NSEC3PARAM RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSECNextDomainName</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>445</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Next Domain Name field in a DNS NSEC RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsNSECTypeBitMaps</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>446</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Type Bit Maps field in a DNS NSEC RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsRRSIGAlgorithm</name>
+      <dataType>unsigned8</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>447</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Algorithm field in a DNS RRSIG RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsRRSIGKeyTag</name>
+      <dataType>unsigned16</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>448</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Key Tag field in a DNS RRSIG RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-06-07">
+      <name>dnsRRSIGOriginalTTL</name>
+      <dataType>unsigned32</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>449</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The Original TTL field in a DNS RRSIG RR.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-06-07</date>
+    </record>
+
+    <record date="2021-08-07">
+      <name>sslCertIssuerOrgNameList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>450</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCertIssuerOrgName (CERT/192) elements, each holding an organization name {id-at 10} of the issuer of an SSL certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-08-07</date>
+    </record>
+
+    <record date="2021-08-07">
+      <name>sslCertIssuerOrgUnitNameList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>451</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCertIssuerOrgUnitName (CERT/193) elements, each holding an organizational unit name {id-at 11} of the issuer of an SSL certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-08-07</date>
+    </record>
+
+    <record date="2021-08-07">
+      <name>sslCertIssuerCommonNameList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>452</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCertIssuerCommonName (CERT/196) elements, each holding a common name {id-at 3} of the issuer of an SSL certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-08-07</date>
+    </record>
+
+    <record date="2021-08-07">
+      <name>sslCertIssuerStreetAddressList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>453</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCertIssuerStreetAddress (CERT/198) elements, each holding a street address {id-at 9} of the issuer of an SSL certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-08-07</date>
+    </record>
+
+    <record date="2021-08-07">
+      <name>sslCertSubjectOrgNameList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>454</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCertSubOrgName (CERT/201) elements, each holding an organization name {id-at 10} of the subject of an SSL certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-08-07</date>
+    </record>
+
+    <record date="2021-08-07">
+      <name>sslCertSubjectOrgUnitNameList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>455</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCertSubOrgUnitName (CERT/202) elements, each holding an organizational unit name {id-at 11} of the subject of an SSL certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-08-07</date>
+    </record>
+
+    <record date="2021-08-07">
+      <name>sslCertSubjectCommonNameList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>456</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCertSubCommonName (CERT/205) elements, each holding a common name {id-at 3} of the subject of an SSL certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-08-07</date>
+    </record>
+
+    <record date="2021-08-07">
+      <name>sslCertSubjectStreetAddressList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>457</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCertSubStreetAddress (CERT/207) elements, each holding a street address {id-at 9} of the subject of an SSL certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-08-07</date>
+    </record>
+
+    <record date="2021-08-07">
+      <name>sslCertIssuerDomainComponentList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>458</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCertIssuerDomainComponent (CERT/314) elements, each holding an LDAP dc (domainComponent), 0.9.2342.19200300.100.1.25, holding one component, a label, of the DNS name of the issuer of an SSL
+          certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-08-07</date>
+    </record>
+
+    <record date="2021-08-07">
+      <name>sslCertSubjectDomainComponentList</name>
+      <dataType>basicList</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>459</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          A basicList of sslCertSubDomainComponent (CERT/315) elements, each holding an LDAP dc (domainComponent), 0.9.2342.19200300.100.1.25, holding one component, a label, of the DNS name of the subject of an SSL certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-08-07</date>
+    </record>
+
+    <record date="2021-11-15">
+      <name>sslCertValidityTotalDays</name>
+      <dataType>signed32</dataType>
+      <group>supermediator</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>460</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The whole number of days the certificate was valid (sslCertValidityNotAfter - sslCertValidityNotBefore).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-11-15</date>
+    </record>
+
+    <record date="2021-11-15">
+      <name>sslCertValidityDaysTimeOfUse</name>
+      <dataType>signed32</dataType>
+      <group>supermediator</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>461</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The whole number of days the certificate was valid at the time it was used (flowStartMilliseconds - sslCertValidityNotBefore).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-11-15</date>
+    </record>
+
+    <record date="2021-11-15">
+      <name>sslCertificateSHA256</name>
+      <dataType>octetArray</dataType>
+      <group>supermediator</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>462</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The SHA256 hash of a complete SSL certificate.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2021-11-15</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sslClientJA3</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>463</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+         The JA3 MD5 hash of the sslClientJA3Fingerprint (CERT/464) calculated on the client-side TLS/SSL fingerprint string.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sslClientJA3Fingerprint</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>464</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The JA3 fingerprint string enumerated from the TLS/SSL ClientHello packet. Element sslClientJA3 (CERT/463) holds the MD5 of this.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sslServerJA3S</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>465</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The JA3S MD5 hash of the sslServerJA3SFingerprint (CERT/466) calculated on the server-side TLS/SSL fingerprint string.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sslServerJA3SFingerprint</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>466</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The JA3S fingerprint string enumerated from the TLS/SSL ServerHello packet. Element sslServerJA3S (CERT/465) holds the MD5 of this.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshHasshVersion</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>467</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The version of the HASSH algorithm used by sshHassh (CERT/468), sshHasshAlgorithms (CERT/469), sshServerHassh (CERT/470), and sshServerHasshAlgorithms (CERT/471).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshHassh</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>468</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The client HASSH MD5 hash of the sshHasshAlgorithms (CERT/469) fingerprint for an SSH client.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshHasshAlgorithms</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>469</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The SSH client hasshAlgorithms: the concatenated name-lists of the client-to-server algorithms delimited by a semicolon. Element sshHassh (CERT/468) holds the MD5 of this.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshServerHassh</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>470</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The server HASSH MD5 hash (hasshServer) of the sshServerHasshAlgorithms (CERT/471) fingerprint for an SSH server.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshServerHasshAlgorithms</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>471</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The SSH server hasshServerAlgoritms: the concatenated name-lists of the server-to-client algorithms delimited by a semicolon. Element sshServerHassh (CERT/470) holds the MD5 of this.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshServerVersion</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>472</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The version string from an SSH server.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshCipher</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>473</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The negotiated symmetric encryption algorithm used for an SSH session.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshMacAlgorithm</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>474</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The negotiated MAC algorithm used for an SSH session.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshCompressionMethod</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>475</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The negotiated compression algorithm used for an SSH session.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshKeyExchangeAlgorithm</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>476</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The negotiated key exchange algorithm used for an SSH session.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshHostKeyAlgorithm</name>
+      <dataType>string</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>477</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The negotiated host key algorithm used for an SSH session.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <record date="2022-09-01">
+      <name>sshServerHostKey</name>
+      <dataType>octetArray</dataType>
+      <group>yaf-dpi</group>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>478</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The MD5 hash of the public key of the SSH server.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-09-01</date>
+    </record>
+
+    <!-- 479-499 unassigned -->
     <record>
       <name>Unassigned</name>
       <cert:enterpriseId>6871</cert:enterpriseId>
-      <elementId>338-499</elementId>
+      <elementId>479-499</elementId>
     </record>
 
     <record>
@@ -4258,7 +6575,7 @@ id-at-name                   {id-at 41}
       <revision>0</revision>
     </record>
 
-    <record>
+    <record updated="2022-11-01">
       <name>largePacketCount</name>
       <dataType>unsigned32</dataType>
       <group>yaf</group>
@@ -4269,8 +6586,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          The number of packets that contain at least 220 bytes of
-          payload.
+          The number of packets that contain more than 225 bytes of payload.
         </paragraph>
       </description>
       <units>packets</units>
@@ -4294,8 +6610,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          An identifier of a tombstone record that is unique within the
-          process that initially generates the record.
+          An identifier of a tombstone record that is unique within the process that initially generates the record.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -4369,8 +6684,7 @@ id-at-name                   {id-at 41}
       <status>current</status>
       <description>
         <paragraph>
-          A list containing a certToolId and the time when that tool accessed
-          the tombstone record.
+          A subTemplateList of records containing a certToolId (CERT/553) and the observationTimeSeconds when that tool accessed the tombstone record.
         </paragraph>
       </description>
       <revision>0</revision>
@@ -4391,6 +6705,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>927</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          Field used by super_mediator to export DNS information.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -4412,6 +6731,11 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>929</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          The number of times the deduplicated item was seen.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
@@ -4422,34 +6746,255 @@ id-at-name                   {id-at 41}
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>930</elementId>
       <status>current</status>
+      <description>
+        <paragraph>
+          A representation of data that is being deduplicated.
+        </paragraph>
+      </description>
       <revision>0</revision>
     </record>
 
-    <!-- 931-999 unassigned -->
+    <record date="2022-03-31">
+      <name>smIPSetMatchesSource</name>
+      <dataType>unsigned8</dataType>
+      <group>supermediator</group>
+      <dataTypeSemantics>flags</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>931</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Used by super_mediator to indicate that the record's source IP address matched an IPset.  A value of 0 means the source address was not present in the IPset; a value of 1 means it was present.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-03-31</date>
+    </record>
+
+    <record date="2022-03-31">
+      <name>smIPSetMatchesDestination</name>
+      <dataType>unsigned8</dataType>
+      <group>supermediator</group>
+      <dataTypeSemantics>flags</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>932</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Used by super_mediator to indicate that the record's destination IP address matched an IPset.  A value of 0 means the destination address was not present in the IPset; a value of 1 means it was present.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-03-31</date>
+    </record>
+
+    <record date="2022-03-31">
+      <name>smIPSetName</name>
+      <dataType>string</dataType>
+      <group>supermediator</group>
+      <dataTypeSemantics>default</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>933</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Used by super_mediator to record the name of the IPset used to determine smIPSetMatchesSource (CERT/931) and smIPSetMatchesDestination (CERT/932).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-03-31</date>
+    </record>
+
+    <record date="2022-03-31">
+      <name>smPrefixMapLabelSource</name>
+      <dataType>string</dataType>
+      <group>supermediator</group>
+      <dataTypeSemantics>default</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>934</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Used by super_mediator to record the label for the source IP or protocol/source-port pair as defined by a SiLK Prefix Map.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-03-31</date>
+    </record>
+
+    <record date="2022-03-31">
+      <name>smPrefixMapLabelDestination</name>
+      <dataType>string</dataType>
+      <group>supermediator</group>
+      <dataTypeSemantics>default</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>935</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Used by super_mediator to record the label for the destination IP or protocol/destination-port pair as defined by a SiLK Prefix Map.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-03-31</date>
+    </record>
+
+    <record date="2022-03-31">
+      <name>smPrefixMapTypeId</name>
+      <dataType>unsigned8</dataType>
+      <group>supermediator</group>
+      <dataTypeSemantics>identifier</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>936</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Used by super_mediator to indicate the type of Prefix Map used to determine smPrefixMapLabelSource (CERT/934) and smPrefixMapLabelDestination (CERT/935), where 0 indicates a map from IPv4 addresses to names, 1 from protocol/port pairs, and 2 from IPv6 addresses.
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-03-31</date>
+    </record>
+
+    <record date="2022-03-31">
+      <name>smPrefixMapName</name>
+      <dataType>string</dataType>
+      <group>supermediator</group>
+      <dataTypeSemantics>default</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>937</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          Used by super_mediator to record the name of the Prefix Map used to determine smPrefixMapLabelSource (CERT/934) and smPrefixMapLabelDestination (CERT/935).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-03-31</date>
+    </record>
+
+    <record date="2022-05-26">
+      <name>silkFlowtypeName</name>
+      <dataType>string</dataType>
+      <group>silk</group>
+      <dataTypeSemantics>default</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>938</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The unique flowtype name of the flowtype identified by silkFlowtypeId (CERT/30). The flowtype name may also be represented by the pair silkClassName (CERT/939) and silkTypeName (CERT/940).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-05-26</date>
+    </record>
+
+    <record date="2022-05-26">
+      <name>silkClassName</name>
+      <dataType>string</dataType>
+      <group>silk</group>
+      <dataTypeSemantics>default</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>939</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The class name of the flowtype identified by silkFlowtypeId (CERT/30) and silkFlowtypeName (CERT/938). See also silkTypeName (CERT/940).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-05-26</date>
+    </record>
+
+    <record date="2022-05-26">
+      <name>silkTypeName</name>
+      <dataType>string</dataType>
+      <group>silk</group>
+      <dataTypeSemantics>default</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>940</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The type name of the flowtype identified by silkFlowtypeId (CERT/30) and silkFlowtypeName (CERT/938). The type name is unique within a silkClassName (CERT/939).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-05-26</date>
+    </record>
+
+    <record date="2022-05-26">
+      <name>silkSensorName</name>
+      <dataType>string</dataType>
+      <group>silk</group>
+      <dataTypeSemantics>default</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>941</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The name of the sensor identified by silkSensorId (CERT/31).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-05-26</date>
+    </record>
+
+    <record date="2022-05-26">
+      <name>silkSensorDescription</name>
+      <dataType>string</dataType>
+      <group>supermediator</group>
+      <dataTypeSemantics>default</dataTypeSemantics>
+      <cert:enterpriseId>6871</cert:enterpriseId>
+      <elementId>942</elementId>
+      <status>current</status>
+      <description>
+        <paragraph>
+          The description of the sensor identified by silkSensorId (CERT/31).
+        </paragraph>
+      </description>
+      <revision>0</revision>
+      <date>2022-05-26</date>
+    </record>
+
+    <!-- 943-999 unassigned -->
     <record>
       <name>Unassigned</name>
       <cert:enterpriseId>6871</cert:enterpriseId>
-      <elementId>931-999</elementId>
+      <elementId>943-999</elementId>
     </record>
 
     <record>
       <name>templateName</name>
       <dataType>string</dataType>
-      <group>yaf</group>
+      <group>fixbuf</group>
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>1000</elementId>
       <status>current</status>
-      <revision>0</revision>
+      <description>
+        <paragraph>
+          Specifies a human-friendly name for an IPFIX template.
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2020-05-29</date>
     </record>
 
     <record>
       <name>templateDescription</name>
       <dataType>string</dataType>
-      <group>yaf</group>
+      <group>fixbuf</group>
       <cert:enterpriseId>6871</cert:enterpriseId>
       <elementId>1001</elementId>
       <status>current</status>
-      <revision>0</revision>
+      <description>
+        <paragraph>
+          Specifies a textual description for an IPFIX template.
+        </paragraph>
+      </description>
+      <revision>1</revision>
+      <date>2020-05-29</date>
     </record>
 
     <!-- 1002-16383 unassigned -->

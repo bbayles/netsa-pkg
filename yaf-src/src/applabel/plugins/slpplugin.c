@@ -15,9 +15,9 @@
  * @sa rfc 2608  href="http://www.ietf.org/rfc/rfc2608.txt"
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Chris Inacio <inacio@cert.org>
+ ** Authors: Chris Inacio
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -198,7 +198,7 @@ slpplugin_LTX_ycSlpScanScan(
 #if YAF_ENABLE_HOOKS
     gboolean     slpStringFound = FALSE;
     uint16_t     slplength[5];
-    uint16_t     slpoffset[5];
+    uint32_t     slpoffset[5];
     for (loop = 0; loop < 5; loop++) {
         slplength[loop] = 0;
         slpoffset[loop] = 0;
@@ -253,7 +253,7 @@ slpplugin_LTX_ycSlpScanScan(
         return 1;
     } else if (2 == version) {
         srcLocProtoHeader_v2_t slpHeader2;
-        uint16_t offset;
+        uint32_t offset;
 
         if (payloadSize < sizeof(srcLocProtoHeader_v2_t)) {
             return 0;
@@ -377,7 +377,7 @@ ycPopulateSLPV2Header(
     unsigned int             payloadSize,
     srcLocProtoHeader_v2_t  *header)
 {
-    uint16_t     offset = 0;
+    uint32_t     offset = 0;
     uint8_t      readValue;
     uint8_t      readValue2;
     unsigned int loop;

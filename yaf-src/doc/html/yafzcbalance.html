@@ -1,31 +1,17 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>YAF - Documentation</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-
-        <link rel="stylesheet" type="text/css" href="../site/style.css" />
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 
 </head>
+
 <body>
-    <div id="p-body">
-      <div id="l-header">
-        <img src="../site/sei-logo.png" id="l-sei-logo"
-            alt="Software Engineering Institute | Carnegie Mellon&copy;" />
-        <div id="l-netsa-logo"><a id="l-netsa-name" href="../index.html"><b>CERT NetSA Security Suite</b></a></div>
-        <div id="l-netsa-motto">Monitoring for Large-Scale Networks</div>
-        <h1 class="l-page-title">YAF</h1>
-        <span id="l-subtitle">Documentation</span>
-      </div><!-- l-header -->
-      <div id="l-content">
-        <div id="l-sidebar">
-          <div class="p-sidebar-section">
-            <h1><a href="index.html">YAF</a></h1>
-            <ul>
-              <li><a href="docs.html">Documentation</a></li>
-              <li><a href="download.html">Downloads</a></li>
-            </ul>
-          </div><!-- p-sidebar-section -->
-        </div><!-- l-sidebar -->
-<h1><a name="name">NAME</a></h1><p><b>yafzcbalance</b> - PF_RING ZC Load balancer for YAF.</p>
+
+<h1 id="NAME">NAME</h1>
+
+<p><b>yafzcbalance</b> - PF_RING ZC Load balancer for YAF.</p>
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
@@ -43,9 +29,9 @@
 
 <h1 id="DESCRIPTION">DESCRIPTION</h1>
 
-<p><b>yafzcbalance</b> is a tool that load balances packets received on one or more interfaces to multiple consumer processes. This process hashes the incoming packets and sends them to the appropriate <b>yaf(1)</b> process listening on a cluster ID/queue.</p>
+<p><b>yafzcbalance</b> is a tool that load balances packets received on one or more interfaces to multiple consumer processes. This process hashes the incoming packets and sends them to the appropriate <a href="yaf.html"><b>yaf(1)</b></a> process listening on a cluster ID/queue.</p>
 
-<p><b>yafzcbalance</b> is based off of the example application, zbalance_ipc, that is distributed with PF_RING. Changes have been made to simplify the process to run specifically with <b>yaf(1)</b>.</p>
+<p><b>yafzcbalance</b> is based off of the example application, zbalance_ipc, that is distributed with PF_RING. Changes have been made to simplify the process to run specifically with <a href="yaf.html"><b>yaf(1)</b></a>.</p>
 
 <p><b>yafzcbalance</b> allows you to bind the application to a particular core. Additionally, you can bind the time pulse thread to the same or another core.</p>
 
@@ -72,7 +58,7 @@
 <dt id="num-NUM_YAFS"><b>--num</b> <i>NUM_YAFS</i></dt>
 <dd>
 
-<p><i>NUM_YAFS</i> is the number of <b>yaf(1)</b> applications that <b>yafzcbalance</b> will distribute packets to. The default is 1.</p>
+<p><i>NUM_YAFS</i> is the number of <a href="yaf.html"><b>yaf(1)</b></a> applications that <b>yafzcbalance</b> will distribute packets to. The default is 1.</p>
 
 </dd>
 <dt id="core-CORE_ID"><b>--core</b> <i>CORE_ID</i></dt>
@@ -84,7 +70,7 @@
 <dt id="time-TIME_CORE_ID"><b>--time</b> <i>TIME_CORE_ID</i></dt>
 <dd>
 
-<p>By default, hardware timestamps are disabled in zero-copy mode. <b>yaf(1)</b> requires that a packet have a timestamp, so <b>yafzcbalance</b> creates a thread that will add a timestamp to the PF_RING packet header. Use this option to bind that thread to core <i>TIME_CORE_ID</i>.</p>
+<p>By default, hardware timestamps are disabled in zero-copy mode. <a href="yaf.html"><b>yaf(1)</b></a> requires that a packet have a timestamp, so <b>yafzcbalance</b> creates a thread that will add a timestamp to the PF_RING packet header. Use this option to bind that thread to core <i>TIME_CORE_ID</i>.</p>
 
 </dd>
 <dt id="pidfile-PID_FILE"><b>--pidfile</b> <i>PID_FILE</i></dt>
@@ -129,15 +115,11 @@
 
 <p>In the following examples, the dollar sign (&quot;$&quot;) represents the shell prompt. The text after the dollar sign represents the command line.</p>
 
-<ul>
-
 <pre><code> $ yafzcbalance --in zc:p6p1,zc:p6p1 -c 99 -n 2 -d -l /var/log/yafzcbalance.log
 
  $ yaf --in 99:0 --live zc --out localhost --ipfix tcp --ipfix-port=18000 --silk
 
  $ yaf --in 99:1 --live zc --out localhost --ipfix tcp --ipfix-port=18001 --silk</code></pre>
-
-</ul>
 
 <h1 id="Known-Issues">Known Issues</h1>
 
@@ -158,18 +140,7 @@
 
 <p>yaf(1)</p>
 
-      </div><!-- l-content -->
-      <div id="l-footer">
-        &copy; 2006-2021 Carnegie Mellon University
-        <span id="l-contact">
-          <a href="https://www.sei.cmu.edu/legal/index.cfm">Legal</a> |
-          <a href="https://www.sei.cmu.edu/legal/privacy-notice/index.cfm">Privacy Notice</a> |
-          <img alt="email address" src="/site/contact_email.png" />
-        </span>
-      </div>
-    </div><!-- p-body -->
 </body>
-
 
 </html>
 

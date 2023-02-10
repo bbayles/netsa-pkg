@@ -7,9 +7,9 @@
  * It is based on RFC 1939 and some random limited packet capture.
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Dan Ruef <druef@cert.org>, Emily Ecoff <ecoff@cert.org>
+ ** Authors: Dan Ruef, Emily Ecoff
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms

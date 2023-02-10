@@ -3,7 +3,7 @@
 ## @OPENSOURCE_LICENSE_START@
 ## libfixbuf 2.0
 ##
-## Copyright 2018-2020 Carnegie Mellon University. All Rights Reserved.
+## Copyright 2018-2023 Carnegie Mellon University. All Rights Reserved.
 ##
 ## NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
 ## ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS"
@@ -31,19 +31,40 @@
 use warnings;
 use strict;
 
-my $project = $ARGV[0] or die "Expected package name as first argument\n";
+# name of this script
+my $NAME = $0;
+$NAME =~ s,.*/,,;
 
-# Licence for fixbuf-2.0 and later
-my $new_license = 'lgpl3';
+# name of project; used in the download links
+my $project = 'libfixbuf';
 
-# License for older versions of fixbuf
-my $old_license = 'lgpl';
+# Value to use in @licenses to skip a release in the output
+my $no_print = 'NO_PRINT';
 
-# The date when the license changed
-my $lgpl3_date = '2018-05-01';
-
-# Date of oldest release that the user is allowed to download.
-my $oldest_rel_date = '2015-07-01';  # fixbuf 1.7.0
+# This array allows suppressing a release from the output and also
+# determines whether to include a download link and the license to
+# use in the click-through pop-up.
+#
+# Each entry is a pair (an array) containing a regex and a string.
+# The regex is compared to the version in the NEWS file (the text
+# after "Version " and before the date), and if it matches, the string
+# is checked.  If the string has the value $no_print, the entry is not
+# printed; if the string is empty or undef, the entry is printed
+# without a download link; otherwise the string names the license to
+# use for the download link.  If the regex does not match, the next
+# entry in the array is tried.  If no match for the version is found
+# in the table, the entry is printed but no download link is added for
+# that release.
+#
+my @licenses = (
+    # no download links for fixbuf 0.x.
+    [qr/^1\.\d/, 'lgpl'],     # fixbuf 1.x
+    [qr/^2\.\d/, 'lgpl3'],    # fixbuf 2.x
+    # do not include 3.x releases here
+    [qr/^3\.\d/, $no_print],  # fixbuf 3.x
+    # original values for other releases
+    #|[qr/^3\.\d/, 'gpl'],      # fixbuf 3.x
+);
 
 print <<HEAD;
 <?xml version="1.0"?>
@@ -51,9 +72,6 @@ print <<HEAD;
            xmlns="http://www.w3.org/1999/xhtml"
            xmlns:xi="http://www.w3.org/2001/XInclude">
 HEAD
-
-my $ul = 0;
-my $li = 0;
 
 # slurp in all of the standard input
 my $content;
@@ -64,28 +82,41 @@ my $content;
 
 
 # This regexp is pretty liberal, so as to be able to grok most NEWS formats.
-while($content =~ /^Version (\d[^:]*?):?\s+\(?([^\n]+?)\)?\s*\n\s*=+\s*((?:.(?!Version))+)/msg)
+while ($content =~ /^Version (\d[^:]*?):?\s+\(?([^\n]+?)\)?\s*\n\s*=+\s*((?:.(?!^Version))+)/msg)
 {
-    my ($ver, $date, $notes) = ($1, $2, $3);
+    my ($vers, $date, $notes) = ($1, $2, $3);
+
+    # determine whether to print and if so, whether have a download
+    # link and the license to use
+    my $download = "";
+    for my $re_lic (@licenses) {
+        my ($re, $license) = @$re_lic;
+        if ($vers =~ $re) {
+            if (!$license) {
+                # print entry with no download link
+            }
+            elsif ($license eq $no_print) {
+                $download = $no_print;
+            }
+            else {
+                $download = <<RELFILE;
+  <p:file href="/releases/$project-$vers.tar.gz" license="$license"/>
+RELFILE
+            }
+            last;
+        }
+    }
+    if ($download eq $no_print) {
+        next;
+    }
 
     print <<RELHEAD1;
  <p:release>
-  <p:version>$ver</p:version>
+  <p:version>$vers</p:version>
   <p:date>$date</p:date>
-RELHEAD1
-
-    if ($date ge $oldest_rel_date)
-    {
-        my $license = (($date ge $lgpl3_date) ? $new_license : $old_license);
-        print <<RELHEAD2;
-  <p:file href="../releases/$project-$1.tar.gz" license="$license"/>
-RELHEAD2
-    }
-
-    print <<RELHEAD3;
-  <p:notes>
+$download  <p:changelog>
    <ul>
-RELHEAD3
+RELHEAD1
 
     # html escape the notes
     $notes =~ s/&/&amp;/g;
@@ -102,11 +133,9 @@ RELHEAD3
 
     print <<RELTAIL;
    </ul>
-  </p:notes>
+  </p:changelog>
  </p:release>
 RELTAIL
-;
-
 }
 print <<TAIL;
 </p:project>

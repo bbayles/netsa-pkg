@@ -9,9 +9,9 @@
  * see http://www.ietf.org/rfc/rfc4271 for more info
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Sarneso <ecoff@cert.org>
+ ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -101,7 +101,7 @@ bgpplugin_LTX_ycBgpScanScan(
     yfFlow_t       *flow,
     yfFlowVal_t    *val)
 {
-    unsigned int offsetptr;
+    uint32_t     offset;
     uint16_t     bgp_len;
     uint8_t      bgp_type;
 
@@ -110,19 +110,19 @@ bgpplugin_LTX_ycBgpScanScan(
         return 0;
     }
 
-    for (offsetptr = 0; offsetptr < 16; offsetptr++) {
-        if (*(payload + offsetptr) != BGP_MARKER) {
+    for (offset = 0; offset < 16; offset++) {
+        if (*(payload + offset) != BGP_MARKER) {
             return 0;
         }
     }
 
-    bgp_len = ntohs(*(uint16_t *)(payload + offsetptr));
+    bgp_len = ntohs(*(uint16_t *)(payload + offset));
     if (bgp_len < 19 || bgp_len > 4096) {
         return 0;
     }
 
-    offsetptr += 2;
-    bgp_type = *(payload + offsetptr);
+    offset += 2;
+    bgp_type = *(payload + offset);
 
     if (bgp_type == 0 || bgp_type > 4) {
         return 0;

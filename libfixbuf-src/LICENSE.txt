@@ -1,6 +1,6 @@
 libfixbuf 2.0
 
-Copyright 2018-2020 Carnegie Mellon University. All Rights Reserved.
+Copyright 2018-2023 Carnegie Mellon University. All Rights Reserved.
 
 GNU LESSER GENERAL PUBLIC LICENSE
 Version 3, 29 June 2007

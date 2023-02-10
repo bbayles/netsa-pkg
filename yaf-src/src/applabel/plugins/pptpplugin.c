@@ -13,9 +13,9 @@
  * @sa rfc 2637  href="http://www.ietf.org/rfc/rfc2637.txt"
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Ecoff <ecoff@cert.org>
+ ** Authors: Emily Ecoff
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms

@@ -145,8 +145,6 @@ prompt.  The text after the dollar sign represents the command line.
 Lines have been wrapped for improved readability, and the back slash
 ("\") is used to indicate a wrapped line.
 
-=over 1
-
 The following example shows how to run B<yaf>, B<getFlowKeyHash>, and
 B<yafMeta2Pcap> to create a PCAP for a given flow.
 
@@ -228,8 +226,6 @@ and use B<yafMeta2Pcap> to create a PCAP for a specific flow
                 --pcap-meta-file "/tmp/pcap-info*" -v
 
  Found 1 packets that match criteria.
-
-=back
 
 =head1 Known Issues
 

@@ -3,7 +3,7 @@
 ** Yet Another Flow IPFIX collector
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Brian Trammell
 ** ------------------------------------------------------------------------
@@ -95,7 +95,7 @@ static yfConfig_t   yaf_config = YF_CONFIG_INIT;
 static uint32_t     yac_cliflags =  MIO_F_CLI_FILE_OUT |
     MIO_F_CLI_DIR_OUT;
 
-AirOptionEntry      yac_optentries[] = {
+static AirOptionEntry      yac_optentries[] = {
     AF_OPTION( "in", 'i', 0, AF_OPT_TYPE_STRING, &(yac_inspec.host),
                "Hostname or address to listen on", NULL ),
     AF_OPTION( "rotate-delay", 'I', 0, AF_OPT_TYPE_INT, &yac_rotate,

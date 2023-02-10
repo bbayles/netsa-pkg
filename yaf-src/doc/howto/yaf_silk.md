@@ -1,33 +1,33 @@
 Configuring YAF with SiLK {#yaf_silk}
 ============================================
 
-This tutorial is a step-by-step guide for setting up **yaf**, 
-and [SiLK](http://tools.netsa.cert.org/silk/index.html) on a single machine
+This tutorial is a step-by-step guide for setting up **yaf**,
+and [SiLK](https://tools.netsa.cert.org/silk/index.html) on a single machine
 for standalone Flow collection and analysis.
 
-* [Basic Install](#install)
-* [Configure SiLK](#silk)
-* [Configure YAF](#yaf)
-* [Run YAF](#goyaf)
+* [Basic Install](#ys_install)
+* [Configure SiLK](#ys_silk)
+* [Configure YAF](#ys_yaf)
+* [Run YAF](#ys_goyaf)
 
-Install prerequisites {#install}
+Install prerequisites {#ys_install}
 ========================
 
     $ yum groupinstall "Development Tools"
     $ yum install libpcap libpcap-devel pcre pcre-devel glib2-devel
-    
-Build [libfixbuf](http://tools.netsa.cert.org/fixbuf/index.html):
-    
-    $ tar -xvzf libfixbuf-1.7.0.tar.gz
-    $ cd libfixbuf-1.7.0
+
+Build [libfixbuf](https://tools.netsa.cert.org/fixbuf2/index.html):
+
+    $ tar -xvzf libfixbuf-2.3.0.tar.gz
+    $ cd libfixbuf-2.3.0
     $ ./configure
     $ make
     $ make install
-    
+
 Build **yaf**:
-    
-    $ tar -xvzf yaf-2.8.0.tar.gz
-    $ cd yaf-2.8.0
+
+    $ tar -xvzf yaf-2.13.0.tar.gz
+    $ cd yaf-2.13.0
     $ ./configure --enable-applabel --enable-plugins
     $ make
     $ make install
@@ -38,35 +38,35 @@ To run **yaf** as a service:
     $ cp etc/yaf.conf /usr/local/etc/
     $ chmod +x /etc/init.d/yaf
 
-    
-Build [SiLK](http://tools.netsa.cert.org/silk/index.html):
-    
-    $ tar -xvzf silk-3.11.0.tar.gz
-    $ cd silk-3.11.0
+
+Build [SiLK](https://tools.netsa.cert.org/silk/index.html):
+
+    $ tar -xvzf silk-3.19.0.tar.gz
+    $ cd silk-3.19.0
     $ ./configure --with-libfixbuf=/usr/local/lib/pkgconfig --enable-ipv6
     $ make
     $ make install
-    
-Setup SiLK {#silk}
+
+Setup SiLK {#ys_silk}
 ============
 
 This example uses /data as the location of the SiLK repository:
 
     $ mkdir -p /data
 
-The default [silk.conf](../../silk/silk.conf.html) that comes with the SiLK distribution
+The default [silk.conf](https://tools.netsa.cert.org/silk/silk.conf.html) that comes with the SiLK distribution
 is typically sufficient and should be copied to the repository:
 
     $ cp site/twoway/silk.conf /data
 
 To run rwflowpack as a service:
-   
+
     $ cp src/rwflowpack/rwflowpack.init.d /etc/init.d/rwflowpack
     $ chmod +x /etc/init.d/rwflowpack
     $ cp src/rwflowpack/rwflowpack.conf /usr/local/etc/rwflowpack.conf
 
 To configure **rwflowpack**, edit ``/usr/local/etc/rwflowpack.conf``
-    
+
     #/usr/local/etc/rwflowpack.conf
     ENABLED=1
     statedirectory=/var/lib/rwflowpack
@@ -98,26 +98,26 @@ To configure **rwflowpack**, edit ``/usr/local/etc/rwflowpack.conf``
     EXTRA_OPTIONS=
 
 
-The [sensor.conf](http://tools.netsa.cert.org/silk/sensor.conf.html)
-is required to setup the 
+The [sensor.conf](https://tools.netsa.cert.org/silk/sensor.conf.html)
+is required to setup the
 listening probe.  Change the internal-ipblocks to match your network
-    
+
     probe S0 ipfix
        listen-on-port 18001
        protocol tcp
     end probe
-    
+
     sensor S0
        ipfix-probes S0
        internal-ipblocks 192.168.1.0/24 10.10.10.0/24
        external-ipblocks remainder
     end sensor
-    
+
 Move the sensor.conf to the repository:
 
     $ mv sensor.conf /data
 
-    
+
 Start **rwflowpack**:
 
     $ service rwflowpack start
@@ -130,7 +130,7 @@ To use the SiLK command line tools, you need to set the **SILK_DATA_ROOTDIR** va
 
     $ export SILK_DATA_ROOTDIR=/data
 
-Configure YAF {#yaf}
+Configure YAF {#ys_yaf}
 ============
 
 Create a directory for the **yaf** log file:
@@ -152,7 +152,7 @@ To configure **yaf**, edit the configuration file ``/usr/local/etc/yaf.conf``:
     YAF_STATEDIR=/var/log/yaf
     YAF_EXTRAFLAGS="--silk --applabel --max-payload=2048 --plugin-name=/usr/local/lib/yaf/dpacketplugin.la"
 
-Start YAF {#goyaf}
+Start YAF {#ys_goyaf}
 ===================
 
 Start YAF via service
@@ -162,7 +162,7 @@ Start YAF via service
 Or on the command line.  See the following 2 examples.
 
 Example **yaf** command line for processing a PCAP file:
-    
+
     /usr/local/bin/yaf
     --in <PCAP FILE> \
     --ipfix tcp \
@@ -174,9 +174,9 @@ Example **yaf** command line for processing a PCAP file:
     --ipfix-port=18000 \
     --applabel --max-payload 2048 \
     --plugin-name=/usr/local/lib/yaf/dpacketplugin.so
-    
+
 Example **yaf** command line for sniffing interface eth0:
-    
+
     /usr/local/bin/yaf
     --in eth0 --live pcap \
     --ipfix tcp \
@@ -199,7 +199,7 @@ Run:
     $ ldconfig
 
 Or add ``/usr/local/lib`` to the LD_LIBRARY_PATH environment variable.
-    
+
 Confirm SiLK is creating flow records:
 
     $ rwfilter --proto=0- --type=all --pass=stdout | rwcut | head

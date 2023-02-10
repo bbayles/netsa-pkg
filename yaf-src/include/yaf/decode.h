@@ -5,7 +5,7 @@
  ** YAF Layer 2 and Layer 3 decode routines
  **
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Brian Trammell
  ** ------------------------------------------------------------------------
@@ -163,7 +163,7 @@ typedef struct yfPBuf_st {
     /** caplist */
     uint16_t             pcap_caplist;
     /** Packet IP length. */
-    uint16_t             iplen;
+    uint32_t             iplen;
     /** Interface number packet was decoded from. Currently unused. */
     uint16_t             ifnum;
     /** flag for determining if the packet was fragmented 0-no, 1-yes,

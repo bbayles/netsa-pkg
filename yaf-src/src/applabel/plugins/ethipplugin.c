@@ -7,9 +7,9 @@
  * http://read.pudn.com/downloads166/ebook/763212/EIP-CIP-V2-1.0.pdf
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2015-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2015-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Sarneso <ecoff@cert.org>
+ ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -119,7 +119,7 @@ ethipplugin_LTX_ycEthIPScanScan(
     yfFlow_t       *flow,
     yfFlowVal_t    *val)
 {
-    uint16_t offset = 0, total_offset = 0;
+    uint32_t offset = 0, total_offset = 0;
     uint16_t temp16 = 0;
     uint32_t temp32 = 0;
     int      packets = 0;

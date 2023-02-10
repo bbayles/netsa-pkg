@@ -1,7 +1,7 @@
 dnl @OPENSOURCE_LICENSE_START@
 dnl libfixbuf 2.0
 dnl
-dnl Copyright 2018-2020 Carnegie Mellon University. All Rights Reserved.
+dnl Copyright 2018-2023 Carnegie Mellon University. All Rights Reserved.
 dnl
 dnl NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
 dnl ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS"

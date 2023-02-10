@@ -1,5 +1,5 @@
-------------------------------------------------------------------------
--- Copyright (C) 2015-2021 by Carnegie Mellon University.
+------------------------------------------------------------*- lua -*---
+-- Copyright (C) 2015-2023 by Carnegie Mellon University.
 --
 -- @OPENSOURCE_HEADER_START@
 --
@@ -73,13 +73,13 @@
 -- input.file="/Documents/mypcapfile.pcap"
 -- input.noerror = true
 --
--- Acceptable keys are {inf, type, export_interface, file, noerror, 
+-- Acceptable keys are {inf, type, export_interface, file, noerror,
 --                      force_read_all}
 --
 -- Acceptable types are "pcap", "dag", "napatech", "netronome", "pfring",
 -- "zc", "file", and "caplist".  The default type is "file".
 --
--- export_interface, force_read_all, and noerror expect 
+-- export_interface, force_read_all, and noerror expect
 -- boolean values: true or false.
 --------------------------------------------------------------------------
 
@@ -100,19 +100,19 @@ input = LIST_INPUT
 -- FILE_EXPORT = {file="/data/myyaffile.yaf"}
 -- ROTATE_EXPORT = {file="/data/yaf/yaf", rotate=200, lock=true}
 -- TCP_LOCAL_EXPORT = {host = "localhost", port = "18000", protocol="tcp"}
--- UDP_LOCAL_EXPORT = {host = "localhost", port = "18001", protocol="udp", 
+-- UDP_LOCAL_EXPORT = {host = "localhost", port = "18001", protocol="udp",
 --                     udp_temp_timeout=600}
 -- GROUP1 = {name="SPREAD_CATCHALL"}
 -- GROUP2 = {name="SPREAD_DNS", value=53}
 -- GROUP3 = {name="SPREAD_HTTP", value=80}
 -- SPREAD_GROUPS={GROUP1, GROUP2, GROUP3}
--- SPREAD_EXPORT = {protocol="spread", daemon="4804", groups=SPREAD_GROUPS, 
+-- SPREAD_EXPORT = {protocol="spread", daemon="4804", groups=SPREAD_GROUPS,
 --                  groupby="applabel"}
 --
 -- Acceptable keys are {file, host, port, protocol, daemon, groups, groupby,
--- 	      	       rotate, lock, udp_temp_timeout}
+--                     rotate, lock, udp_temp_timeout}
 -- Acceptable protocols are "tcp", "udp", "sctp", and "spread"
--- 
+--
 -------------------------------------------------------------------------
 TCP_LOCAL_EXPORT = {host = "localhost", port = "18000", protocol="tcp"}
 
@@ -122,7 +122,7 @@ output = TCP_LOCAL_EXPORT
 -----------------------------------------------------------------------
 -- DECODE OPTIONS
 -- The following options are used to modify the YAF packet decoder's behavior.
--- None of these options are required.  
+-- None of these options are required.
 -- decode expects a table containing one or more of the following keys
 -- set to true or false.
 -- By default, all of the below features are turned off.
@@ -137,14 +137,14 @@ decode = {gre = false, ip4_only=false, ip6_only=false, nofrag=false}
 -----------------------------------------------------------------------
 -- EXPORT OPTIONS
 -- These options are used to modify the data exported by YAF
--- None of these options are required.  
+-- None of these options are required.
 -- export expects a table containing one or more of the following keys set
 -- to true or false.  By default, all of the below features are turned off.
--- 
+--
 -- Available keys are {silk, uniflow, force_ip6, flow_stats, delta, mac}
 --
--- EXPORT_OPTIONS = {silk=true, uniflow=true, force_ip6=true, 
--- 		    flow_stats=true, delta=true, mac=true}
+-- EXPORT_OPTIONS = {silk=true, uniflow=true, force_ip6=true,
+--                  flow_stats=true, delta=true, mac=true}
 ------------------------------------------------------------------------
 export = {silk = true}
 
@@ -162,7 +162,7 @@ export = {silk = true}
 -- active_timeout =
 
 ------------------------------------------------------------------------
--- filter = BPF_FILTER 
+-- filter = BPF_FILTER
 -- Set Berkeley Packet Filtering (BPF) in YAF with BPF_FILTER.
 ------------------------------------------------------------------------
 -- filter = "port 53"
@@ -192,17 +192,31 @@ maxpayload = 1024
 
 ------------------------------------------------------------------------
 -- export_payload = true/false
--- If true, export at most PAYLOAD_OCTETS or MAX_PAY_OCTETS given to
--- maxpayload or maxexport for each direction of the flow. Default is false.
+-- If true, export the first N bytes of payload from each direction of
+-- the flow, where N is the minimum of PAYLOAD_OCTETS (maxpayload) or
+-- MAX_PAY_OCTETS (maxexport). See also export_payload_applabels.
+-- Default is false.
 ------------------------------------------------------------------------
 export_payload = false
+
+------------------------------------------------------------------------
+-- export_payload_applabels = {INTEGER, INTEGER, ...}
+
+-- If set, payload export is enabled (as with export_payload) but only
+-- for the silkAppLabel values in the list.  The value must be a list of
+-- integers between 0 and 65535 inclusive.  Default is not set.
+--
+-- To see payload only for unknown applabels:
+--     export_payload_applabels = { 0 }
+------------------------------------------------------------------------
+-- export_payload_applabels = {25, 80}
 
 ------------------------------------------------------------------------
 -- udp_payload = true/false
 -- If true, capture at most PAYLOAD_OCTETS octets from the start of
 -- each UDP flow, where PAYLOAD_OCTETS is set using the maxpayload option
 ------------------------------------------------------------------------
--- udp_payload = 
+-- udp_payload =
 
 ------------------------------------------------------------------------
 -- stats = INTERVAL (integer)
@@ -214,7 +228,7 @@ export_payload = false
 
 ------------------------------------------------------------------------
 -- no_tombstone = true/false
--- If true, tombstone records will not be sent. 
+-- If true, tombstone records will not be sent.
 -- default is false.
 ------------------------------------------------------------------------
 -- no_tombstone =
@@ -229,18 +243,18 @@ export_payload = false
 ------------------------------------------------------------------------
 -- ingress = ingressInterface (integer)
 -- egress = egressInterface (integer)
--- use the above options to manually set the ingressInterface or 
+-- use the above options to manually set the ingressInterface or
 -- egressInterface in the exported flow record. Default is 0.
 ------------------------------------------------------------------------
 -- ingress =
--- egress = 
+-- egress =
 
 ------------------------------------------------------------------------
 -- obdomain = DOMAIN_ID (integer)
 -- Set the othe observationDomainID on each exported IPFIX message to
 -- DOMAIN_ID.  Default is 0.
 ------------------------------------------------------------------------
--- obdomain = 
+-- obdomain =
 
 ------------------------------------------------------------------------
 -- maxflows = FLOW_TABLE_MAX (integer)
@@ -261,19 +275,19 @@ export_payload = false
 ------------------------------------------------------------------------
 -- udp_uniflow = 0
 
------------------------------------------------------------------------- 
+------------------------------------------------------------------------
 -- Passive OS Fingerprinting (p0f) OPTIONS
 -- p0fprint = true/false
 -- p0f-fingerprints = "/usr/local/etc/p0f.fp"
 -- fpexport = true/false
 -- See the yaf man page for more information. YAF must be configured
 -- appropriately to use the following options.
------------------------------------------------------------------------- 
+------------------------------------------------------------------------
 -- p0fprint = true
 -- fpexport = true
 -- p0f_fingerprints = "/usr/local/etc/p0f.fp"
 
------------------------------------------------------------------------- 
+------------------------------------------------------------------------
 -- PLUGIN OPTIONS
 -- Specify the plugin for YAF to load.  See the yaf, yafdpi, yafdhcp man
 -- pages for more information about plugins and the available plugins.
@@ -282,8 +296,8 @@ export_payload = false
 -- the following variables DPI_PLUGIN and DHCP_PLUGIN and used like:
 -- plugin = {DPI_PLUGIN, DHCP_PLUGIN}
 --
--- DPI_PLUGIN = {name = "/usr/local/lib/yaf/dpacketplugin.la", options="53", 
---     	      	 conf="/usr/local/etc/yafDPIRules.conf"}
+-- DPI_PLUGIN = {name = "/usr/local/lib/yaf/dpacketplugin.la", options="53",
+--               conf="/usr/local/etc/yafDPIRules.conf"}
 -- DHCP_PLUGIN = {name = "/usr/local/lib/yaf/dhcp_fp_plugin.la"}
 --
 -- Each plugin table has the available keys {name, options, conf}
@@ -295,7 +309,7 @@ export_payload = false
 -- The following table will configure YAF's PCAP export capability.
 --
 -- Example:
--- PCAP_EXPORT = {path = "/data/pcap/yafpcap", maxpcap=25, pcap_timer=300, 
+-- PCAP_EXPORT = {path = "/data/pcap/yafpcap", maxpcap=25, pcap_timer=300,
 --                meta="/data/meta/yafmeta"}
 -- pcap = PCAP_EXPORT
 --
@@ -317,12 +331,12 @@ PCAP_EXPORT = {path = "/tmp/pcap", maxpcap=25, pcap_timer=300, meta="/tmp/meta"}
 
 -----------------------------------------------------------------------
 -- LOGGING OPTIONS
--- These options are used to specify how log messages are routed. 
+-- These options are used to specify how log messages are routed.
 -- Available keys are {spec, level}
 --
 -- spec may be set to a syslog facility name, stderr, or the absolute
 -- path to a file for file logging.  Default is stderr.
--- 
+--
 -- level can be set to "quiet", "error", "critical", "warning", "message",
 -- and "debug".  The default logging level is "warning".
 --

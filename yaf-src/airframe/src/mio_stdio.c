@@ -3,7 +3,7 @@
 ** Multiple I/O standard in source / standard out sink
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Brian Trammell
 ** ------------------------------------------------------------------------
@@ -58,6 +58,7 @@
 
 #define _AIRFRAME_SOURCE_
 #include <airframe/mio_stdio.h>
+#include "mio_internal.h"
 
 gboolean
 mio_source_check_stdin(

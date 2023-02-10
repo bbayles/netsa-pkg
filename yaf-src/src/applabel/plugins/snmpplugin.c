@@ -8,9 +8,9 @@
  * See RFCs 1901, 1905, 1906 for SNMPv2c
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Ecoff <ecoff@cert.org>
+ ** Authors: Emily Ecoff
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -118,7 +118,7 @@ snmpplugin_LTX_ycSnmpScanScan(
     yfFlow_t       *flow,
     yfFlowVal_t    *val)
 {
-    uint16_t offsetptr = 0;
+    uint32_t offset = 0;
     uint8_t  pdu_type = 0;
     uint8_t  pdu_length = 0;
     uint8_t  version = 0;
@@ -132,52 +132,52 @@ snmpplugin_LTX_ycSnmpScanScan(
         return 0;
     }
 
-    offsetptr++;
+    offset++;
     /* Get length */
-    pdu_length = *(payload + offsetptr);
+    pdu_length = *(payload + offset);
 
     if (pdu_length == 0) {
         return 0;
     }
 
-    offsetptr++;
+    offset++;
     /* SNMP version type */
-    if (*(payload + offsetptr) != SNMP_INT) {
+    if (*(payload + offset) != SNMP_INT) {
         return 0;
     }
 
-    offsetptr++;
+    offset++;
     /* Should be length of 1 */
-    if (*(payload + offsetptr) != 1) {
+    if (*(payload + offset) != 1) {
         return 0;
     }
 
-    offsetptr++;
+    offset++;
     /* Now at version number */
-    version = *(payload + offsetptr);
+    version = *(payload + offset);
     if (version == 0 || version == 1) {
         /* v1 or v2c*/
-        offsetptr++;
+        offset++;
 
-        if (offsetptr > payloadSize) {
+        if (offset > payloadSize) {
             return 0;
         }
-        if (*(payload + offsetptr) != SNMP_OCT) {
+        if (*(payload + offset) != SNMP_OCT) {
             /* no community string */
             return 0;
         }
-        offsetptr++;
+        offset++;
 
-        if (offsetptr > payloadSize) {
+        if (offset > payloadSize) {
             return 0;
         }
         /* length of community string  & go past community string */
-        offsetptr += *(payload + offsetptr) + 1;
-        if (offsetptr > payloadSize) {
+        offset += *(payload + offset) + 1;
+        if (offset > payloadSize) {
             return 0;
         }
 
-        if (!(pdu_type = snmpGetType(*(payload + offsetptr)))) {
+        if (!(pdu_type = snmpGetType(*(payload + offset)))) {
             return 0;
         }
 
@@ -187,81 +187,81 @@ snmpplugin_LTX_ycSnmpScanScan(
             return 0;
         }
 
-        offsetptr++;
-        if (offsetptr > payloadSize) {
+        offset++;
+        if (offset > payloadSize) {
             return 0;
         }
-        pdu_length = *(payload + offsetptr);
+        pdu_length = *(payload + offset);
 
         if (pdu_length == 0) {
             return 0;
         }
-        offsetptr++;
-        if (offsetptr > payloadSize) {
+        offset++;
+        if (offset > payloadSize) {
             return 0;
         }
 
         /* check request ID */
-        if (*(payload + offsetptr) != SNMP_INT) {
+        if (*(payload + offset) != SNMP_INT) {
             return 0;
         }
 
-        offsetptr++;
-        if (offsetptr > payloadSize) {
+        offset++;
+        if (offset > payloadSize) {
             return 0;
         }
 
         /* actual request id is here  - go past it*/
-        if (*(payload + offsetptr) == 4) {
-            offsetptr += 5;
-        } else if (*(payload + offsetptr) == 2) {
-            offsetptr += 3;
-        } else if (*(payload + offsetptr) == 1) {
-            offsetptr += 2;
+        if (*(payload + offset) == 4) {
+            offset += 5;
+        } else if (*(payload + offset) == 2) {
+            offset += 3;
+        } else if (*(payload + offset) == 1) {
+            offset += 2;
         } else {
             return 0;
         }
 
-        if (((size_t)offsetptr + 8) > payloadSize) {
+        if (((size_t)offset + 8) > payloadSize) {
             return 0;
         }
 
         /* now go to Error field */
-        if (*(payload + offsetptr) != SNMP_INT) {
+        if (*(payload + offset) != SNMP_INT) {
             return 0;
         }
-        offsetptr++;
-        if (*(payload + offsetptr) != 1) {
+        offset++;
+        if (*(payload + offset) != 1) {
             return 0;
         }
-        offsetptr++;
+        offset++;
         /* Check Error Status code */
-        if (*(payload + offsetptr) > 0x05) {
+        if (*(payload + offset) > 0x05) {
             return 0;
         }
 
-        offsetptr++;
+        offset++;
         /* Check Error Index */
-        if (*(payload + offsetptr) != SNMP_INT) {
+        if (*(payload + offset) != SNMP_INT) {
             return 0;
         }
 
-        offsetptr++;
-        if (*(payload + offsetptr) != 1) {
+        offset++;
+        if (*(payload + offset) != 1) {
             return 0;
         }
 
-        offsetptr += 2;
+        offset += 2;
         /* Error Index is here */
 
         /* Next should be varbind list of type Sequence */
-        if (*(payload + offsetptr) != SNMP_SEQ) {
+        if (*(payload + offset) != SNMP_SEQ) {
             return 0;
         }
-        offsetptr++;
+        offset++;
 
         /* Length of varbind list is next */
-        if (*(payload + offsetptr) == 0) {
+        if (*(payload + offset) == 0) {
             return 0;
         }
 
@@ -272,104 +272,104 @@ snmpplugin_LTX_ycSnmpScanScan(
         /* version 3 fun - not there yet */
         uint8_t msg_flags = 0;
 
-        if ((size_t)offsetptr + 5 > payloadSize) {
+        if ((size_t)offset + 5 > payloadSize) {
             return 0;
         }
 
-        offsetptr++;
+        offset++;
         /* check for msg_max_size sequence PDU */
-        if (*(payload + offsetptr) != SNMP_SEQ) {
+        if (*(payload + offset) != SNMP_SEQ) {
             return 0;
         }
 
-        offsetptr += 2;
+        offset += 2;
         /* should be an integer next */
-        if (*(payload + offsetptr) != SNMP_INT) {
+        if (*(payload + offset) != SNMP_INT) {
             return 0;
         }
 
-        offsetptr++;
+        offset++;
         /* should be of length 4 */
-        msg_len = *(payload + offsetptr);
+        msg_len = *(payload + offset);
         if (msg_len == 0) {
             return 0;
         }
 
-        offsetptr++;
+        offset++;
         /* msg id is here */
-        offsetptr += msg_len;
-        if (offsetptr > payloadSize) {
+        offset += msg_len;
+        if (offset > payloadSize) {
             return 0;
         }
 
-        if ((size_t)offsetptr + 4 > payloadSize) {
+        if ((size_t)offset + 4 > payloadSize) {
             return 0;
         }
-        if (*(payload + offsetptr) != SNMP_INT) {
+        if (*(payload + offset) != SNMP_INT) {
             return 0;
         }
 
-        offsetptr++;
+        offset++;
 
         /* Msg Len can be more than 2 */
-        msg_len = *(payload + offsetptr);
+        msg_len = *(payload + offset);
         if (msg_len == 0) {
             return 0;
         }
-        offsetptr += 1 + msg_len;
+        offset += 1 + msg_len;
 
-        if ((size_t)offsetptr + 3 > payloadSize) {
+        if ((size_t)offset + 3 > payloadSize) {
             return 0;
         }
         /* 1 for type - 1 for length */
-        if (*(offsetptr + payload) != SNMP_OCT) {
+        if (*(offset + payload) != SNMP_OCT) {
             return 0;
         }
 
-        offsetptr++;
+        offset++;
 
-        msg_len = *(offsetptr + payload);
+        msg_len = *(offset + payload);
         if (msg_len == 0) {
             return 0;
         }
 
-        offsetptr++;
+        offset++;
         if (msg_len == 1) {
-            msg_flags = *(payload + offsetptr);
-            offsetptr++;
+            msg_flags = *(payload + offset);
+            offset++;
 
             if (msg_flags > 7) {
                 return 0;
             }
         } else {
-            offsetptr += msg_len;
+            offset += msg_len;
         }
 
-        if ((size_t)offsetptr + 3 > payloadSize) {
+        if ((size_t)offset + 3 > payloadSize) {
             return 0;
         }
 
         /* message security model */
-        if (*(offsetptr + payload) == SNMP_INT) {
-            offsetptr++;
+        if (*(offset + payload) == SNMP_INT) {
+            offset++;
 
-            msg_len = *(payload + offsetptr);
+            msg_len = *(payload + offset);
 
-            offsetptr += msg_len + 1;
+            offset += msg_len + 1;
         } else {
             return 0;
         }
 
-        if ((size_t)offsetptr + 3 > payloadSize) {
+        if ((size_t)offset + 3 > payloadSize) {
             return 0;
         }
 
-        if (*(payload + offsetptr) != SNMP_OCT) {
+        if (*(payload + offset) != SNMP_OCT) {
             return 0;
         }
-        offsetptr++;
+        offset++;
 
-        pdu_length = *(payload + offsetptr);
+        pdu_length = *(payload + offset);
         if (pdu_length == 0) {
             return 0;
         }

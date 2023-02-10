@@ -5,10 +5,10 @@
  * PFRING ZC
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2015-2021 Carnegie Mellon University.
+ ** Copyright (C) 2015-2023 Carnegie Mellon University.
  ** All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Author: Emily Sarneso <ecoff@cert.org>
+ ** Author: Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms

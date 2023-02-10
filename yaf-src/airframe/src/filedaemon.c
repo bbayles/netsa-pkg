@@ -3,7 +3,7 @@
 ** Invokes yaf, naf, etc. as a file daemon process
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Tony Cebzanov
 ** ------------------------------------------------------------------------
@@ -17,19 +17,19 @@
 #include <airframe/airopt.h>
 #include <airframe/logconfig.h>
 
-char          *fd_inspec          = NULL;
-char          *fd_outspec         = NULL;
-char          *fd_nextdir         = NULL;
-char          *fd_faildir         = NULL;
-char          *fd_outext          = NULL;
-uint32_t       fd_poll_delay      = 30;
-gboolean       fd_lock            = FALSE;
-gsize          fd_bufsize         = 1024;
-char          *fd_pidfile         = NULL;
-pid_t          fd_pid             = 0;
-gboolean       fd_nodaemon        = FALSE;
+static char          *fd_inspec          = NULL;
+static char          *fd_outspec         = NULL;
+static char          *fd_nextdir         = NULL;
+static char          *fd_faildir         = NULL;
+static char          *fd_outext          = NULL;
+static uint32_t       fd_poll_delay      = 30;
+static gboolean       fd_lock            = FALSE;
+static gsize          fd_bufsize         = 1024;
+static char          *fd_pidfile         = NULL;
+static pid_t          fd_pid             = 0;
+static gboolean       fd_nodaemon        = FALSE;
 
-AirOptionEntry fd_options[]  = {
+static AirOptionEntry fd_options[]  = {
     AF_OPTION( "in", 'i', 0, AF_OPT_TYPE_STRING, &fd_inspec,
                "Input specifier", "inspec" ),
     AF_OPTION( "out", 'o', 0, AF_OPT_TYPE_STRING, &fd_outspec,
@@ -264,7 +264,7 @@ on_child_exit(
 }
 
 
-void
+static void
 fd_lock_file(
     char  *filename)
 {
@@ -293,7 +293,7 @@ fd_lock_file(
 }
 
 
-void
+static void
 fd_unlock_file(
     char  *filename)
 {
@@ -311,7 +311,7 @@ fd_unlock_file(
 }
 
 
-gboolean
+static gboolean
 daemonize(
     void)
 {

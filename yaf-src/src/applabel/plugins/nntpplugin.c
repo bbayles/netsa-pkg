@@ -7,9 +7,9 @@
  * It is based on RFC 977 and some random limited packet capture.
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Ecoff <ecoff@cert.org>
+ ** Authors: Emily Ecoff
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -184,7 +184,7 @@ ycNNTPScanInit(
     const char  nntpResponseRegexString[] =
         "(([1-5]([0-4]|[8-9])[0-9] )+"
         ".* (text follows)?[\\r\\n]?"
-        "(.* \\r\\n)?)\b";
+        "(.* \\r\\n)?)\\b";
     const char nntpCommandRegexString[] =
         "^((ARTICLE|GROUP|HELP|IHAVE|LAST"
         "|LIST|NEWGROUPS|NEWNEWS|NEXT|POST|QUIT"

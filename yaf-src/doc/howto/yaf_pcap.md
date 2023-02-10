@@ -28,8 +28,8 @@ Additionally, these features can be used on live traffic.  However, the
 pcap-per-flow option is not recommended for networks with high data speeds.
 
 The following tutorial uses **yaf** and the tools that are installed
-with **yaf**.  It also uses [SiLK](http://tools.netsa.cert.org/silk/index.html)
-for some basic flow analysis.  In addition, this example uses 
+with **yaf**.  It also uses [SiLK](https://tools.netsa.cert.org/silk/index.html)
+for some basic flow analysis.  In addition, this example uses
 [capinfos](http://www.wireshark.org/docs/man-pages/capinfos.html),
 a program installed with Wireshark, that provides statistics of PCAP files.
 
@@ -40,8 +40,8 @@ Single Large PCAP Example {#single}
 =========================
 
 Let's assume we have one large PCAP that we would like to analyze.
-First, we could create SiLK flow data from this PCAP using 
-[rwipfix2silk](http://tools.netsa.cert.org/silk/rwipfix2silk.html):
+First, we could create SiLK flow data from this PCAP using
+[rwipfix2silk](https://tools.netsa.cert.org/silk/rwipfix2silk.html):
 
     $ yaf --in /data/big.pcap --out - \
           --applabel --max-payload=1500 --silk \
@@ -51,15 +51,15 @@ First, we could create SiLK flow data from this PCAP using
 Note that it is important to use the ``--interface-values`` option to
 **rwipfix2silk** so we can view the VLAN tags (if the PCAP contains vlans).
 
-Alternatively, you could use [yafscii](http://tools.netsa.cert.org/yaf/yafscii.html)
-or [super_mediator](http://tools.netsa.cert.org/super_mediator/index.html) to view
+Alternatively, you could use [yafscii](https://tools.netsa.cert.org/yaf2/yafscii.html)
+or [super_mediator](https://tools.netsa.cert.org/super_mediator1/index.html) to view
 the flow data that **yaf** creates.  This tutorial uses the SiLK tools as they
 provide the quickest method for filtering the flow data.
 
 Perhaps we do some analysis on the flow data we created.
-The following example uses [rwstats](http://tools.netsa.cert.org/silk/rwstats.html), a tool for summarizing SiLK flow records and sorting the results, to
+The following example uses [rwstats](https://tools.netsa.cert.org/silk/rwstats.html), a tool for summarizing SiLK flow records and sorting the results, to
 view the top 20 application protocols used in the flow file:
-    
+
     $ rwstats --fields=29 --top --count 20 /tmp/yaf2flow.rw
     INPUT: 64510 Records for 24 Bins and 64510 Total Records
     OUTPUT: Top 20 Bins by Records
@@ -84,18 +84,18 @@ view the top 20 application protocols used in the flow file:
       110|         6|  0.009301| 99.972097|
      1863|         4|  0.006201| 99.978298|
      5050|         4|  0.006201| 99.984499|
-    
+
 Let us focus on the 4 records
 labeled as application 5050, Yahoo Messenger.  A list
-of application labels can be found on the 
-[applabel](http://tools.netsa.cert.org/yaf/applabel.html) man page.
+of application labels can be found on the
+[applabel](https://tools.netsa.cert.org/yaf2/applabel.html) man page.
 
 Use **rwfilter** and **rwcut** to obtain more details about the flows
-labeled as 5050.  [rwfilter](http://tools.netsa.cert.org/silk/rwfilter.html)
+labeled as 5050.  [rwfilter](https://tools.netsa.cert.org/silk/rwfilter.html)
 selects SiLK flow records that satisfy a set of filtering options, while
-[rwcut](http://tools.netsa.cert.org/silk/rwcut.html) prints the attributes
+[rwcut](https://tools.netsa.cert.org/silk/rwcut.html) prints the attributes
 of the flow records in human-readable format.
-    
+
     $ rwfilter --application=5050 --pass-dest=stdout /tmp/yaf2flow.rw \
       	       | rwcut --fields=1,2,3,4,5,6,7,9,13,14
                 sIP|            dIP|sPort|dPort|pro|   packets|     bytes|\
@@ -108,8 +108,8 @@ of the flow records in human-readable format.
 		2011/01/28T21:53:26.219|  900|    0|
        98.136.48.48|    10.10.0.208| 5050|51094|  6|        24|      6284|\
        		2011/01/28T21:53:26.296|  900|    0|
-    
-**rwfilter** returns the 4 flow records, or 2 bidirectional flow (Biflow) records. I'm 
+
+**rwfilter** returns the 4 flow records, or 2 bidirectional flow (Biflow) records. I'm
 interested in the first Biflow and would like to perform a deeper
 analysis of this particular flow by looking at the PCAP.
 
@@ -117,7 +117,7 @@ There are four ways to do this in **yaf**:
 
 1. [Index the PCAP file using the pcap-meta-file](#index1)
 2. [Use getFlowKeyHash and YAF](#getkeyhash)
-3. [Use a BPF Filter](#bpf) 
+3. [Use a BPF Filter](#bpf)
 4. [Use the pcap-per-flow option](#pcap-per-flow)
 
 Indexing the PCAP file using the pcap-meta-file {#index1}
@@ -127,7 +127,7 @@ The first way is to index the PCAP file using the pcap-meta-file. In the
 following example we use the ``-no-output`` option.  Alternatively, we
 could write the flow data to ``/dev/null`` because we are
 only interested in the pcap-meta-file.
-    
+
     $ yaf --in /data/big.pcap \
           --no-output \
           --pcap-meta-file /tmp/yaf_ -v
@@ -151,10 +151,10 @@ only interested in the pcap-meta-file.
     [2014-12-23 14:16:07]     196465 ARP packets. (3.10%)
     [2014-12-23 14:16:07] yaf Exported 1 stats records.
     [2014-12-23 14:16:07] yaf terminating
-    
+
     $ wc -l /tmp/yaf_20141223141600_00000.meta
      5922318 /tmp/yaf_20141223141600_00000.meta
-    
+
 You can see that the PCAP metadata file contains at least one line for each
 packet in the PCAP.  The additional lines are to speed up processing
 of this file.  We will need the flow key hash and
@@ -167,21 +167,21 @@ use the ``--interface-values`` option with **rwipfix2silk**.  If your PCAP
 does not contain VLAN tags, then it is not necessary.
 
 We could either list the flow information on the command line:
-    
+
     $ getFlowKeyHash --sip4 10.10.0.208 --dip4 98.136.48.106 \
       		     --sport 50997 --dport 5050 \
     		     --protocol 6 --vlan 900 \
     		     --date 2011-01-28 --time 21:53:05.607
                 sIP|            dIP|sPort|dPort|pro| vlan|      hash|                  ms
         10.10.0.208|  98.136.48.106|50997| 5050|  6|  900|2549564224|       1296251585607
-    
+
     FILE PATH: 607/2549564224-201112821535_0.pcap
-    
-Or we can use **rwsilk2ipfix** with **getFlowKeyHash**.  
-[rwsilk2ipfix](http://tools.netsa.cert.org/silk/rwsilk2ipfix.html) converts
+
+Or we can use **rwsilk2ipfix** with **getFlowKeyHash**.
+[rwsilk2ipfix](https://tools.netsa.cert.org/silk/rwsilk2ipfix.html) converts
 a stream of SiLK flow records (such as the one produced by **rwfilter**) to
 IPFIX records (default input of **getFlowKeyHash**).
-    
+
     $ rwfilter --application=5050 --pass-dest=stdout /tmp/yaf2flow.rw \
       	       | rwsilk2ipfix | getFlowKeyHash
                 sIP|            dIP|sPort|dPort|pro| vlan|      hash|                  ms
@@ -189,7 +189,7 @@ IPFIX records (default input of **getFlowKeyHash**).
       98.136.48.106|    10.10.0.208| 5050|50997|  6|  900|1131976655|       1296251585607
         10.10.0.208|   98.136.48.48|51094| 5050|  6|  900|2538881818|       1296251606219
        98.136.48.48|    10.10.0.208| 5050|51094|  6|  900|1131976502|       1296251606219
-    
+
 
 We are interested in the "hash" and "ms" values.  The
 FILE PATH will be used in the third approach.
@@ -197,7 +197,7 @@ FILE PATH will be used in the third approach.
 Using the key hash, milliseconds, along with the oringal PCAP, and the PCAP
 metadata file, the **yafMeta2Pcap** tool will create the PCAP we
 are looking for:
-    
+
     $ yafMeta2Pcap --pcap /data/big.pcap \
                    --pcap-meta-file=/tmp/yaf_20141223141600_00000.meta \
                    --out /tmp/YMSG.pcap \
@@ -208,7 +208,7 @@ are looking for:
     Opening PCAP File /data/big.pcap
     Opening output file /tmp/YMSG.pcap
     Found 41 packets that match criteria.
-    
+
     $ capinfos -c /tmp/YMSG.pcap
     File name:           /tmp/YMSG.pcap
     Number of packets:   41
@@ -217,7 +217,7 @@ Alternatively, you can send the output of **getFlowKeyHash** directly to
 **yafMeta2Pcap**:
 
     $ rwfilter --application=5050 --pass-dest=stdout /tmp/yaf2flow.rw \
-      	       | rwsilk2ipfix | getFlowKeyHash -I | yafMeta2Pcap \ 
+      	       | rwsilk2ipfix | getFlowKeyHash -I | yafMeta2Pcap \
                --pcap /data/big.pcap --pcap-meta-file /tmp/yaf_meta_pcap.txt \
 	       --out /tmp/YMSG.pcap
     Looking for hash: 2549564224 at start time: 1296251585607
@@ -231,7 +231,7 @@ Using getFlowKeyHash and YAF {#getkeyhash}
 ---------------------------
 
 The second approach is to calculate the flow key hash using **getFlowKeyHash**
-and generate a PCAP file with **yaf** for only the flow you are searching for.  
+and generate a PCAP file with **yaf** for only the flow you are searching for.
 This approach works well if you know which PCAP file the flow is contained in.
 Assuming we have already run **yaf** and **rwipfix2silk**, we can search for
 a particular flow using rwfilter and pipe it to getFlowKeyHash to generate
@@ -249,11 +249,11 @@ Now that we have the flow key hash and start time, we can run **yaf** as
 follows:
 
     $ yaf --in /data/big.pcap --no-output --pcap /tmp/YMSG.pcap \
-          --hash 2549564224 --stime 1296251585607 --max-payload=2000 
- 
-    $ capinfos -c /tmp/YMSG.pcap  
+          --hash 2549564224 --stime 1296251585607 --max-payload=2000
+
+    $ capinfos -c /tmp/YMSG.pcap
     File name:           /tmp/YMSG.pcap
-    Number of packets:   41 
+    Number of packets:   41
 
 The ``--max-payload`` option is required for this approach and it should
 be set to something larger than the typical MTU to ensure
@@ -263,12 +263,12 @@ that length.
 
 Using a BPF Filter {#bpf}
 ------------------
-    
+
 The third approach is to use a BPF filter.  Sometimes it can be a bit difficult to
 format the filter string correctly (especially when there are VLAN tags)
  and it may not weed out all of the data we don't want.  The following BPF filter
 should suffice:
-    
+
     $ yaf --in /data/big.pcap \
           --out /tmp/5050.yaf \
           --pcap /tmp/YMSG_ \
@@ -288,22 +288,22 @@ should suffice:
     [2014-01-27 20:46:46]   Maximum fragment table size 0.
     [2014-01-27 20:46:46] yaf Exported 1 stats records.
     [2014-01-27 20:46:46] yaf terminating
-    
+
 As you can see, we actually captured 4 flows with the above BPF Filter.
 You could use **yafscii** to view the flows:
-    
+
     $ yafscii --in /tmp/5050.yaf --out -
     2011-01-28 21:53:05.607 - 21:53:27.568 (21.961 sec) tcp 10.10.0.208:50997 => 98.136.48.106:5050 452bc00b:65e6c66b S/APRS:AS/APSF vlan 384:384 (23/3250 <-> 18/3264) rtt 78 ms
     2011-01-28 21:53:27.568 tcp 10.10.0.208:50997 => 98.136.48.106:5050 452bc409 R/0 vlan 384 (1/40 ->)
     2011-01-28 21:53:27.688 tcp 10.10.0.208:50997 => 98.136.48.106:5050 452bc409 R/0 vlan 384 (1/40 ->)
     2011-01-28 21:53:27.688 tcp 10.10.0.208:50997 => 98.136.48.106:5050 452bc409 R/0 vlan 384 (1/40 ->)
-    
+
 **capinfos** can be used to confirm how many packets are in the PCAP.
-    
+
     $ capinfos -c /tmp/YMSG_20140127204003_00000.pcap
     File name:           /tmp/YMSG_20140127204003_00000.pcap
     Number of packets:   44
-    
+
 Using the BPF filter with **yaf** captured 3 extra packets that were not technically
 apart of this flow.  However, now that we have a smaller PCAP, we can use
 wireshark or a similar tool to view the payload and perform a deeper
@@ -322,7 +322,7 @@ combined with other options, it is useful.
 
 First create a temporary directory to place all the small PCAP files
 and then run YAF as follows:
-    
+
     $ mkdir /tmp/pcap
 
     $ yaf --in /data/big.pcap \
@@ -331,7 +331,7 @@ and then run YAF as follows:
           --pcap-per-flow \
           --max-payload=1600 \
           --verbose
-    
+
 The ``--max-payload`` option is required with pcap-per-flow and it should
 be set to something larger than the typical MTU to ensure
 you get the full packet.  You can think of max-payload as snaplen. If
@@ -349,28 +349,28 @@ The default size is 25 MB, and can be modified by using the
 
 To quickly determine which PCAP we are interested in, we can
 use the **getFlowKeyHash** program again:
-    
+
     $ getFlowKeyHash --sip4 10.10.0.208 \
       		 --dip4 98.136.48.106 \
     		 --sport 50997 --dport 5050 \
     		 --protocol 6 --vlan 900 \
     		 --date 2011-01-28 --time 21:53:05.607
-    
+
                 sIP|            dIP|sPort|dPort|pro| vlan|      hash|                  ms
         10.10.0.208|  98.136.48.106|50997| 5050|  6|  900|2549564224|       1296251585607
-    
+
     FILE PATH: 607/2549564224-201112821535_0.pcap
-    
+
 The **getFlowKeyHash** provides the file path to your PCAP:
-    
+
     $ capinfos -c /tmp/pcap/607/2549564224-20110128215305_0.pcap
     File name:           /tmp/pcap/607/2549564224-20110128215305_0.pcap
     Number of packets:   41
-    
+
 Multiple Input Files {#multiple}
 =====================
 
-This tutorial has presented four different ways to slice a 
+This tutorial has presented four different ways to slice a
 large, single PCAP for a given flow.
 This same process can be used over multiple PCAP files as well.  Often
 PCAP is captured using tcpdump, rolling files when they reach a particular
@@ -382,7 +382,7 @@ providing the ``--caplist`` option to **yaf**, the argument to ``--in`` must be 
 ordered, newline-delimited list of pathnames to the PCAP files.  Blank
 lines and lines beginning with the character '#' are ignored.  The files
 must be listed in ascending time order, as **yaf** rejects out-of-order packets.
-    
+
     $ ls -d -1 -rt /tmp/pcap/** > /tmp/yaf_cap_file.txt
     $ cat /tmp/yaf_cap_file.txt
     /tmp/pcap/pcap1.pcap
@@ -395,7 +395,7 @@ must be listed in ascending time order, as **yaf** rejects out-of-order packets.
     /tmp/pcap/pcap8.pcap
     /tmp/pcap/pcap9.pcap
     /tmp/pcap/pcap10.pcap
-    
+
     $ yaf --in /tmp/yaf_cap_file.txt \
           --caplist \
           --noerror \
@@ -412,13 +412,13 @@ maximum file size for your operating system.*
 
 The **yafMeta2Pcap** program can take the same caplist file used
 as the argument to ``--in`` for **yaf**.
-    
+
     $ yafMeta2Pcap --caplist /tmp/yaf_cap_file.txt \
                    --pcap-meta-file=/tmp/yaf_meta_pcap.txt \
                    --out /tmp/YMSG.pcap \
                    --hash 2549564224 \
                    --time 1296251585607 -v
-    
+
 *Note: **yafMeta2Pcap** will only open the PCAP files that contain
 the flow of interest.*
 

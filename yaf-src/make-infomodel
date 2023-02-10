@@ -1,7 +1,7 @@
 #! /usr/bin/perl
 #
 #######################################################################
-# Copyright (C) 2018-2021 by Carnegie Mellon University.
+# Copyright (C) 2018-2023 by Carnegie Mellon University.
 #
 #
 #######################################################################
@@ -298,7 +298,7 @@ sub parse_options
 sub tool_version_exit()
 {
     print <<EOF;
-Copyright (C) 2018-2021 by Carnegie Mellon University
+Copyright (C) 2018-2023 by Carnegie Mellon University
 GNU General Public License (GPL) Rights pursuant to Version 2, June 1991.
 Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013.
 EOF

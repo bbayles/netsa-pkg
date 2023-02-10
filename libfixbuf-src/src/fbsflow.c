@@ -7,14 +7,14 @@
  * within the fixbuf structure
  *
  * ------------------------------------------------------------------------
- * Copyright (C) 2008-2019 Carnegie Mellon University. All Rights Reserved.
+ * Copyright (C) 2008-2023 Carnegie Mellon University. All Rights Reserved.
  * ------------------------------------------------------------------------
- * Authors: Emily Sarneso <ecoff@cert.org>
+ * Authors: Emily Sarneso
  * ------------------------------------------------------------------------
  * @OPENSOURCE_LICENSE_START@
  * libfixbuf 2.0
  *
- * Copyright 2018-2019 Carnegie Mellon University. All Rights Reserved.
+ * Copyright 2018-2023 Carnegie Mellon University. All Rights Reserved.
  *
  * NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
  * ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS"

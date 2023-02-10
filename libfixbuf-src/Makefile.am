@@ -7,7 +7,7 @@
 ## @OPENSOURCE_LICENSE_START@
 ## libfixbuf 2.0
 ##
-## Copyright 2018-2020 Carnegie Mellon University. All Rights Reserved.
+## Copyright 2018-2023 Carnegie Mellon University. All Rights Reserved.
 ##
 ## NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
 ## ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS"
@@ -43,18 +43,28 @@ pkgconfig_DATA = libfixbuf.pc
 
 include doxygen.am
 
-MOSTLYCLEANFILES = $(DX_CLEANFILES)
-DISTCLEANFILES = $(RELEASES_XML)
+MOSTLYCLEANFILES = $(DX_CLEANFILES) $(RELEASES_XML)
 
 RELEASES_XML = doc/releases.xml
 
 
 dist-hook: docs copy-doxygen-doc
 
-docs: make-doc-path doxygen-doc subdir-docs $(RELEASES_XML)
+docs: make-doc-path doxygen-doc repair-doxy-docs subdir-docs $(RELEASES_XML)
 
 make-doc-path:
 	test -d $(top_builddir)/doc/html || $(MKDIR_P) $(top_builddir)/doc/html
+
+# Doxygen adds both id="foo" and name="foo" attributes. Remove name.
+REPAIR_DOXY_DOCS = \
+ if test -d doc/html/libfixbuf ; then \
+   for i in `find doc/html/libfixbuf -name '*.html'` ; do \
+     $(PERL) -i -lpwe 's/\b(id=("[^">]+")) +name=\2/$$1/g; s/\bname=("[^">]+") +(id=\1)/$$2/g;' $$i ; \
+   done ; \
+ fi
+
+repair-doxy-docs:
+	$(REPAIR_DOXY_DOCS)
 
 subdir-docs:
 	cd $(top_builddir)/src && $(MAKE) docs
@@ -66,9 +76,9 @@ RUN_NEWS2XHTML = \
  srcdir='' ; \
  test -f ./doc/news2xhtml.pl || srcdir=$(srcdir)/ ; \
  if $(AM_V_P) ; then \
- echo "$(PERL) $${srcdir}doc/news2xhtml.pl $(PACKAGE_TARNAME) < '$<' > '$@'" ; \
+ echo "$(PERL) $${srcdir}doc/news2xhtml.pl < '$<' > '$@'" ; \
  else echo "  GEN     " $@ ; fi ; \
- $(PERL) $${srcdir}doc/news2xhtml.pl $(PACKAGE_TARNAME) < "$<" > "$@" || \
+ $(PERL) $${srcdir}doc/news2xhtml.pl < "$<" > "$@" || \
  { rm "$@" ; exit 1 ; }
 
 $(RELEASES_XML): NEWS

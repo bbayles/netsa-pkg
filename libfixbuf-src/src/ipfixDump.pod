@@ -201,13 +201,9 @@ Prints a brief usage message to the standard output and exits.
 In the following examples, the dollar sign ("$") represents the shell
 prompt.  The text after the dollar sign represents the command line.
 
-=over 1
-
  $ ipfixDump --in - --out -
 
  $ ipfixDump --in /data/ipfix.ipfix --out /data/text.txt --yaf
-
-=back
 
 =head1 Known Issues
 

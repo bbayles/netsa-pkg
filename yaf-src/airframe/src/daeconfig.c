@@ -3,7 +3,7 @@
 ** Generic daemon configuration support
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2005-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2005-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Brian Trammell
 ** ------------------------------------------------------------------------
@@ -67,7 +67,7 @@ static gboolean did_fork = FALSE;
 
 static gboolean daemon_quit = FALSE;
 
-AirOptionEntry  daec_optentries[] = {
+static AirOptionEntry  daec_optentries[] = {
     AF_OPTION( "daemon", 'd', 0, AF_OPT_TYPE_NONE, &opt_daemon,
                "Become daemon", NULL ),
     AF_OPTION( "foreground", (char)0, 0, AF_OPT_TYPE_NONE, &opt_fg,
@@ -115,11 +115,18 @@ daec_will_fork(
 
 void
 daec_quit(
-    )
+    void)
 {
     ++daemon_quit;
 }
 
+static void
+sighandler_daec_quit(
+    int   sig)
+{
+    (void)sig;
+    daec_quit();
+}
 
 gboolean
 daec_did_quit(
@@ -157,7 +164,7 @@ daec_setup(
     }
 
     /* install quit flag handlers */
-    sa.sa_handler = daec_quit;
+    sa.sa_handler = sighandler_daec_quit;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGINT, &sa, &osa)) {
@@ -166,7 +173,7 @@ daec_setup(
         return FALSE;
     }
 
-    sa.sa_handler = daec_quit;
+    sa.sa_handler = sighandler_daec_quit;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGTERM, &sa, &osa)) {

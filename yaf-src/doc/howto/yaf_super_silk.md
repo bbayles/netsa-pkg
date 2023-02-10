@@ -1,21 +1,21 @@
 Configuring YAF with super_mediator and SiLK {#yaf_sm_silk}
 ============================================
 
-This tutorial is a step-by-step guide of setting up **yaf**, 
-[super_mediator](http://tools.netsa.cert.org/super_mediator/index.html), and [SiLK](http://tools.netsa.cert.org/silk/index.html).
+This tutorial is a step-by-step guide of setting up **yaf**,
+[super_mediator](https://tools.netsa.cert.org/super_mediator1/index.html), and [SiLK](https://tools.netsa.cert.org/silk/index.html).
 
-* [Overview](#overview)
-* [Basic Install](#install)
-  * [Setup MySQL Database](#mysql)
-* [Configure SiLK](#silk)
-* [Configure super_mediator](#sm)
-* [Run YAF](#goyaf)
-* [Analysis with MySQL/SiLK](#analysis)
+* [Overview](#yss_overview)
+* [Basic Install](#yss_install)
+  * [Setup MySQL Database](#yss_mysql)
+* [Configure SiLK](#yss_silk)
+* [Configure super_mediator](#yss_sm)
+* [Run YAF](#yss_goyaf)
+* [Analysis with MySQL/SiLK](#yss_analysis)
 
-Overview {#overview}
+Overview {#yss_overview}
 ==========
 
-Check out this [tutorial](../../super_mediator/sm_guide.html) 
+Check out this [tutorial](https://tools.netsa.cert.org/super_mediator1/sm_guide.html)
 for information on what super_mediator
 is and what data it can produce. This particular tutorial shows how
 super_mediator can insert the DPI data
@@ -24,44 +24,44 @@ will perform DNS deduplication on DNS resource records.
 This tutorial also shows how to do a basic install of SiLK and have
 **super_mediator** forward all the flows it receives to SiLK.
 
-Install prerequisites {#install}
+Install prerequisites {#yss_install}
 ========================
    $ yum groupinstall "Development Tools"
    $ yum install libpcap-devel pcre-devel mysql-server mysql-devel
-    
-Build [libfixbuf](http://tools.netsa.cert.org/fixbuf/index.html):
-    
-    $ tar -xvzf libfixbuf-1.7.0.tar.gz
-    $ cd libfixbuf-1.7.0
+
+Build [libfixbuf](https://tools.netsa.cert.org/fixbuf2/index.html):
+
+    $ tar -xvzf libfixbuf-2.3.0.tar.gz
+    $ cd libfixbuf-2.3.0
     $ ./configure
     $ make
     $ make install
-    
+
 Build **yaf**:
-    
-    $ tar -xvzf yaf-2.8.0.tar.gz
-    $ cd yaf-2.8.0
+
+    $ tar -xvzf yaf-2.13.0.tar.gz
+    $ cd yaf-2.13.0
     $ ./configure --enable-applabel --enable-plugins
     $ make
     $ make install
-    
+
 Build **super_mediator**:
-    
-    $ tar -xvzf super_mediator-1.2.0.tar.gz
-    $ cd super_mediator-1.2.0
+
+    $ tar -xvzf super_mediator-1.8.0.tar.gz
+    $ cd super_mediator-1.8.0
     $ ./configure --with-mysql
     $ make
     $ make install
-    
-Build [SiLK](http://tools.netsa.cert.org/silk/index.html):
-    
+
+Build [SiLK](https://tools.netsa.cert.org/silk/index.html):
+
     $ tar -xvzf silk-3.11.0.tar.gz
     $ cd silk-3.11.0
     $ ./configure --with-libfixbuf=/usr/local/lib/pkgconfig --enable-ipv6
     $ make
     $ make install
-    
-Setup the MySQL Database  {#mysql}
+
+Setup the MySQL Database  {#yss_mysql}
 ------------------------
 
 Setup mysqld
@@ -78,18 +78,18 @@ last step):
     $ mysql -u root -p
 
 Create the database you intend to use for super_mediator:
-    
+
     mysql> create database smediator;
-    
+
 Create a user for super_mediator to access the database:
-    
+
     mysql> CREATE USER 'mediator'@'localhost' IDENTIFIED BY '<SuperSecretPassword>';
-    
+
 Giver permissions to user to access only the smediator database:
-    
+
     mysql> GRANT ALL ON smediator.* TO mediator@'localhost';
-    
-Setup SiLK {#silk}
+
+Setup SiLK {#yss_silk}
 ============
 
 We will using /data as the location of our SiLK repository:
@@ -104,7 +104,7 @@ We will be using the default silk.conf file so copy it to the repo now:
     $ chmod +x /etc/init.d/rwflowpack
 
 To configure **rwflowpack**, edit ``/usr/local/etc/rwflowpack.conf``
-    
+
     #/usr/local/etc/rwflowpack.conf
     ENABLED=1
     statedirectory=/var/lib/rwflowpack
@@ -135,21 +135,21 @@ To configure **rwflowpack**, edit ``/usr/local/etc/rwflowpack.conf``
     USER=root
     EXTRA_OPTIONS=
 
-We will need to create the Sensor configuration file 
-[sensor.conf](http://tools.netsa.cert.org/silk/sensor.conf.html) to setup the 
+We will need to create the Sensor configuration file
+[sensor.conf](https://tools.netsa.cert.org/silk/sensor.conf.html) to setup the
 listening probe.  Change the internal-ipblocks to match your network
-    
+
     probe S0 ipfix
        listen-on-port 18001
        protocol tcp
     end probe
-    
+
     sensor S0
        ipfix-probes S0
        internal-ipblocks 192.168.1.0/24 10.10.10.0/24
        external-ipblocks remainder
     end sensor
-    
+
 Move the sensor.conf to the repository:
 
     $ mv sensor.conf /data
@@ -166,7 +166,7 @@ To use the SiLK command line tools, you need to set the **SILK_DATA_ROOTDIR** va
 
     $ export SILK_DATA_ROOTDIR=/data
 
-Setup super_mediator {#sm}
+Setup super_mediator {#yss_sm}
 =====================
 
 Create the file directories that **super_mediator** will use to write files
@@ -184,20 +184,20 @@ Use **super_table_creator** to create all the tables in your database:
 	--database=smediator --dns-dedup
 
 Create your super_mediator.conf file.  One is installed by default into /usr/local/etc.  The following one will get you started:
-    
+
     COLLECTOR TCP
        PORT 18000
     COLLECTOR END
-    
+
     #rwflowpack
     EXPORTER TCP
        PORT 18001
        HOST localhost
        FLOW_ONLY
     EXPORTER END
-    
+
     #dedup process
-    
+
     EXPORTER TEXT
        PATH "/data/smediator/dns/yaf2dns"
        DELIMITER "|"
@@ -209,7 +209,7 @@ Create your super_mediator.conf file.  One is installed by default into /usr/loc
        MYSQL_TABLE "dns-dedup"
        MYSQL_DATABASE "smediator"
     EXPORTER END
-    
+
     #dpi 2 database
     EXPORTER TEXT
        PATH "/data/smediator/dpi"
@@ -221,17 +221,17 @@ Create your super_mediator.conf file.  One is installed by default into /usr/loc
        MYSQL_PASSWORD "<SuperSecretPassword>"
        MYSQL_DATABASE "smediator"
     EXPORTER END
-    
+
     DNS_DEDUP
        MAX_HIT_COUNT 5000
     DNS_DEDUP END
-    
+
     LOGLEVEL DEBUG
-    
+
     LOG "/var/log/super_mediator.log"
-    
+
     PIDFILE "/data/super_mediator.pid"
-    
+
 Start **super_mediator**:
 
     $ super_mediator -c /usr/local/etc/super_mediator.conf --daemonize
@@ -244,7 +244,7 @@ If **super_mediator** is not running, check for any errors:
 
     $ cat /var/log/super_mediator.log
 
-Start YAF {#goyaf}
+Start YAF {#yss_goyaf}
 ============
 
     $ mkdir /var/log/yaf
@@ -252,7 +252,7 @@ Start YAF {#goyaf}
     $ export LTDL_LIBRARY_PATH=/usr/local/lib/yaf
 
 Example **yaf** command line for processing a PCAP file:
-    
+
     /usr/local/bin/yaf
     --in <PCAP FILE> \
     --ipfix tcp \
@@ -264,9 +264,9 @@ Example **yaf** command line for processing a PCAP file:
     --ipfix-port=18000 \
     --applabel --max-payload 2048 \
     --plugin-name=/usr/local/lib/yaf/dpacketplugin.so
-    
+
 Example **yaf** command line for sniffing interface eth0:
-    
+
     /usr/local/bin/yaf
     --in eth0 --live pcap \
     --ipfix tcp \
@@ -278,8 +278,8 @@ Example **yaf** command line for sniffing interface eth0:
     --ipfix-port=18000 \
     --applabel --max-payload 2048 \
     --plugin-name=/usr/local/lib/yaf/dpacketplugin.so
-    
-Confirm Install and Sample Analysis {#analysis}
+
+Confirm Install and Sample Analysis {#yss_analysis}
 ====================================
 
 Confirm MySQL database contains data:
@@ -287,7 +287,7 @@ Confirm MySQL database contains data:
     $ mysql -u root -p
 
     mysql> use smediator;
-    
+
     mysql> select table_name, table_rows from information_schema.tables where table_schema = DATABASE();
     +-------------+------------+
     | table_name  | table_rows |
@@ -311,7 +311,7 @@ Confirm MySQL database contains data:
     | tftp        |          0 |
     | tls         |      34370 |
     +-------------+------------+
-    
+
 Confirm SiLK is creating flow records:
 
     $ rwfilter --proto=0- --type=all --pass=stdout | rwcut | head

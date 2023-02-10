@@ -6,7 +6,7 @@
  * the interface to a simple hash that is implemented to hide a sparse array
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Chris Inacio
  ** ------------------------------------------------------------------------
