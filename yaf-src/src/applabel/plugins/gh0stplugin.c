@@ -17,9 +17,9 @@
  *    contain a ZLIB header at some offset in the first 21 bytes
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Sarneso <ecoff@cert.org>
+ ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -93,7 +93,7 @@ static int
 findGh0stPacketLength(
     const uint8_t  *payload,
     unsigned int    payloadSize,
-    uint16_t        packet_len);
+    uint32_t        packet_len);
 
 
 
@@ -124,8 +124,8 @@ gh0stplugin_LTX_ycGh0stScanScan(
     yfFlow_t       *flow,
     yfFlowVal_t    *val)
 {
-    uint16_t     pkt_length = 0;
-    uint16_t     second_pkt_length = 0;
+    uint32_t     pkt_length = 0;
+    uint32_t     second_pkt_length = 0;
     uint16_t     zlib_header = 0;
     /* gboolean weird = FALSE; */
     /* gboolean hdr = FALSE; */
@@ -264,7 +264,7 @@ static int
 findGh0stPacketLength(
     const uint8_t  *payload,
     unsigned int    payloadSize,
-    uint16_t        packet_len)
+    uint32_t        packet_len)
 {
     int      i = 0;
     uint32_t length;

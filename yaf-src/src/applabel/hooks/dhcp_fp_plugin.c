@@ -9,7 +9,7 @@
  * dhcp_fingerprints.conf
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
@@ -703,7 +703,7 @@ ypHookPacket(
     yfFlowKey_t    *key,
     const uint8_t  *pkt,
     size_t          caplen,
-    uint16_t        iplen,
+    uint32_t        iplen,
     yfTCPInfo_t    *tcpinfo,
     yfL2Info_t     *l2info)
 {
@@ -733,7 +733,7 @@ ypFlowPacket(
     yfFlowVal_t    *val,
     const uint8_t  *pkt,
     size_t          caplen,
-    uint16_t        iplen,
+    uint32_t        iplen,
     yfTCPInfo_t    *tcpinfo,
     yfL2Info_t     *l2info)
 {
@@ -1087,7 +1087,7 @@ ypScanPayload(
     const uint8_t  *pkt,
     size_t          caplen,
     pcre           *expression,
-    uint16_t        offset,
+    uint32_t        offset,
     uint16_t        elementID,
     uint16_t        applabel)
 {

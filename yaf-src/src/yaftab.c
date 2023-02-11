@@ -5,7 +5,7 @@
  ** YAF Active Flow Table
  **
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2021 Carnegie Mellon University.
+ ** Copyright (C) 2006-2023 Carnegie Mellon University.
  ** All Rights Reserved.
  **
  ** ------------------------------------------------------------------------
@@ -1103,7 +1103,7 @@ yfCloseActiveFlow(
     const uint8_t  *pkt,
     uint32_t        paylen,
     uint8_t         reason,
-    uint16_t        iplen)
+    uint32_t        iplen)
 {
     yfFlowNode_t *tfn;  /*temp flow to write*/
     yfFlowVal_t  *valtemp;
@@ -1365,11 +1365,20 @@ yfFlowTabAlloc(
         NDPI_PROTOCOL_BITMASK all;
         set_ndpi_malloc(yf_malloc);
         set_ndpi_free(yf_free);
+#if HAVE_NDPI_INIT_PREFS
+        flowtab->ndpi_struct = ndpi_init_detection_module(ndpi_no_prefs);
+#else
         flowtab->ndpi_struct = ndpi_init_detection_module();
+#endif
         if (flowtab->ndpi_struct == NULL) {
             g_warning("Could not initialize NDPI");
             return NULL;
         }
+#if HAVE_NDPI_FINALIZE_INITIALIZATION
+        ndpi_finalize_initialization(flowtab->ndpi_struct);
+#elif HAVE_NDPI_FINALIZE_INITALIZATION
+        ndpi_finalize_initalization(flowtab->ndpi_struct);
+#endif
 
         NDPI_BITMASK_SET_ALL(all);
         ndpi_set_protocol_detection_bitmask2(flowtab->ndpi_struct, &all);
@@ -2192,7 +2201,7 @@ yfFlowStatistics(
     yfFlowNode_t  *fn,
     yfFlowVal_t   *val,
     uint64_t       ptime,
-    uint16_t       datalen)
+    uint32_t       datalen)
 {
     if (val->stats->ltime) {
         val->stats->aitime += (ptime - val->stats->ltime);
@@ -2249,7 +2258,7 @@ yfAddOutOfSequence(
         pbuf->payload : NULL;
     size_t        paylen = (pbuflen >= YF_PBUFLEN_BASE) ?
         pbuf->paylen : 0;
-    uint16_t      datalen = (pbuf->iplen - pbuf->allHeaderLen +
+    uint32_t      datalen = (pbuf->iplen - pbuf->allHeaderLen +
                              l2info->l2hlen);
     uint32_t      pcap_len = 0;
     gboolean      rev = FALSE;
@@ -2549,25 +2558,36 @@ yfNDPIApplabel(
     size_t        paylen)
 {
     struct ndpi_flow_struct *nflow;
-    struct ndpi_id_struct src, dst;
     ndpi_protocol proto;
 
     if (paylen == 0) {
         return;
     }
 
-    nflow = malloc(sizeof(struct ndpi_flow_struct));
-    memset(nflow, 0, sizeof(struct ndpi_flow_struct));
-    memset(&src, 0, sizeof(struct ndpi_id_struct));
-    memset(&dst, 0, sizeof(struct ndpi_id_struct));
+    nflow = yf_malloc(sizeof(*nflow));
+    memset(nflow, 0, sizeof(*nflow));
 
-    proto = ndpi_detection_process_packet(flowtab->ndpi_struct, nflow, payload,
-                                          paylen, flow->etime, &src, &dst);
+#if !HAVE_STRUCT_NDPI_ID_STRUCT
+    proto = ndpi_detection_process_packet(flowtab->ndpi_struct, nflow,
+                                          payload, paylen, flow->etime);
+#else
+    {
+        struct ndpi_id_struct src, dst;
+
+        memset(&src, 0, sizeof(struct ndpi_id_struct));
+        memset(&dst, 0, sizeof(struct ndpi_id_struct));
+
+        proto = ndpi_detection_process_packet(flowtab->ndpi_struct, nflow,
+                                              payload, paylen, flow->etime,
+                                              &src, &dst);
+    }
+#endif  /* HAVE_STRUCT_NDPI_ID_STRUCT */
+
     flow->ndpi_master = proto.master_protocol;
     flow->ndpi_sub = proto.app_protocol;
 
     /* g_debug("proto is %d other is %d", proto.master_protocol,
-     * proto.protocol); */
+     * proto.app_protocol); */
     ndpi_free_flow(nflow);
 }
 
@@ -2603,7 +2623,7 @@ yfFlowPBuf(
         pbuf->payload : NULL;
     size_t paylen = (pbuflen >= YF_PBUFLEN_BASE) ?
         pbuf->paylen : 0;
-    uint16_t datalen = (pbuf->iplen - pbuf->allHeaderLen +
+    uint32_t datalen = (pbuf->iplen - pbuf->allHeaderLen +
                         l2info->l2hlen);
     uint32_t pcap_len = 0;
 #if YAF_MPLS

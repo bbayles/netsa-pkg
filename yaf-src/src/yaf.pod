@@ -1,3 +1,7 @@
+# yaf manual page   -*- mode: text; fill-column: 78 -*-
+#
+# src/yaf.pod.  Generated from yaf.pod.in by configure.
+#
 =pod
 
 =head1 NAME
@@ -32,7 +36,8 @@ B<yaf> - Yet Another Flowmeter
             [--max-payload PAYLOAD_OCTETS] [--udp-payload]
             [--max-export PAYLOAD_OCTETS]
             [--max-flows FLOW_TABLE_MAX]
-            [--export-payload] [--silk] [--udp-uniflow PORT]
+            [--export-payload] [--payload-applabel-select LABELS]
+            [--silk] [--udp-uniflow PORT]
             [--uniflow] [--mac] [--force-ip6-export]
             [--observation-domain DOMAIN_ID] [--entropy]
             [--applabel] [--applabel-rules RULES_FILE]
@@ -447,17 +452,24 @@ These options are used to modify the data exported by B<yaf>.
 
 =item B<--export-payload>
 
-If present, export at most I<PAYLOAD_OCTETS> (the argument to
-B<--max-payload>) octets from the start of each direction of each
-flow. Non-TCP flows will only export payload from the first packet. By default,
-B<yaf> will not export flow payload.
+If present, export payload from each direction of each flow. The amount of
+payload exported for each direction is the smaller of the arguments to
+B<--max-payload> and B<--max-export>. Non-TCP flows will only export payload
+from the first packet. By default, B<yaf> will not export flow payload.  See
+also B<--payload-applabel-select>.
+
+=item B<--payload-applabel-select> I<APPLABEL_LIST>
+
+Enable payload export (as B<--export-payload>) but only for the application
+labels specified in I<APPLABEL_LIST>, a comma separated list of applabel
+values.
 
 =item B<--max-export> I<MAX_PAY_OCTETS>
 
-If present, export at most I<MAX_PAY_OCTETS> from the start of
-each direction of each flow.  I<MAX_PAY_OCTETS> can be less than or equal
-to the value given to B<--max-payload>.  By default, I<MAX_PAY_OCTETS>
-is the value given to B<--max-payload> if B<--export-payload> is also present.
+If present, export at most I<MAX_PAY_OCTETS> from the start of each direction
+of each flow.  I<MAX_PAY_OCTETS> must not be more than the argument to
+B<--max-payload>.  By default, I<MAX_PAY_OCTETS> is the value given to
+B<--max-payload> if B<--export-payload> is also present.
 
 =item B<--uniflow>
 

@@ -7,9 +7,9 @@
  * 65b4a3780db3b3f3c2256e68003dffe6/$file/rec523_dnpprotmanend.pdf
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2015-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2015-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Sarneso <ecoff@cert.org>
+ ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -171,17 +171,22 @@ dnp3plugin_LTX_ycDnpScanScan(
 {
     ycDNPMessageHeader_t header;
     /* int                  direction; */
-    uint16_t             offset = 0, function_offset = 0;
-    uint16_t             total_offset = 0;
+    uint32_t             offset = 0, function_offset = 0;
+    uint32_t             total_offset = 0;
     uint8_t              function = 0;
     /* uint8_t              group, variation, prefix, qual_code; */
     int     app_header_len = 0, packets = 0;
     int     packet_len, packet_rem;
     /*    uint32_t            quantity = 0;*/
 #if YAF_ENABLE_HOOKS
-    uint8_t crc_buf[payloadSize];
+    /* The DNP3 length in the header is a single byte but that length does not
+     * include the CRCs. However, crc_buf holds the data once the CRCs have
+     * been removed, so we can safely use a max of 255. (Actual data max is
+     * 250 since the header length includes the link control (1 byte) and
+     * destination and source addresses (each 2 bytes)). */
+    uint8_t crc_buf[255];
     size_t  crc_buf_len;
-#endif
+#endif  /* #if YAF_ENABLE_HOOKS */
 
     /* direction is determined by TCP session */
     /* There is a direction and primary bit in the Control flags but
@@ -438,7 +443,7 @@ dnp3plugin_LTX_ycDnpScanScan(
             yfHookScanPayload(flow, payload, (packet_len - 10), NULL,
                               (total_offset + 10), DNP_PLACEHOLDER,
                               DNP_PORT_NUMBER);
-            crc_buf_len = payloadSize;
+            crc_buf_len = sizeof(crc_buf);
             yfRemoveCRC((payload + total_offset + 10), (packet_len - 10),
                         crc_buf, &crc_buf_len, DNP_BLOCK_SIZE, 2);
             /* offset is 2, past transport & application control */

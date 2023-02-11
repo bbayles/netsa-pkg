@@ -1,3 +1,66 @@
+Version 2.13.0: 2023-02-09
+==========================
+
+Added ability for yaf to limit payload export to a named set of applabels.
+
+Increased the maximum payload that YAF may capture for performing DPI.
+
+Added support for recent releases of nDPI.
+
+Added yaf.init to the list of installed files.
+
+Stopped export of full flow template that is never used for data records.
+
+Fixed minor bug in --version where Compact IPv4 support always reported NO.
+
+Fixed bugs in regular expressions for nntpResponseRegex and smtpURLRegex.
+
+Version 3.0.0.alpha2: 2023-02-09
+================================
+
+Enhanced the deep packet inspection capabilities for SSH connections to include negotiated algorithms and HASSH hash.
+
+Added the JA3 hash to the DPI for TLS connections.
+
+Made several changes to the yafDPIRules.conf file for applabels written as C plugins: Allow the user to disable the export of arbitrary DPI elements and SMTP headers. Allow a protocol to be specified. Moved the regex definitions from C to yafDPIRules.conf.
+
+Increased the maximum payload that YAF may capture for performing DPI.
+
+Fixed a potential bug in the Shannon entropy calculation that may cause small differences in calculated values.
+
+Version 3.0.0.alpha1: 2022-02-28
+================================
+
+Merged the configuration files yafApplabelRules.conf and yafDPIRules.conf into a single file written in Lua. Previous versions of those files will not work with this version of yaf.
+
+Changed Deep Packet Inspection (DPI) support to be compiled into yaf when requested by configure; it is no longer a plug-in. Run configure with --enable-dpi to enable the capability; run yaf with --dpi to use it. Specifying --dpi enables application labeling; it is no longer necessary to explicitly specify --applabel when enabling DPI.
+
+Changed yaf to export metadata about information elements and templates by default: both as compile-time and run-time options. To disable on an invocation, run yaf with the --no-element-metadata and/or --no-template-metadata switches. To disable support entirely, pass --disable-metadata-export to configure. (Note that super_mediator-2.0.0 works best with template metadata enabled.)
+
+Updated yaf to use the enhanced template metadata available in libfixbuf-3.0.0.  This allows yaf to declare that it only uses some templates within sub-records (that is, within a subTemplateList or subTemplateMultiList).  The metadata also describes the information element yaf uses in its basicLists.
+
+Added the yaf command line option --payload-applabel-select to enable exporting payload data for only selected appLabel values.
+
+Updated the regular expressions used for application-labeling.
+
+Changed numerous aspects of the DPI data.
+
+Updated, rearranged, and fixed bugs in SMTP DPI.
+
+Added fields for more DNSSEC values and fixed other bugs in DNS DPI.
+
+Renamed the configure option --enable-p0fprinter to --with-p0f.
+
+Renamed the configure option --enable-ndpi to --with-ndpi.
+
+Fixed bugs in POP3 DPI.
+
+Removed support for the Spread toolkit.
+
+Removed support for the popt options parser.
+
+Updated fixbuf requirement to libfixbuf-3.0.0.
+
 Version 2.12.2: 2021-10-14
 ==========================
 
@@ -48,7 +111,7 @@ Fixed compilation errors when building with newer versions of PF_Ring.
 Version 2.11.0: 2019-03-18
 ==========================
 
-Support for FixBuf 2.3.0 added, and is now required.
+Support for libfixbuf 2.3.0 added, and is now required.
 
 Added support for nDPI 2.0.
 
@@ -69,7 +132,7 @@ New YAF stats and tombstone format.
 Version 2.10.0: 2018-04-30
 ==========================
 
-Support for FixBuf 2.0.0 added, and is now required.
+Support for libfixbuf 2.0.0 added, and is now required.
 
 Derive information elements from included XML files.
 
@@ -352,7 +415,7 @@ New Application Labels (MSNP, RTP, RTCP, Jabber)
 
 Rolling Pcap output and pcap-per-flow options.
 
-<a href="../p0f/index.html">CERT p0f Fingerprints</a> included.
+CERT p0f Fingerprints included. (https://tools.netsa.cert.org/p0f/)
 
 New option to process out-of-sequence flows.
 
@@ -377,7 +440,7 @@ Version 2.1.0: 2011-07-27
 
 New Information Element exported in every flow record, flowAttributes (CERT PEN 6871, IE 40).
 
-YAF now checks if a flow has fixed-size packets and exports this flag using the new flowAttributes Information Element (see <a href="yaf.html">yaf</a>)
+YAF now checks if a flow has fixed-size packets and exports this flag using the new flowAttributes Information Element.  See the YAF man page for details.
 
 Reset Application Label on UDP-uniflows for Deep Packet Inspection
 
@@ -416,7 +479,7 @@ Enhancement for SNMPv3 application labeler
 Version 2.0.0: 2011-04-28
 ==============================
 
-This version requires <a href="../fixbuf/index.html">libfixbuf-1.0.0</a> or greater.
+This version requires libfixbuf-1.0.0 or greater.
 
 Added Napatech Adapter Integration (requires libpcapexpress).
 
@@ -486,9 +549,9 @@ Version 1.2.0: 2010-07-27
 
 Spread support has been added into libfixbuf and YAF to allow publish subscribe distribution of YAF sensor output.
 
-Plugin support has returned to YAF to support basic deep packet inspection (DPI) and application labeling (see <a href="yafdpi.html"> yafdpi </a>).
+Plugin support has returned to YAF to support basic deep packet inspection (DPI) and application labeling (see the yafdpi manual page).
 
-Added 9 new protocols to the application labeling feature (see <a href="applabel.html">applabel</a>).
+Added 9 new protocols to the application labeling feature (see the applabel manual page).
 
 Added ability for signature detection through the application labeling mechanism.
 
@@ -506,7 +569,7 @@ Fixed IPv6 header options bug.
 
 Fixed bug in parsing capability for strings longer than 80 columns.
 
-Added p0f passive OS labeling capability from community <a href="../p0f/libp0f.html">libp0f</a>.
+Added p0f passive OS labeling capability from community (https://tools.netsa.cert.org/p0f/libp0f.html).
 
 Added Berkley Packet Filtering (BPF) switch --filter.
 

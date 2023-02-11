@@ -4,9 +4,9 @@
 ** YAF core I/O routines
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
-** Authors: Brian Trammell, Chris Inacio, Emily Ecoff <ecoff@cert.org>
+** Authors: Brian Trammell, Chris Inacio, Emily Ecoff
 ** ------------------------------------------------------------------------
 ** @OPENSOURCE_HEADER_START@
 ** Use of the YAF system and related source code is subject to the terms
@@ -617,8 +617,16 @@ typedef struct yfTombstoneAccess_st {
 } yfTombstoneAccess_t;
 
 /* Core library configuration variables */
+/* amount of payload to export; 0 to export none */
 static unsigned int yaf_core_export_payload = 0;
+/* whether to map IPv4 addresses to IPv6 */
 static gboolean     yaf_core_map_ipv6 = FALSE;
+#if YAF_ENABLE_APPLABEL
+/* limit export to these applabels; if NULL, export all */
+static uint16_t *yaf_core_payload_applabels = NULL;
+/* number of appLabels in `yaf_core_payload_applabels` */
+static size_t yaf_core_payload_applabels_size = 0;
+#endif  /* YAF_ENABLE_APPLABEL */
 
 /**
  * yfAlignmentCheck
@@ -813,6 +821,43 @@ yfWriterExportPayload(
     yaf_core_export_payload = max_payload;
 }
 
+#if YAF_ENABLE_APPLABEL
+void
+yfWriterExportPayloadApplabels(
+    const GArray   *applabels)
+{
+    guint i;
+
+#if GLIB_CHECK_VERSION(2, 22, 0)
+    g_assert(sizeof(long) == g_array_get_element_size((GArray *)applabels));
+#endif
+    if (0 == applabels->len) {
+        return;
+    }
+
+    yaf_core_payload_applabels_size = applabels->len;
+    yaf_core_payload_applabels = g_new(uint16_t, applabels->len);
+    for (i = 0; i < applabels->len; ++i) {
+        g_assert(g_array_index(applabels, long, i) >= 0);
+        g_assert(g_array_index(applabels, long, i) <= UINT16_MAX);
+        yaf_core_payload_applabels[i] =
+            (uint16_t)g_array_index(applabels, long, i);
+    }
+}
+
+static gboolean
+findInApplabelArray(
+    uint16_t    applabel)
+{
+    size_t i;
+    for (i = 0; i < yaf_core_payload_applabels_size; ++i) {
+        if (yaf_core_payload_applabels[i] == applabel) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+#endif  /* YAF_ENABLE_APPLABEL */
 
 void
 yfWriterExportMappedV6(
@@ -1030,19 +1075,7 @@ yfInitExporterSession(
 #endif /* if YAF_ENABLE_METADATA_EXPORT */
     }
 
-#if YAF_ENABLE_METADATA_EXPORT
-    if (!fbSessionAddTemplateWithMetadata(session, FALSE, YAF_FLOW_FULL_TID,
-                                          tmpl, YAF_FLOW_FULL_NAME, NULL, err))
-    {
-        return NULL;
-    }
-#else /* if YAF_ENABLE_METADATA_EXPORT */
-    /* Add the full record template to the session */
-    if (!fbSessionAddTemplate(session, FALSE, YAF_FLOW_FULL_TID, tmpl, err)) {
-        return NULL;
-    }
-
-#endif /* if YAF_ENABLE_METADATA_EXPORT */
+    /* Add the full record template to the internal session only */
     if (!fbSessionAddTemplate(session, TRUE, YAF_FLOW_FULL_TID, tmpl, err)) {
         return NULL;
     }
@@ -2550,8 +2583,13 @@ yfWriteFlow(
 
 #if YAF_ENABLE_PAYLOAD
     /* point to payload */
-    if ((0 < yaf_core_export_payload) &&
-        (flow->val.paylen || flow->rval.paylen))
+    if ((0 < yaf_core_export_payload)
+        && (flow->val.paylen || flow->rval.paylen)
+#if YAF_ENABLE_APPLABEL
+        && (NULL == yaf_core_payload_applabels
+            || findInApplabelArray(flow->appLabel))
+#endif
+       )
     {
         tmplcount++;
     }
@@ -2631,31 +2669,29 @@ yfWriteFlow(
 
 #if YAF_ENABLE_PAYLOAD
     /* Add Payload Template */
-    if ((0 < yaf_core_export_payload) &&
-        (flow->val.paylen || flow->rval.paylen))
+    if ((0 < yaf_core_export_payload)
+        && (flow->val.paylen || flow->rval.paylen)
+#if YAF_ENABLE_APPLABEL
+        && (NULL == yaf_core_payload_applabels
+            || findInApplabelArray(flow->appLabel))
+#endif
+       )
     {
         stml = FBSTMLNEXT(&(rec.subTemplateMultiList), stml);
         if (etid) {
             payrec = (yfPayloadFlow_t *)FBSTMLINIT(stml,
                                                    YAF_PAYLOAD_FLOW_TID | etid,
                                                    yaf_tmpl.revPayloadTemplate);
-            if (flow->rval.paylen > yaf_core_export_payload) {
-                payrec->reversePayload.len = yaf_core_export_payload;
-            } else {
-                payrec->reversePayload.len = flow->rval.paylen;
-            }
+            payrec->reversePayload.len = MIN(flow->rval.paylen,
+                                             yaf_core_export_payload);
             payrec->reversePayload.buf = flow->rval.payload;
         } else {
             payrec = (yfPayloadFlow_t *)FBSTMLINIT(stml,
                                                    YAF_PAYLOAD_FLOW_TID,
                                                    yaf_tmpl.payloadTemplate);
         }
+        payrec->payload.len = MIN(flow->val.paylen, yaf_core_export_payload);
         payrec->payload.buf = flow->val.payload;
-        if (flow->val.paylen > yaf_core_export_payload) {
-            payrec->payload.len = yaf_core_export_payload;
-        } else {
-            payrec->payload.len = flow->val.paylen;
-        }
         tmplcount--;
     }
 #endif /* if YAF_ENABLE_PAYLOAD */
@@ -2763,7 +2799,7 @@ yfWriteFlow(
 #endif /* if YAF_ENABLE_FPEXPORT */
 
     if (stats) {
-        uint16_t pktavg = 0;
+        uint32_t pktavg = 0;
         stml = FBSTMLNEXT(&(rec.subTemplateMultiList), stml);
         if (etid) {
             statsflow =
@@ -2773,7 +2809,7 @@ yfWriteFlow(
             statsflow->reverseTcpUrgTotalCount = flow->rval.stats->tcpurgct;
             statsflow->reverseSmallPacketCount = flow->rval.stats->smallpktct;
             statsflow->reverseFirstNonEmptyPacketSize =
-                flow->rval.stats->firstpktsize;
+                (uint16_t)flow->rval.stats->firstpktsize;
             statsflow->reverseNonEmptyPacketCount =
                 flow->rval.stats->nonemptypktct;
             statsflow->reverseLargePacketCount =
@@ -2805,7 +2841,7 @@ yfWriteFlow(
                 statsflow->reverseStandardDeviationInterarrivalTime =
                     sqrt(time_temp / count);
             }
-            statsflow->reverseMaxPacketSize = flow->rval.stats->maxpktsize;
+            statsflow->reverseMaxPacketSize = (uint16_t)flow->rval.stats->maxpktsize;
         } else {
             statsflow = (yfFlowStatsRecord_t *)FBSTMLINIT(stml,
                                                           YAF_STATS_FLOW_TID,
@@ -2815,10 +2851,10 @@ yfWriteFlow(
         pktavg = 0;
         statsflow->tcpUrgTotalCount = flow->val.stats->tcpurgct;
         statsflow->smallPacketCount = flow->val.stats->smallpktct;
-        statsflow->firstNonEmptyPacketSize = flow->val.stats->firstpktsize;
+        statsflow->firstNonEmptyPacketSize = (uint16_t)flow->val.stats->firstpktsize;
         statsflow->nonEmptyPacketCount = flow->val.stats->nonemptypktct;
         statsflow->dataByteCount = flow->val.stats->payoct;
-        statsflow->maxPacketSize = flow->val.stats->maxpktsize;
+        statsflow->maxPacketSize = (uint16_t)flow->val.stats->maxpktsize;
         statsflow->firstEightNonEmptyPacketDirections = flow->pktdir;
         statsflow->largePacketCount = flow->val.stats->largepktct;
         temp = 0;

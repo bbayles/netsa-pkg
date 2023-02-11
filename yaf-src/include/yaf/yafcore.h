@@ -4,7 +4,7 @@
  ** YAF core I/O routines
  **
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Brian Trammell
  ** ------------------------------------------------------------------------
@@ -248,7 +248,7 @@ typedef struct yfFlowStats_st {
     /** to calculate inter-packet delay */
     uint64_t   iaarray[10];
     /** to calculate distribution of packet payload size */
-    uint16_t   pktsize[10];
+    uint32_t   pktsize[10];
     /** total amount of payload data */
     uint64_t   payoct;
     /** used to calculate interarrival time */
@@ -264,9 +264,9 @@ typedef struct yfFlowStats_st {
     /** average interarrival time in milliseconds */
     uint32_t   aitime;
     /** payload length of first non-empty pkt */
-    uint16_t   firstpktsize;
+    uint32_t   firstpktsize;
     /** largest pkt size */
-    uint16_t   maxpktsize;
+    uint32_t   maxpktsize;
 } yfFlowStats_t;
 
 /**
@@ -631,6 +631,17 @@ yfWriterClose(
 void
 yfWriterExportPayload(
     int   max_payload);
+
+#if YAF_ENABLE_APPLABEL
+/**
+ *  Limits payload export to the silkAppLabel values contained in `applabels`,
+ *  a GArray of `long` values.  The values in `applabels` are copied to
+ *  another data structure.
+ */
+void
+yfWriterExportPayloadApplabels(
+    const GArray   *applabels);
+#endif  /* YAF_ENABLE_APPLABEL */
 
 /**
  * FIXME doc

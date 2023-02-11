@@ -7,9 +7,9 @@
  * have a function to be called to process those rules
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Chris Inacio <inacio@cert.org>
+ ** Authors: Chris Inacio
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms

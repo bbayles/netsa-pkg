@@ -6,9 +6,9 @@
  * see http://www.ietf.org/rfc/rfc3036 for more info
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Sarneso <ecoff@cert.org>
+ ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -98,7 +98,7 @@ ldpplugin_LTX_ycLdpScanScan(
     yfFlow_t       *flow,
     yfFlowVal_t    *val)
 {
-    unsigned int offsetptr = 0;
+    uint32_t     offset = 0;
     uint16_t     version;
     uint16_t     length;
     uint32_t     id;
@@ -118,9 +118,9 @@ ldpplugin_LTX_ycLdpScanScan(
         return 0;
     }
 
-    offsetptr += 2;
+    offset += 2;
 
-    length = g_ntohs(*(uint16_t *)(payload + offsetptr));
+    length = g_ntohs(*(uint16_t *)(payload + offset));
 
     if (length > 4096) {
         return 0;
@@ -130,9 +130,9 @@ ldpplugin_LTX_ycLdpScanScan(
         return 0;
     }
 
-    offsetptr += 2;
+    offset += 2;
 
-    id = g_ntohl(*(uint32_t *)(payload + offsetptr));
+    id = g_ntohl(*(uint32_t *)(payload + offset));
 
     /* id should be the same as src ip */
 
@@ -140,17 +140,17 @@ ldpplugin_LTX_ycLdpScanScan(
         return 0;
     }
 
-    offsetptr += 4;
+    offset += 4;
 
     /* Last 2 bytes are 0 */
 
-    if (*(payload + offsetptr) != 0) {
+    if (*(payload + offset) != 0) {
         return 0;
     }
 
-    offsetptr++;
+    offset++;
 
-    if (*(payload + offsetptr) != 0) {
+    if (*(payload + offset) != 0) {
         return 0;
     }
 

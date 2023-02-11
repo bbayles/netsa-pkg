@@ -5,7 +5,7 @@
 ** YAF Active Flow Table Plugin Interface
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Brian Trammell
 ** ------------------------------------------------------------------------
@@ -89,7 +89,7 @@ typedef gboolean (*yfHookPacket_fn)(
     yfFlowKey_t    *key,
     const uint8_t  *pkt,
     size_t          caplen,
-    uint16_t        iplen,
+    uint32_t        iplen,
     yfTCPInfo_t    *tcpinfo,
     yfL2Info_t     *l2info);
 
@@ -100,7 +100,7 @@ typedef void (*yfHookFlowPacket_fn)(
     yfFlowVal_t    *val,
     const uint8_t  *pkt,
     size_t          caplen,
-    uint16_t        iplen,
+    uint32_t        iplen,
     yfTCPInfo_t    *tcpinfo,
     yfL2Info_t     *l2info);
 
@@ -154,7 +154,7 @@ typedef void (*yfHookScanPayload_fn)(
     const uint8_t  *pkt,
     size_t          caplen,
     pcre           *expression,
-    uint16_t        offset,
+    uint32_t        offset,
     uint16_t        elementID,
     uint16_t        applabel);
 #endif /* YAF_ENABLE_APPLABEL */
@@ -276,7 +276,7 @@ yfHookPacket(
     yfFlowKey_t    *key,
     const uint8_t  *pkt,
     size_t          caplen,
-    uint16_t        iplen,
+    uint32_t        iplen,
     yfTCPInfo_t    *tcpinfo,
     yfL2Info_t     *l2info)
 {
@@ -311,7 +311,7 @@ yfHookFlowPacket(
     yfFlowVal_t    *val,
     const uint8_t  *pkt,
     size_t          caplen,
-    uint16_t        iplen,
+    uint32_t        iplen,
     yfTCPInfo_t    *tcpinfo,
     yfL2Info_t     *l2info)
 {
@@ -760,7 +760,7 @@ yfHookScanPayload(
     const uint8_t  *pkt,
     size_t          caplen,
     pcre           *expression,
-    uint16_t        offset,
+    uint32_t        offset,
     uint16_t        elementID,
     uint16_t        applabel)
 {

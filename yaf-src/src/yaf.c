@@ -3,7 +3,7 @@
 ** Yet Another Flow generator
 * **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Brian Trammell
 ** ------------------------------------------------------------------------
@@ -125,6 +125,9 @@ static int      yaf_opt_active = 1800;
 static int      yaf_opt_max_flows = 0;
 static int      yaf_opt_max_payload = 0;
 static int      yaf_opt_payload_export = 0;
+#if YAF_ENABLE_APPLABEL
+static char    *yaf_opt_payload_applabels = NULL;
+#endif
 static gboolean yaf_opt_payload_export_on = FALSE;
 static gboolean yaf_opt_applabel_mode = FALSE;
 static gboolean yaf_opt_force_read_all = FALSE;
@@ -206,7 +209,7 @@ pluginOptParse(
 #endif /* if YAF_ENABLE_HOOKS */
 /* Local derived configutation */
 
-AirOptionEntry yaf_optent_core[] = {
+static AirOptionEntry yaf_optent_core[] = {
     AF_OPTION("in", 'i', 0, AF_OPT_TYPE_STRING, &yaf_config.inspec,
               AF_OPTION_WRAP "Input (file, - for stdin; interface) [-]",
               "inspec"),
@@ -270,7 +273,7 @@ AirOptionEntry yaf_optent_core[] = {
     AF_OPTION_END
 };
 
-AirOptionEntry yaf_optent_dec[] = {
+static AirOptionEntry yaf_optent_dec[] = {
     AF_OPTION("no-frag", 0, 0, AF_OPT_TYPE_NONE, &yaf_opt_nofrag,
               AF_OPTION_WRAP "Disable IP fragment reassembly",
               NULL),
@@ -287,7 +290,7 @@ AirOptionEntry yaf_optent_dec[] = {
     AF_OPTION_END
 };
 
-AirOptionEntry yaf_optent_flow[] = {
+static AirOptionEntry yaf_optent_flow[] = {
     AF_OPTION("idle-timeout", 'I', 0, AF_OPT_TYPE_INT, &yaf_opt_idle,
               AF_OPTION_WRAP "Idle flow timeout [300, 5m]",
               "sec"),
@@ -308,7 +311,7 @@ AirOptionEntry yaf_optent_flow[] = {
     AF_OPTION_END
 };
 
-AirOptionEntry yaf_optent_exp[] = {
+static AirOptionEntry yaf_optent_exp[] = {
     AF_OPTION("no-output", 0, 0, AF_OPT_TYPE_NONE, &yaf_config.no_output,
               AF_OPTION_WRAP "Turn off IPFIX export", NULL),
     AF_OPTION("no-stats", 0, 0, AF_OPT_TYPE_NONE, &yaf_config.nostats,
@@ -371,7 +374,7 @@ AirOptionEntry yaf_optent_exp[] = {
     AF_OPTION_END
 };
 
-AirOptionEntry yaf_optent_ipfix[] = {
+static AirOptionEntry yaf_optent_ipfix[] = {
     AF_OPTION("ipfix-port", 0, 0, AF_OPT_TYPE_STRING,
               &(yaf_config.connspec.svc),
               AF_OPTION_WRAP "Select IPFIX export port [4739, 4740]", "port"),
@@ -392,7 +395,7 @@ AirOptionEntry yaf_optent_ipfix[] = {
     AF_OPTION_END
 };
 
-AirOptionEntry yaf_optent_pcap[] = {
+static AirOptionEntry yaf_optent_pcap[] = {
     AF_OPTION("pcap", 'p', 0, AF_OPT_TYPE_STRING, &yaf_config.pcapdir,
               AF_OPTION_WRAP "Directory/File prefix to store rolling"
               AF_OPTION_WRAP "pcap files", "dir"),
@@ -423,13 +426,19 @@ AirOptionEntry yaf_optent_pcap[] = {
 
 
 #if YAF_ENABLE_PAYLOAD
-AirOptionEntry yaf_optent_payload[] = {
+static AirOptionEntry yaf_optent_payload[] = {
     AF_OPTION("max-payload", 's', 0, AF_OPT_TYPE_INT, &yaf_opt_max_payload,
               AF_OPTION_WRAP "Maximum payload to capture per flow [0]",
               "octets"),
     AF_OPTION("export-payload", 0, 0, AF_OPT_TYPE_NONE,
               &yaf_opt_payload_export_on,
               AF_OPTION_WRAP "Enable payload export", NULL),
+#if YAF_ENABLE_APPLABEL
+    AF_OPTION("payload-applabel-select", 0, 0, AF_OPT_TYPE_STRING,
+              &yaf_opt_payload_applabels,
+              AF_OPTION_WRAP "Export payload for only these silkApplabels",
+              "appLabel[,appLabel...]"),
+#endif  /* YAF_ENABLE_APPLABEL */
     AF_OPTION("udp-payload", 0, 0, AF_OPT_TYPE_NONE, &yaf_opt_udp_max_payload,
               AF_OPTION_WRAP "Capture maximum payload for udp flow", NULL),
     AF_OPTION("max-export", 0, 0, AF_OPT_TYPE_INT, &yaf_opt_payload_export,
@@ -476,7 +485,7 @@ AirOptionEntry yaf_optent_payload[] = {
 #endif /* if YAF_ENABLE_PAYLOAD */
 
 #ifdef YAF_ENABLE_HOOKS
-AirOptionEntry yaf_optent_plugin[] = {
+static AirOptionEntry yaf_optent_plugin[] = {
     AF_OPTION("plugin-name", 0, 0, AF_OPT_TYPE_STRING, &pluginName,
               AF_OPTION_WRAP "Load a yaf plugin(s)",
               "libplugin_name[,libplugin_name...]"),
@@ -563,7 +572,7 @@ yfVersionString(
                            );
     g_string_append_printf(resultString, "    * %-32s  %s\n",
                            "Compact IPv4 support:",
-#if YAF_COMPACT_V4
+#if YAF_ENABLE_COMPACT_IP4
                            "YES"
 #else
                            "NO"
@@ -1034,6 +1043,46 @@ yfLuaLoadConfig(
     yf_lua_getnum("udp_uniflow", yaf_opt_udp_uniflow_port);
     yf_lua_getbool("udp_payload", yaf_opt_udp_max_payload);
 
+#if YAF_ENABLE_APPLABEL
+    /* enable payload export but only for these applabels */
+    lua_getglobal(L, "export_payload_applabels");
+    if (!lua_isnil(L, -1)) {
+        GArray   *applabels;
+        gboolean  warned = FALSE;
+        long      applabel;
+
+        if (!lua_istable(L, -1)) {
+            air_opterr("export_payload_applabels is not a valid table."
+                       " Should be in the form:"
+                       " export_payload_applabels = { 80, 25, ...}");
+        }
+        len = yfLuaGetLen(L, -1);
+        applabels = g_array_sized_new(FALSE, FALSE, sizeof(applabel), len);
+        for (i = 1; i <= len; ++i) {
+            lua_rawgeti(L, -1, i);
+            if (lua_isnumber(L, -1)) {
+                applabel = (long)lua_tonumber(L, -1);
+                if (applabel >= 0 && applabel <= UINT16_MAX) {
+                    g_array_append_val(applabels, applabel);
+                }
+            } else if (!warned) {
+                warned = TRUE;
+                g_warning("Ignoring non-number entry in"
+                          " export_payload_applabels");
+            }
+            lua_pop(L, 1);
+        }
+        /* Finished with the table */
+        lua_pop(L, 1);
+        if (0 == applabels->len) {
+            air_opterr("Found no valid applabels in export_payload_applabels");
+        }
+        yaf_opt_payload_export_on = TRUE;
+        yfWriterExportPayloadApplabels(applabels);
+        g_array_free(applabels, TRUE);
+    }
+#endif  /* YAF_ENABLE_APPLABEL */
+
     /* decode options */
     lua_getglobal(L, "decode");
     if (!lua_isnil(L, -1)) {
@@ -1334,6 +1383,40 @@ yfParseOptions(
     } else {
         yaf_reqtype = YF_TYPE_IPANY;
     }
+
+#if YAF_ENABLE_APPLABEL
+    if (yaf_opt_payload_applabels) {
+        gchar **labels = g_strsplit(yaf_opt_payload_applabels, ",", -1);
+        GArray *applabels = NULL;
+        char *ep;
+        unsigned int i;
+        long applabel;
+
+        /* count entries in the list to size the GArray */
+        for (i = 0; labels[i] != NULL; ++i)
+            ;                   /* empty */
+
+        applabels = g_array_sized_new(FALSE, FALSE, sizeof(applabel), i);
+        for (i = 0; labels[i] != NULL; ++i) {
+            ep = labels[i];
+            errno = 0;
+            applabel = strtol(labels[i], &ep, 0);
+            if (applabel >= 0 && applabel <= UINT16_MAX &&
+                ep != labels[i] && 0 == errno)
+            {
+                g_array_append_val(applabels, applabel);
+            }
+        }
+
+        if (applabels->len > 0) {
+            yaf_opt_payload_export_on = TRUE;
+            yfWriterExportPayloadApplabels(applabels);
+        }
+        g_strfreev(labels);
+        g_array_free(applabels, TRUE);
+        g_free(yaf_opt_payload_applabels);
+    }
+#endif  /* YAF_ENABLE_APPLABEL */
 
     /* process core library options */
     if (yaf_opt_payload_export_on && !yaf_opt_payload_export) {

@@ -1,4 +1,4 @@
-dnl Copyright (C) 2018-2021 by Carnegie Mellon University.
+dnl Copyright (C) 2018-2023 by Carnegie Mellon University.
 
 # ---------------------------------------------------------------------------
 # INFOMODEL_AC_COLLECT_REGISTRIES(infomodel_dir)

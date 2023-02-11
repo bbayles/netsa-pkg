@@ -216,8 +216,8 @@ the ingressInterface IPFIX field.  If SiLK was configured to pack the
 SNMP interface, this value will interfere with the correct calculation
 of the B<getFlowKeyHash>. You also may want to ignore this field if B<yaf>
 is run with the B<--no-vlan-in-key> option which forces B<yaf> to not use
-the VLAN in the flow key hash calculation. Alternatively, you may set 
-the environment variable YAF_IGNORE_SNMP to 1 to always ignore 
+the VLAN in the flow key hash calculation. Alternatively, you may set
+the environment variable YAF_IGNORE_SNMP to 1 to always ignore
 this value in flow key hash calculations.
 
 =back
@@ -228,8 +228,6 @@ In the following examples, the dollar sign ("$") represents the shell
 prompt.  The text after the dollar sign represents the command line.
 Lines have been wrapped for improved readability, and the back slash
 ("\") is used to indicate a wrapped line.
-
-=over 1
 
  $ getFlowKeyHash --sip4 10.10.25.11 --dip4 10.10.26.12 --sport 1586 \
                   --dport 80 --protocol 6 --vlan 3
@@ -260,8 +258,6 @@ Lines have been wrapped for improved readability, and the back slash
             | rwsilk2ipfix | getFlowKeyHash -I | \
             yafMeta2Pcap --pcap-meta-file="/data/pcapmeta/*" \
             --out myDNSpcap.pcap
-
-=back
 
 =head1 Known Issues
 

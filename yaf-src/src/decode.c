@@ -3,7 +3,7 @@
 ** YAF Layer 2 and Layer 3 decode routines
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Brian Trammell
 ** ------------------------------------------------------------------------
@@ -763,7 +763,7 @@ yfDecodeL2(
       case DLT_JUNIPER_ETHER:
         {
             uint16_t tot_ext_len = 0;
-            uint16_t hdr_len = 4;
+            uint32_t hdr_len = 4;
             uint32_t proto;
 
             if (*caplen < 4) {
@@ -857,7 +857,7 @@ yfDecodeIPv4(
     size_t          *caplen,
     const uint8_t   *pkt,
     yfFlowKey_t     *key,
-    uint16_t        *iplen,
+    uint32_t        *iplen,
     yfIPFragInfo_t  *fraginfo)
 {
     const yfHdrIPv4_t *iph = (const yfHdrIPv4_t *)pkt;
@@ -938,7 +938,7 @@ yfDecodeIPv6(
     size_t          *caplen,
     const uint8_t   *pkt,
     yfFlowKey_t     *key,
-    uint16_t        *iplen,
+    uint32_t        *iplen,
     yfIPFragInfo_t  *fraginfo)
 {
     const yfHdrIPv6_t     *iph = (const yfHdrIPv6_t *)pkt;
@@ -1381,7 +1381,7 @@ yfDecodeIP(
     size_t          *caplen,
     const uint8_t   *pkt,
     yfFlowKey_t     *key,
-    uint16_t        *iplen,
+    uint32_t        *iplen,
     yfTCPInfo_t     *tcpinfo,
     yfIPFragInfo_t  *fraginfo);
 
@@ -1392,7 +1392,7 @@ yfDecodeERSPAN(
     size_t          *caplen,
     const uint8_t   *pkt,
     yfFlowKey_t     *key,
-    uint16_t        *iplen,
+    uint32_t        *iplen,
     yfIPFragInfo_t  *fraginfo,
     yfTCPInfo_t     *tcpinfo)
 {
@@ -1442,7 +1442,7 @@ yfDecodeGRE(
     size_t          *caplen,
     const uint8_t   *pkt,
     yfFlowKey_t     *key,
-    uint16_t        *iplen,
+    uint32_t        *iplen,
     yfIPFragInfo_t  *fraginfo,
     yfTCPInfo_t     *tcpinfo)
 {
@@ -1561,7 +1561,7 @@ yfDecodeIP(
     size_t          *caplen,
     const uint8_t   *pkt,
     yfFlowKey_t     *key,
-    uint16_t        *iplen,
+    uint32_t        *iplen,
     yfTCPInfo_t     *tcpinfo,
     yfIPFragInfo_t  *fraginfo)
 {
@@ -1682,7 +1682,7 @@ yfDecodeToPBuf(
 {
     uint16_t       type;
     yfFlowKey_t   *key = &(pbuf->key);
-    uint16_t      *iplen = &(pbuf->iplen);
+    uint32_t      *iplen = &(pbuf->iplen);
     yfTCPInfo_t   *tcpinfo = &(pbuf->tcpinfo);
 /*    yfL2Info_t              *l2info = (pbuflen >= YF_PBUFLEN_NOPAYLOAD) ?
  *    &(pbuf->l2info) : NULL;*/

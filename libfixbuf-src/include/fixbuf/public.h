@@ -3,14 +3,14 @@
  ** fixbuf IPFIX Implementation Public Interface
  **
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2020 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Brian Trammell, Dan Ruef
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_LICENSE_START@
  ** libfixbuf 2.0
  **
- ** Copyright 2018-2020 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright 2018-2023 Carnegie Mellon University. All Rights Reserved.
  **
  ** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
  ** ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS"
@@ -81,14 +81,14 @@
  * [RFC 6313]:  https://tools.ietf.org/html/rfc6313
  * [RFC 7011]:  https://tools.ietf.org/html/rfc7011
  * [RFC 7012]:  https://tools.ietf.org/html/rfc7012
- * [YAF]:       https://tools.netsa.cert.org/YAF/index.html
- * [ipfixDump]: https://tools.netsa.cert.org/fixbuf/ipfixDump.html
- * [pyfixbuf]:  https://tools.netsa.cert.org/pyfixbuf/index.html
+ * [YAF]:       /yaf2/index.html
+ * [ipfixDump]: /fixbuf2/ipfixDump.html
+ * [pyfixbuf]:  /pyfixbuf/index.html
  *
  * @section Downloading
  *
  * libfixbuf is distributed from
- * https://tools.netsa.cert.org/fixbuf/download.html
+ * https://tools.netsa.cert.org/fixbuf2/download.html
  *
  * @section Building
  *
@@ -146,7 +146,7 @@
  *
  * @section Copyright
  *
- * libfixbuf is copyright 2005-2020 Carnegie Mellon University, and is released
+ * libfixbuf is copyright 2005-2023 Carnegie Mellon University, and is released
  * under the GNU Lesser General Public License (LGPL) Version 3.
  * See the LICENSE.txt file in the distribution for details.
  *
@@ -1104,12 +1104,12 @@
  * - [SiLK][]
  * - [Analysis Pipeline][analysis_pipeline]
  *
- * [SiLK]:                    https://tools.netsa.cert.org/silk/index.html
- * [YAF]:                     https://tools.netsa.cert.org/yaf/index.html
- * [analysis_pipeline]:       https://tools.netsa.cert.org/analysis-pipeline5/index.html
- * [super_mediator]:          https://tools.netsa.cert.org/super_mediator/index.html
- * [yaf_file_mediator]:       https://tools.netsa.cert.org/fixbuf/file_mediator.html
- * [yaf_silk_mysql_mediator]: https://tools.netsa.cert.org/fixbuf/mysql_mediator.html
+ * [SiLK]:                    /silk/index.html
+ * [YAF]:                     /yaf2/index.html
+ * [analysis_pipeline]:       /analysis-pipeline5/index.html
+ * [super_mediator]:          /super_mediator1/index.html
+ * [yaf_file_mediator]:       /fixbuf2/file_mediator.html
+ * [yaf_silk_mysql_mediator]: /fixbuf2/mysql_mediator.html
  *
  *
  */

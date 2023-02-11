@@ -3,7 +3,7 @@
 ** Airframe options interface
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Tony Cebzanov
 ** ------------------------------------------------------------------------

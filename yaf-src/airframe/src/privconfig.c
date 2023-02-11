@@ -3,7 +3,7 @@
 ** Generic privilege configuration support.
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Brian Trammell
 ** ------------------------------------------------------------------------
@@ -69,7 +69,7 @@ static gboolean did_become = FALSE;
 
 #define AF_OPTION_WRAP "\n\t\t\t\t"
 
-AirOptionEntry privc_optentries[] = {
+static AirOptionEntry privc_optentries[] = {
     AF_OPTION("become-user", 'U', 0, AF_OPT_TYPE_STRING, &opt_user,
               AF_OPTION_WRAP "Become user after setup if started as root",
               "user"),

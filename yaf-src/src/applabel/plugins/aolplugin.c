@@ -6,9 +6,9 @@
  * http://en.wikipedia.org/wiki/OSCAR_protocol
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Sarneso <ecoff@cert.org>
+ ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -76,7 +76,7 @@ static uint16_t
 getTLVID(
     const uint8_t  *payload,
     unsigned int    payloadSize,
-    uint16_t        offsetptr);
+    uint32_t        offset);
 
 
 /**
@@ -107,7 +107,7 @@ aolplugin_LTX_ycAolScanScan(
 {
     gboolean snac = FALSE;
     uint16_t flap_seq_number = 0;
-    uint16_t offsetptr = 0;
+    uint32_t offset = 0;
     uint16_t flap_data_size = 0;
     uint8_t  class;
     uint16_t tlv_id;
@@ -116,12 +116,12 @@ aolplugin_LTX_ycAolScanScan(
         return 0;
     }
 
-    if (*(payload + offsetptr) != 0x2a) {
+    if (*(payload + offset) != 0x2a) {
         return 0;
     }
-    offsetptr++;
+    offset++;
 
-    class = *(payload + offsetptr);
+    class = *(payload + offset);
     if ((class == 0) || (class > 5)) {
         return 0;
     }
@@ -131,35 +131,35 @@ aolplugin_LTX_ycAolScanScan(
         snac = TRUE;
     }
 
-    offsetptr++;
+    offset++;
     /* seq number */
 
-    flap_seq_number = ntohs(*(uint16_t *)(payload + offsetptr));
+    flap_seq_number = ntohs(*(uint16_t *)(payload + offset));
     if (flap_seq_number > 0xEFFF) {
         return 0;
     }
 
-    offsetptr += 2;
+    offset += 2;
     /* size of data */
-    flap_data_size = ntohs(*(uint16_t *)(payload + offsetptr));
-    offsetptr += 2;
+    flap_data_size = ntohs(*(uint16_t *)(payload + offset));
+    offset += 2;
 
     if (snac) {
         uint16_t family;
         uint16_t family_sub_id;
 
-        if ((size_t)offsetptr + 4 > payloadSize) {
+        if ((size_t)offset + 4 > payloadSize) {
             return 0;
         }
 
-        family = ntohs(*(uint16_t *)(payload + offsetptr));
+        family = ntohs(*(uint16_t *)(payload + offset));
         if (family > 0x17 && family != 0x85) {
             return 0;
         }
 
-        offsetptr += 2;
+        offset += 2;
 
-        family_sub_id = ntohs(*(uint16_t *)(payload + offsetptr));
+        family_sub_id = ntohs(*(uint16_t *)(payload + offset));
         /* there are more detailed specifications on what family id and
          * family_sub_id can be paired, but too many to efficiently check
          * so we will generalize */
@@ -167,9 +167,9 @@ aolplugin_LTX_ycAolScanScan(
             return 0;
         }
 
-        offsetptr += 8; /* 2 for SNAC flags, 4 for request ID */
+        offset += 8; /* 2 for SNAC flags, 4 for request ID */
 
-        if (offsetptr > payloadSize) {
+        if (offset > payloadSize) {
             return 0;
         }
     }
@@ -178,25 +178,25 @@ aolplugin_LTX_ycAolScanScan(
         uint32_t protocol;
 
         /* protocol version */
-        if ((size_t)offsetptr + 4 > payloadSize) {
+        if ((size_t)offset + 4 > payloadSize) {
             return 0;
         }
 
-        protocol = ntohl(*(uint32_t *)(payload + offsetptr));
+        protocol = ntohl(*(uint32_t *)(payload + offset));
 
         if (protocol > 1) {
             return 0;
         }
 
-        offsetptr += 4;
+        offset += 4;
         if (flap_data_size != 4) {
-            tlv_id = getTLVID(payload, payloadSize, offsetptr);
+            tlv_id = getTLVID(payload, payloadSize, offset);
             if (tlv_id != 6 && tlv_id != 7 && tlv_id != 8 && tlv_id != 3 &&
                 tlv_id != 148 && tlv_id != 74)
             {
                 return 0;
             }
-            offsetptr += 2;
+            offset += 2;
         }
     }
 
@@ -208,15 +208,15 @@ static uint16_t
 getTLVID(
     const uint8_t  *payload,
     unsigned int    payloadSize,
-    uint16_t        offsetptr)
+    uint32_t        offset)
 {
     uint16_t tlvid;
 
-    if ((size_t)offsetptr + 2 > payloadSize) {
+    if ((size_t)offset + 2 > payloadSize) {
         return 0;
     }
 
-    tlvid = ntohs(*(uint16_t *)(payload + offsetptr));
+    tlvid = ntohs(*(uint16_t *)(payload + offset));
 
     return tlvid;
 }

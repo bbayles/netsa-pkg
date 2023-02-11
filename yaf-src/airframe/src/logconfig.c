@@ -3,7 +3,7 @@
 ** Generic glib-based logging configuration support
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2005-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2005-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Brian Trammell
 ** ------------------------------------------------------------------------
@@ -78,7 +78,7 @@ typedef struct logc_st {
 
 static logc_t  logc = { "", "", NULL, NULL, FALSE, FALSE, NULL };
 
-AirOptionEntry logc_optentries[] = {
+static AirOptionEntry logc_optentries[] = {
     AF_OPTION("log", 'l', 0, AF_OPT_TYPE_STRING, &(logc.logspec),
               AF_OPTION_WRAP "Log facility, log file path, or stderr [stderr]",
               "logspec"),

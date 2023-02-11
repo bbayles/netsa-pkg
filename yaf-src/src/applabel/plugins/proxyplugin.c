@@ -9,9 +9,9 @@
  * labeled as http (80).
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Chris Inacio <inacio@cert.org>, Emily Sarneso <ecoff@cert.org>
+ ** Authors: Chris Inacio, Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -112,8 +112,8 @@ decodeSSLv2(
     const uint8_t  *payload,
     unsigned int    payloadSize,
     yfFlow_t       *flow,
-    uint16_t        offsetptr,
-    uint16_t        firstpkt,
+    uint32_t        offset,
+    uint32_t        firstpkt,
     uint8_t         datalength);
 
 static gboolean
@@ -121,8 +121,8 @@ decodeTLSv1(
     const uint8_t  *payload,
     unsigned int    payloadSize,
     yfFlow_t       *flow,
-    uint16_t        offsetptr,
-    uint16_t        firstpkt,
+    uint32_t        offset,
+    uint32_t        firstpkt,
     uint8_t         datalength,
     uint8_t         type);
 
@@ -170,8 +170,8 @@ proxyplugin_LTX_ycProxyScanScan(
     uint8_t      ssl_length;
     uint8_t      ssl_msgtype;
     uint16_t     tls_version;
-    uint16_t     offsetptr = 0;
-    uint16_t     firstpkt = 0;
+    uint32_t     offset = 0;
+    uint32_t     firstpkt = 0;
     unsigned int payloadLength = payloadSize;
     unsigned int loop = 0;
     int          rc;
@@ -234,15 +234,15 @@ proxyplugin_LTX_ycProxyScanScan(
         }
 
         ssl_msgtype = 1;
-        offsetptr += 3;
+        offset += 3;
 
         /* this is the version from the handshake message */
-        tls_version = ntohs(*(uint16_t *)(payload + offsetptr));
-        offsetptr += 2;
+        tls_version = ntohs(*(uint16_t *)(payload + offset));
+        offset += 2;
         if (tls_version == TLS_VERSION_1 || tls_version == SSL_VERSION_2 ||
             tls_version == SSL_VERSION_3)
         {
-            if (!decodeSSLv2(payload, payloadLength, flow, offsetptr,
+            if (!decodeSSLv2(payload, payloadLength, flow, offset,
                              firstpkt, ssl_length))
             {
                 return 0;
@@ -275,17 +275,17 @@ proxyplugin_LTX_ycProxyScanScan(
             if (ssl_length < 3) {
                 return 0;
             }
-            offsetptr += 4;
+            offset += 4;
 
-            if ( ((size_t)offsetptr + 2) < payloadLength) {
-                tls_version = ntohs(*(uint16_t *)(payload + offsetptr));
-                offsetptr += 2;
+            if ( ((size_t)offset + 2) < payloadLength) {
+                tls_version = ntohs(*(uint16_t *)(payload + offset));
+                offset += 2;
 
                 if (tls_version == TLS_VERSION_1 ||
                     tls_version == SSL_VERSION_2 ||
                     tls_version == SSL_VERSION_3)
                 {
-                    if (!decodeSSLv2(payload, payloadLength, flow, offsetptr,
+                    if (!decodeSSLv2(payload, payloadLength, flow, offset,
                                      firstpkt, ssl_length))
                     {
                         return 0;
@@ -321,9 +321,9 @@ proxyplugin_LTX_ycProxyScanScan(
                 tls_version = ntohs(*(uint16_t *)(payload + 1));
                 /* 1 for content type, 2 for version, 2 for length,
                  * 1 for handshake type*/
-                offsetptr += 6;
+                offset += 6;
                 /* now we should be at record length */
-                if (!decodeTLSv1(payload, payloadLength, flow, offsetptr,
+                if (!decodeTLSv1(payload, payloadLength, flow, offset,
                                  firstpkt, ssl_length, ssl_msgtype))
                 {
                     return 0;
@@ -350,13 +350,13 @@ decodeTLSv1(
     const uint8_t  *payload,
     unsigned int    payloadSize,
     yfFlow_t       *flow,
-    uint16_t        offsetptr,
-    uint16_t        firstpkt,
+    uint32_t        offset,
+    uint32_t        firstpkt,
     uint8_t         datalength,
     uint8_t         type)
 {
     uint32_t record_len;
-    uint16_t header_len = offsetptr - 1;
+    uint32_t header_len = offset - 1;
     uint32_t cert_len, sub_cert_len;
     int      cert_count = 0;
     uint16_t cipher_suite_len;
@@ -364,88 +364,88 @@ decodeTLSv1(
     uint8_t  compression_len;
     uint8_t  next_msg;
     uint16_t ext_len = 0;
-    uint16_t ext_ptr;
+    uint32_t ext_ptr;
     uint16_t sub_ext_len;
     uint16_t sub_ext_type;
 
     /* Both Client and Server Hello's start off the same way */
     /* 3 for Length, 2 for Version, 32 for Random, 1 for session ID Len*/
-    if ((size_t)offsetptr + 39 > payloadSize) {
+    if ((size_t)offset + 39 > payloadSize) {
         return FALSE;
     }
 
-    record_len = (ntohl(*(uint32_t *)(payload + offsetptr)) & 0xFFFFFF00) >> 8;
+    record_len = (ntohl(*(uint32_t *)(payload + offset)) & 0xFFFFFF00) >> 8;
 
-    offsetptr += 37; /* skip version  & random*/
+    offset += 37; /* skip version  & random*/
 
-    session_len = *(payload + offsetptr);
+    session_len = *(payload + offset);
 
-    offsetptr += session_len + 1;
+    offset += session_len + 1;
 
-    if ((size_t)offsetptr + 2 > payloadSize) {
+    if ((size_t)offset + 2 > payloadSize) {
         return FALSE;
     }
 
     if (type == 1) {
         /* Client Hello */
 
-        cipher_suite_len = ntohs(*(uint16_t *)(payload + offsetptr));
+        cipher_suite_len = ntohs(*(uint16_t *)(payload + offset));
 
         /* figure out number of ciphers by dividing by 2 */
 
-        offsetptr += 2;
+        offset += 2;
 
         if (cipher_suite_len > payloadSize) {
             return FALSE;
         }
 
-        if ((size_t)offsetptr + cipher_suite_len > payloadSize) {
+        if ((size_t)offset + cipher_suite_len > payloadSize) {
             return FALSE;
         }
         /* cipher length */
         /* ciphers are here */
-        offsetptr += cipher_suite_len;
+        offset += cipher_suite_len;
 
-        if ((size_t)offsetptr + 1 > payloadSize) {
+        if ((size_t)offset + 1 > payloadSize) {
             return FALSE;
         }
 
-        compression_len = *(payload + offsetptr);
+        compression_len = *(payload + offset);
 
-        offsetptr += compression_len + 1;
+        offset += compression_len + 1;
 
 #if YAF_ENABLE_HOOKS
         yfHookScanPayload(flow, payload, cipher_suite_len, NULL,
-                          offsetptr + firstpkt, 91, TLS_PORT_NUMBER);
+                          offset + firstpkt, 91, TLS_PORT_NUMBER);
 #endif
     } else if (type == 2) {
         /* Server Hello */
-        if ((size_t)offsetptr + 3 > payloadSize) {
+        if ((size_t)offset + 3 > payloadSize) {
             return FALSE;
         }
         /* cipher is here */
 #if YAF_ENABLE_HOOKS
-        yfHookScanPayload(flow, payload, 2, NULL, offsetptr + firstpkt, 89,
+        yfHookScanPayload(flow, payload, 2, NULL, offset + firstpkt, 89,
                           TLS_PORT_NUMBER);
 #endif
-        offsetptr += 2;
+        offset += 2;
         /* compression method */
 #if YAF_ENABLE_HOOKS
-        yfHookScanPayload(flow, payload, 1, NULL, offsetptr + firstpkt, 90,
+        yfHookScanPayload(flow, payload, 1, NULL, offset + firstpkt, 90,
                           TLS_PORT_NUMBER);
 #endif
-        offsetptr++;
+        offset++;
     }
 
-    if (((size_t)offsetptr - header_len) < record_len) {
+    if (((size_t)offset - header_len) < record_len) {
         int tot_ext = 0;
         /* extensions? */
-        ext_len = ntohs(*(uint16_t *)(payload + offsetptr));
-        ext_ptr = offsetptr + 2;
-        offsetptr += ext_len + 2;
+        ext_len = ntohs(*(uint16_t *)(payload + offset));
+        ext_ptr = offset + 2;
+        offset += ext_len + 2;
 #if YAF_ENABLE_HOOKS
         /* only want Client Hello's server name */
-        if (type == 1 && (offsetptr < payloadSize)) {
+        if (type == 1 && (offset < payloadSize)) {
             while (ext_ptr < payloadSize && (tot_ext < ext_len)) {
                 sub_ext_type = ntohs(*(uint16_t *)(payload + ext_ptr));
                 ext_ptr += 2;
@@ -476,27 +476,27 @@ decodeTLSv1(
 #endif /* if YAF_ENABLE_HOOKS */
     }
 
-    while (payloadSize > offsetptr) {
-        next_msg = *(payload + offsetptr);
+    while (payloadSize > offset) {
+        next_msg = *(payload + offset);
         if (next_msg == 11) {
             /* certificate */
-            if ((size_t)offsetptr + 7 > payloadSize) {
+            if ((size_t)offset + 7 > payloadSize) {
                 return TRUE; /* prob should be false */
             }
 
-            offsetptr++;
+            offset++;
 
-            record_len = (ntohl(*(uint32_t *)(payload + offsetptr)) &
+            record_len = (ntohl(*(uint32_t *)(payload + offset)) &
                           0xFFFFFF00) >> 8;
-            offsetptr += 3;
+            offset += 3;
 
             /* Total Cert Length */
-            cert_len = (ntohl(*(uint32_t *)(payload + offsetptr)) &
+            cert_len = (ntohl(*(uint32_t *)(payload + offset)) &
                         0xFFFFFF00) >> 8;
-            offsetptr += 3;
+            offset += 3;
 
-            while (payloadSize > ((size_t)offsetptr + 4)) {
-                sub_cert_len = (ntohl(*(uint32_t *)(payload + offsetptr)) &
+            while (payloadSize > ((size_t)offset + 4)) {
+                sub_cert_len = (ntohl(*(uint32_t *)(payload + offset)) &
                                 0xFFFFFF00) >> 8;
                 if ((sub_cert_len > cert_len) || (sub_cert_len < 2)) {
                     /* it's at least got to have a version number */
@@ -509,9 +509,9 @@ decodeTLSv1(
                 /* offset of certificate */
                 if (cert_count < MAX_CERTS) {
 #if YAF_ENABLE_HOOKS
-                    if (((size_t)offsetptr + sub_cert_len + 3) < payloadSize) {
+                    if (((size_t)offset + sub_cert_len + 3) < payloadSize) {
                         yfHookScanPayload(flow, payload, 1, NULL,
-                                          offsetptr + firstpkt, 93,
+                                          offset + firstpkt, 93,
                                           TLS_PORT_NUMBER);
                     }
 #endif /* if YAF_ENABLE_HOOKS */
@@ -520,25 +520,25 @@ decodeTLSv1(
                 }
 
                 cert_count++;
-                offsetptr += 3 + sub_cert_len;
+                offset += 3 + sub_cert_len;
             }
         } else if (next_msg == 22) {
             /* 1 for type, 2 for version, 2 for length - we know it's long */
-            offsetptr += 5;
+            offset += 5;
         } else if (next_msg == 20 || next_msg == 21 || next_msg == 23) {
-            offsetptr += 3; /* 1 for type, 2 for version */
+            offset += 3; /* 1 for type, 2 for version */
 
-            if (((size_t)offsetptr + 2) > payloadSize) {
+            if (((size_t)offset + 2) > payloadSize) {
                 return TRUE; /* prob should be false */
             }
 
-            record_len = ntohs(*(uint16_t *)(payload + offsetptr));
+            record_len = ntohs(*(uint16_t *)(payload + offset));
 
             if (record_len > payloadSize) {
                 return TRUE;
             }
 
-            offsetptr += record_len + 2;
+            offset += record_len + 2;
         } else {
             return TRUE;
         }
@@ -553,8 +553,8 @@ decodeSSLv2(
     const uint8_t  *payload,
     unsigned int    payloadSize,
     yfFlow_t       *flow,
-    uint16_t        offsetptr,
-    uint16_t        firstpkt,
+    uint32_t        offset,
+    uint32_t        firstpkt,
     uint8_t         datalength)
 {
     uint32_t record_len;
@@ -564,23 +564,23 @@ decodeSSLv2(
     int      cert_count = 0;
     uint8_t  next_msg;
 
-    if ((size_t)offsetptr + 6 > payloadSize) {
+    if ((size_t)offset + 6 > payloadSize) {
         return FALSE;
     }
 
-    cipher_spec_length = ntohs(*(uint16_t *)(payload + offsetptr));
+    cipher_spec_length = ntohs(*(uint16_t *)(payload + offset));
 
     /* cipher_spec_length */
     /* session length */
 
-    offsetptr += 4;
+    offset += 4;
 
     /* challenge length */
-    challenge_length = ntohs(*(uint16_t *)(payload + offsetptr));
+    challenge_length = ntohs(*(uint16_t *)(payload + offset));
 
-    offsetptr += 2;
+    offset += 2;
 
-    if ((size_t)offsetptr + cipher_spec_length > payloadSize) {
+    if ((size_t)offset + cipher_spec_length > payloadSize) {
         return FALSE;
     }
 
@@ -590,32 +590,32 @@ decodeSSLv2(
 
 #if YAF_ENABLE_HOOKS
     yfHookScanPayload(flow, payload, cipher_spec_length, NULL,
-                      offsetptr + firstpkt, 92, TLS_PORT_NUMBER);
+                      offset + firstpkt, 92, TLS_PORT_NUMBER);
 #endif
-    offsetptr += cipher_spec_length + challenge_length;
+    offset += cipher_spec_length + challenge_length;
 
-    while (payloadSize > offsetptr) {
-        next_msg = *(payload + offsetptr);
+    while (payloadSize > offset) {
+        next_msg = *(payload + offset);
 
         if (next_msg == 11) {
             /* certificate */
-            if ((size_t)offsetptr + 7 > payloadSize) {
+            if ((size_t)offset + 7 > payloadSize) {
                 return TRUE; /* prob should be false */
             }
 
-            offsetptr++;
+            offset++;
 
-            record_len = (ntohl(*(uint32_t *)(payload + offsetptr)) &
+            record_len = (ntohl(*(uint32_t *)(payload + offset)) &
                           0xFFFFFF00) >> 8;
-            offsetptr += 3;
+            offset += 3;
 
             /* Total Cert Length */
-            cert_len = (ntohl(*(uint32_t *)(payload + offsetptr)) &
+            cert_len = (ntohl(*(uint32_t *)(payload + offset)) &
                         0xFFFFFF00) >> 8;
-            offsetptr += 3;
+            offset += 3;
 
-            while (payloadSize > offsetptr) {
-                sub_cert_len = (ntohl(*(uint32_t *)(payload + offsetptr)) &
+            while (payloadSize > offset) {
+                sub_cert_len = (ntohl(*(uint32_t *)(payload + offset)) &
                                 0xFFFFFF00) >> 8;
 
                 if ((sub_cert_len > cert_len) || (sub_cert_len < 2)) {
@@ -629,9 +629,9 @@ decodeSSLv2(
                 /* offset of certificate */
                 if (cert_count < MAX_CERTS) {
 #if YAF_ENABLE_HOOKS
-                    if (((size_t)offsetptr + sub_cert_len + 3) < payloadSize) {
+                    if (((size_t)offset + sub_cert_len + 3) < payloadSize) {
                         yfHookScanPayload(flow, payload, 1, NULL,
-                                          offsetptr + firstpkt, 93,
+                                          offset + firstpkt, 93,
                                           TLS_PORT_NUMBER);
                     }
 #endif /* if YAF_ENABLE_HOOKS */
@@ -640,25 +640,25 @@ decodeSSLv2(
                 }
 
                 cert_count++;
-                offsetptr += 3 + sub_cert_len;
+                offset += 3 + sub_cert_len;
             }
         } else if (next_msg == 22) {
             /* 1 for type, 2 for version, 2 for length - we know it's long */
-            offsetptr += 5;
+            offset += 5;
         } else if (next_msg == 20 || next_msg == 21 || next_msg == 23) {
-            offsetptr += 3; /* 1 for type, 2 for version */
+            offset += 3; /* 1 for type, 2 for version */
 
-            if (((size_t)offsetptr + 2) > payloadSize) {
+            if (((size_t)offset + 2) > payloadSize) {
                 return TRUE; /* prob should be false */
             }
 
-            record_len = ntohs(*(uint16_t *)(payload + offsetptr));
+            record_len = ntohs(*(uint16_t *)(payload + offset));
 
             if (record_len > payloadSize) {
                 return TRUE;
             }
 
-            offsetptr += record_len + 2;
+            offset += record_len + 2;
         } else {
             return TRUE;
         }

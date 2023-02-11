@@ -3,7 +3,7 @@
 ** YAF flow printer
 **
 ** ------------------------------------------------------------------------
-** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Brian Trammell
 ** ------------------------------------------------------------------------
@@ -87,7 +87,7 @@ static uint32_t yaft_cliflags = MIO_F_CLI_FILE_IN |
     MIO_F_CLI_DIR_OUT |
     MIO_F_CLI_DEF_STDOUT;
 
-AirOptionEntry yaft_optentries[] = {
+static AirOptionEntry yaft_optentries[] = {
     AF_OPTION( "tabular", (char)0, 0, AF_OPT_TYPE_NONE, &yaft_tabular,
                "Print flows in tabular format", NULL ),
     AF_OPTION( "mac", (char)0, 0, AF_OPT_TYPE_NONE, &yaft_mac,

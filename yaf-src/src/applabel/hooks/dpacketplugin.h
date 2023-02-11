@@ -6,7 +6,7 @@
  * header file for dpacketplugin.c
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
  ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
@@ -998,7 +998,7 @@ ypDPIScanner(
     ypDPIFlowCtx_t  *flowContext,
     const uint8_t   *payloadData,
     unsigned int     payloadSize,
-    uint16_t         offset,
+    uint32_t         offset,
     yfFlow_t        *flow,
     yfFlowVal_t     *val);
 

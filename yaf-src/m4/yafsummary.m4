@@ -3,7 +3,7 @@ dnl ------------------------------------------------------------------------
 dnl yafconfig.m4
 dnl write summary of configure to a file (stolen from SiLK)
 dnl ------------------------------------------------------------------------
-dnl Copyright (C) 2013-2021 Carnegie Mellon University. All Rights Reserved.
+dnl Copyright (C) 2013-2023 Carnegie Mellon University. All Rights Reserved.
 dnl ------------------------------------------------------------------------
 dnl Authors: Emily Sarneso
 dnl ------------------------------------------------------------------------

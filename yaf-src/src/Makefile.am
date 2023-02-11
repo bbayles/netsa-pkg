@@ -3,9 +3,9 @@
 ## Makefile.am (source)
 ## autotools build system for YAF
 ## ------------------------------------------------------------------------
-## Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+## Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
 ## ------------------------------------------------------------------------
-## Authors: Brian Trammell 
+## Authors: Brian Trammell
 ## ------------------------------------------------------------------------
 ## GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
 ## Government Purpose License Rights (GPLR) pursuant to DFARS 252.227-7013
@@ -64,24 +64,24 @@ if CYGWIN
 libyaf_la_SOURCES += yafcygwin.c
 endif
 
-libyaf_la_LIBADD = @GLIB_LDADD@ 
-libyaf_la_LDFLAGS = @GLIB_LIBS@ @libfixbuf_LIBS@ @libp0f_LIBS@ @SPREAD_LDFLAGS@ @SPREAD_LIBS@ -version-info @LIBCOMPAT@ -release ${VERSION} @libndpi_LIBS@
-libyaf_la_CFLAGS = @GLIB_CFLAGS@ @libfixbuf_CFLAGS@ @libp0f_CFLAGS@ @SPREAD_CFLAGS@ -DYAF_CONF_DIR='"$(sysconfdir)"' @libndpi_CFLAGS@ -DYAF_APPLABEL_PATH=\"${libdir}/yaf\"
+libyaf_la_LIBADD = $(GLIB_LDADD)
+libyaf_la_LDFLAGS = $(GLIB_LIBS) $(libfixbuf_LIBS) $(libp0f_LIBS) $(libndpi_LIBS) $(SPREAD_LDFLAGS) $(SPREAD_LIBS) -version-info $(LIBCOMPAT) -release ${VERSION}
+libyaf_la_CFLAGS = $(GLIB_CFLAGS) $(libfixbuf_CFLAGS) $(libp0f_CFLAGS) $(libndpi_CFLAGS) $(SPREAD_CFLAGS) -DYAF_CONF_DIR='"$(sysconfdir)"' -DYAF_APPLABEL_PATH=\"${libdir}/yaf\"
 
 yaf_SOURCES = yaf.c yafstat.c yafdag.c yafcap.c yafout.c yaflush.c yafpcapx.c yafnfe.c yafpfring.c
-yaf_LDADD   =  libyaf.la @GLIB_LDADD@ ../lua/src/liblua.la
-yaf_LDFLAGS = -L../airframe/src -lairframe @GLIB_LIBS@ @libfixbuf_LIBS@ @libp0f_LIBS@ @SPREAD_LDFLAGS@ @SPREAD_LIBS@ -export-dynamic 
-yaf_CFLAGS  = @GLIB_CFLAGS@ @libfixbuf_CFLAGS@ @SPREAD_CFLAGS@ @libp0f_CFLAGS@ -DYAF_CONF_DIR='"$(sysconfdir)"'
+yaf_LDADD   =  libyaf.la $(GLIB_LDADD) ../lua/src/liblua.la
+yaf_LDFLAGS = -L../airframe/src -lairframe $(GLIB_LIBS) $(libfixbuf_LIBS) $(libp0f_LIBS) $(libndpi_LIBS) $(SPREAD_LDFLAGS) $(SPREAD_LIBS) -export-dynamic
+yaf_CFLAGS  = $(GLIB_CFLAGS) $(libfixbuf_CFLAGS) $(libp0f_CFLAGS) $(libndpi_CFLAGS) $(SPREAD_CFLAGS) -DYAF_CONF_DIR='"$(sysconfdir)"'
 
 yafscii_SOURCES = yafscii.c
-yafscii_LDADD = libyaf.la @GLIB_LDADD@ 
-yafscii_LDFLAGS =  -L../airframe/src -lairframe @GLIB_LIBS@ @libfixbuf_LIBS@
-yafscii_CFLAGS = @GLIB_CFLAGS@ @libfixbuf_CFLAGS@ 
+yafscii_LDADD = libyaf.la $(GLIB_LDADD)
+yafscii_LDFLAGS =  -L../airframe/src -lairframe $(GLIB_LIBS) $(libfixbuf_LIBS)
+yafscii_CFLAGS = $(GLIB_CFLAGS) $(libfixbuf_CFLAGS)
 
 yafcollect_SOURCES = yafcollect.c
-yafcollect_LDADD = libyaf.la @GLIB_LDADD@
-yafcollect_LDFLAGS =  -L../airframe/src -lairframe @GLIB_LIBS@ @libfixbuf_LIBS@
-yafcollect_CFLAGS = @GLIB_CFLAGS@ @libfixbuf_CFLAGS@
+yafcollect_LDADD = libyaf.la $(GLIB_LDADD)
+yafcollect_LDFLAGS =  -L../airframe/src -lairframe $(GLIB_LIBS) $(libfixbuf_LIBS)
+yafcollect_CFLAGS = $(GLIB_CFLAGS) $(libfixbuf_CFLAGS)
 
 noinst_HEADERS = yafdag.h yafcap.h yafpcapx.h yafstat.h yafout.h yaflush.h yafctx.h yafapplabel.h applabel/payloadScanner.h applabel/portHash.h yafnfe.h yafpfring.h infomodel.h
 

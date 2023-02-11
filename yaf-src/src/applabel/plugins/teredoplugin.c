@@ -12,9 +12,9 @@
  * @sa rfc 4380  href="http://tools.ietf.org/html/rfc4380"
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Dan Ruef <druef@cert.org>
+ ** Authors: Dan Ruef
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms

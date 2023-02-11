@@ -12,9 +12,9 @@
  * and add'l config options.
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Sarneso <ecoff@cert.org>
+ ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -104,7 +104,8 @@ dhcpplugin_LTX_ycDhcpScanScan(
     yfFlowVal_t    *val)
 {
     uint8_t  op, htype;
-    uint16_t flags, offsetptr = 0;
+    uint16_t flags;
+    uint32_t offset = 0;
     uint32_t magic_cookie;
     int      loop;
 
@@ -120,60 +121,60 @@ dhcpplugin_LTX_ycDhcpScanScan(
     if (op != 2 && op != 1) {
         return 0;   /* BOOTREPLY = 2, BOOTREQUEST = 1 */
     }
-    offsetptr++;
+    offset++;
 
     /* Hardware type */
-    htype = *(payload + offsetptr);
+    htype = *(payload + offset);
     if (htype != 1) {
         return 0;
     }
 
     /* hardware len is after type */
 
-    offsetptr += 2;
+    offset += 2;
 
     /* hops should be 0 */
-    if (*(payload + offsetptr) != 0) {
+    if (*(payload + offset) != 0) {
         return 0;
     }
 
     /* transaction ID next & then seconds elapsed */
-    offsetptr += 7;
+    offset += 7;
 
-    flags = ntohs(*(uint16_t *)(payload + offsetptr));
+    flags = ntohs(*(uint16_t *)(payload + offset));
     if (flags != 0x8000 && flags != 0) {
         return 0;  /* only 1 (Broadcast flag) bit can be set) */
     }
 
     /* client addr is after flags - can be different based on type of message
      * */
-    offsetptr += 6;
+    offset += 6;
 
     if (op == 1) {
         /* yiaddr, siaddr, and giaddr should be 0 */
         for (loop = 0; loop < 12; loop++) {
-            if (*(payload + offsetptr + loop) != 0) {
+            if (*(payload + offset + loop) != 0) {
                 return 0;
             }
         }
     }
     /* 12 for above yiaddr, siaddr, and giaddr, 16 for chaddr */
-    offsetptr += 28;
+    offset += 28;
     /* 64 for sname, 128 for file, 4 for magic cookie */
-    if ((size_t)offsetptr + 196 <= payloadSize) {
-        offsetptr += 192;
+    if ((size_t)offset + 196 <= payloadSize) {
+        offset += 192;
     } else {
         /* should be good enough - but magic cookie will secure the decision */
         return DHCP_PORT_NUMBER;
     }
 
-    magic_cookie = ntohl(*(uint32_t *)(payload + offsetptr));
+    magic_cookie = ntohl(*(uint32_t *)(payload + offset));
     if (magic_cookie != MAGICCOOKIE) {
         return 0;
     }
 
-    offsetptr += 4;
-    if (offsetptr >= payloadSize) {
+    offset += 4;
+    if (offset >= payloadSize) {
         /* just enough */
         return DHCP_PORT_NUMBER;
     }

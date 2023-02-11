@@ -1,3 +1,115 @@
+Version 2.4.2: 2023-02-09
+=========================
+
+Updated CERT IPFIX elements to include those added in libfixbuf 3.0.  This update does not include the element name changes that were part of that release.
+
+Version 3.0.0.alpha2: 2023-02-09
+================================
+
+Fixed long-standing bugs in transcoding the following data types when their sizes differ: signed integers with negative values, doubles, and fixed-size strings and octet-arrays.  This may introduce inconsistencies when tools are compiled with different versions of libfixbuf.
+
+Changed libfixbuf to reject a template and return an error when it receives a template that uses an invalid length for an element.  Previously libfixbuf printed a warning and accepted the template.
+
+Added support for a hexdump argument to the --string-format and --octet-format switches of ipfixDump.
+
+Fixed a bug from 3.0.0.alpha1 where NTP-encoded time values were not decoded correctly by fbRecordGetValueForField() and similar functions.
+
+Changed fbSubTemplateMultiListEntryClear() to zero the tmpl and tmplID members.
+
+Changed fbDecodeBasicList() to free and reallocate its memory on each call.
+
+Version 3.0.0.alpha1: 2022-02-24
+================================
+
+Made many changes to functions and public structs that break compatibilty with previous releases of libfixbuf.
+
+Changed fbTemplate_t to reference a new object type, fbTemplateField_t,
+resulting in changes to many function signatures.  The TemplateField includes
+the offset of the element's value, making it easier to get a value from a
+record.
+
+Changed and removed members of fbInfoElement_t.  Added several macros to get
+values from an fbInfoElement_t.
+
+Added a new type, fbTemplateInfo_t, to hold the name and description of a
+Template and additional information about it.  A TemplateInfo contains a
+SubTemplateList of fbBasicListInfo_t, a new type to describe the information
+element IDs of a BasicList and of the element it contains.
+
+Changed fbSessionAddTemplate() to take an additional parameter: an
+fbTemplateInfo_t, which may be NULL.  fbSessionAddTemplateWithMetadata() has
+been removed.
+
+Changed fbSessionSetMetadataExportTemplates() to take an additional paramter:
+the template ID for the fbBasicListInfo_t.
+
+Removed support for the Spread Toolkit.
+
+Renamed the following functions:
+fBufSetAutomaticInsert() to fBufSetAutomaticElementInsert(),
+fBufSetAutomaticMode() to fBufSetAutomaticNextMessage(),
+fbBasicListRealloc() to fbBasicListResize(),
+fbListValidSemantic() to fbListSemanticsIsValid(),
+fbSubTemplateListRealloc() to fbSubTemplateListResize(),
+fbSubTemplateMultiListEntryRealloc() to fbSubTemplateMultiListEntryResize(),
+fbSubTemplateMultiListRealloc() to fbSubTemplateMultiListResize(), and
+fbTemplateGetIndexedIE() to fbTemplateGetFieldByPosition().
+
+Removed functions fbBasicListInitWithOwnBuffer(),
+fbSessionEnableTemplateMetadata(), fbSessionEnableTypeMetadata(), and
+fbSubTemplateListInitWithOwnBuffer().
+
+Removed fbInfoModelTypeInfoRecord() and fbTemplateMetadataRecord().  Added a
+replaced function, fbTemplateIsMetadata(), that checks whether a Template is
+for describing metadata: RFC5610 records (Info Element descriptions) or
+Template metadata.
+
+Removed macros FB_IE_BASIC_LIST, FB_IE_SUBTEMPLATE_LIST, and
+FB_IE_SUBTEMPLATE_MULTILIST.
+
+Changed the members of fbSubTemplateList_t.
+
+Made major changes to the output of ipfixDump, and modified many of its
+command line switches.
+
+Added a new type, fbRecord_t, that holds the data for a record read from a
+stream and the Template that describes that data.  Added functions,
+fBufNextRecord() and others, to support the new type and get values from a
+fbRecord_t.
+
+Added a function to copy an fbRecord_t from one fbTemplate_t to another.
+
+Added a new command line tool, ipfix2json, to convert an IPFIX file to JSON.
+This tool is built by default; use --disable-tools to build the library only.
+
+Updated the ABI to use 'const' on more parameters and more return values.
+
+Added new convenience functions, fbSessionAddTemplatesForExport() and
+fBufSetTemplatesForExport(), that handle adding or setting both the internal
+and export templates.
+
+Added convenience functions to copy an incoming templates to an export Session.
+
+Added a new function, fbBasicListInitWithLength(), to initialize a BasicList
+and use reduced length encoding for the element.
+
+Added convenience macros fbBLNext(), fbSTLNext(), fbSTMLNext(), and
+fbSTMLEntryNext() for iterating over fbBasicList_t, fbSubTemplateList_t,
+fbSubTemplateMultiList_t and fbSubTemplateMultiListEntry_t objects.
+
+Added a Template iterator, fbTemplateIter_t, to visit the TemplateFields in a
+Template.
+
+Added functions to copy and compare Templates.  Added functions to find an
+element in a Template and return a TemplateField.
+
+Added a function to set the context object on a Template.
+
+Added an enum for the Information Element semantics, fbInfoElementSemantics_t.
+Added an enum for the structured data (list) semantics, fbListSemantics_t.
+
+Changed license to GNU General Public License (GPL) Version 2, June 1991.
+
 Version 2.4.1: 2020-12-22
 =========================
 

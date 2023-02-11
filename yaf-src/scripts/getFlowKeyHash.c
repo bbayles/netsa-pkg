@@ -16,11 +16,11 @@
 * time, you can find the pcap file which contains the entire
 * flow.
 ** ------------------------------------------------------------------------
-** Copyright (C) 2006-2021 Carnegie Mellon University.
+** Copyright (C) 2006-2023 Carnegie Mellon University.
 ** All Rights Reserved.
 **
 ** ------------------------------------------------------------------------
-** Author: Emily Sarneso <ecoff@cert.org>
+** Author: Emily Sarneso
 ** ------------------------------------------------------------------------
 ** @OPENSOURCE_HEADER_START@
 ** Use of the YAF system and related source code is subject to the terms
@@ -351,7 +351,7 @@ convertIP6Address(
 
 static fBuf_t *
 exportIPFIX(
-    char    *output,
+    char    *output_name,
     GError **err)
 {
     fbInfoModel_t *infoModel = NULL;
@@ -387,7 +387,7 @@ exportIPFIX(
         return NULL;
     }
 
-    exp = fbExporterAllocFile(output);
+    exp = fbExporterAllocFile(output_name);
 
     if (!exp) {
         return NULL;
@@ -417,7 +417,7 @@ exportIPFIX(
 
 static gboolean
 collectIPFIX(
-    char    *input,
+    char    *input_name,
     FILE    *fp,
     GError **err)
 {
@@ -453,7 +453,7 @@ collectIPFIX(
         return FALSE;
     }
 
-    coll = fbCollectorAllocFile(NULL, input, err);
+    coll = fbCollectorAllocFile(NULL, input_name, err);
     if (!coll) {
         return FALSE;
     }

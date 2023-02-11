@@ -1,6 +1,6 @@
 /*
 ** ------------------------------------------------------------------------
-** Copyright (C) 2017-2021 Carnegie Mellon University. All Rights Reserved.
+** Copyright (C) 2017-2023 Carnegie Mellon University. All Rights Reserved.
 ** ------------------------------------------------------------------------
 ** Authors: Matt Coates
 ** ------------------------------------------------------------------------
@@ -35,7 +35,7 @@ validate_NTP(
 {
     uint8_t      ntp_version;
     uint8_t      ntp_mode;
-    unsigned int consumed = 0;
+    uint32_t     consumed = 0;
     uint16_t     data_item_size;
     uint16_t     data_item_count;
     uint16_t     extension_field_len;

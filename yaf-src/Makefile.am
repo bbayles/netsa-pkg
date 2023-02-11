@@ -3,7 +3,7 @@
 ## Makefile.am (toplevel)
 ## autotools build system for YAF
 ## ------------------------------------------------------------------------
-## Copyright (C) 2006-2021 Carnegie Mellon University. All Rights Reserved.
+## Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
 ## ------------------------------------------------------------------------
 ## Authors: Brian Trammell
 ## ------------------------------------------------------------------------
@@ -19,7 +19,7 @@ ACLOCAL_AMFLAGS = -I m4
 # Avoid picking up MacOS X resource forks in "make dist"
 am__tar = COPY_EXTENDED_ATTRIBUTES_DISABLE=1 COPYFILE_DISABLE=1 ${AMTAR} cof - "$$tardir"
 
-SUBDIRS = infomodel lua airframe libltdl src include etc scripts
+SUBDIRS = infomodel lua libltdl airframe src include etc scripts
 
 include doxygen.am
 
@@ -31,10 +31,21 @@ utils-doc:
 	(cd $(top_builddir)/airframe/doc && $(MAKE) docs)
 
 release-note-doc: NEWS
-	$(top_srcdir)/doc/news2xhtml.pl yaf gpl 16 < $(top_srcdir)/NEWS > doc/releases.xml
+	$(top_srcdir)/doc/news2xhtml.pl < $(top_srcdir)/NEWS > doc/releases.xml
 
 make-doc-path:
 	mkdir -p $(top_builddir)/doc/html
+
+# Doxygen adds both id="foo" and name="foo" attributes.  Remove name.
+REPAIR_DOXY_DOCS = \
+ if test -d doc/html/libyaf ; then \
+   for i in `find doc/html/libyaf -name '*.html'` ; do \
+     $(PERL) -i -lpwe 's/\b(id=("[^">]+")) +name=\2/$$1/g; s/\bname=("[^">]+") +(id=\1)/$$2/g;' $$i ; \
+   done ; \
+ fi
+
+repair-doxy-docs:
+	$(REPAIR_DOXY_DOCS)
 
 copy-doxygen-doc:
 	cp -pr doc/html $(distdir)/doc
@@ -45,7 +56,7 @@ dist-hook: docs copy-doxygen-doc
 distclean-local:
 	rm -f $(top_builddir)/doc/releases.xml
 
-docs: make-doc-path doxygen-doc utils-doc release-note-doc
+docs: make-doc-path doxygen-doc repair-doxy-docs utils-doc release-note-doc
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libyaf.pc

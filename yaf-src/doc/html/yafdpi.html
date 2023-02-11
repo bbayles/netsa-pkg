@@ -1,31 +1,17 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>YAF - Documentation</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-
-        <link rel="stylesheet" type="text/css" href="../site/style.css" />
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 
 </head>
+
 <body>
-    <div id="p-body">
-      <div id="l-header">
-        <img src="../site/sei-logo.png" id="l-sei-logo"
-            alt="Software Engineering Institute | Carnegie Mellon&copy;" />
-        <div id="l-netsa-logo"><a id="l-netsa-name" href="../index.html"><b>CERT NetSA Security Suite</b></a></div>
-        <div id="l-netsa-motto">Monitoring for Large-Scale Networks</div>
-        <h1 class="l-page-title">YAF</h1>
-        <span id="l-subtitle">Documentation</span>
-      </div><!-- l-header -->
-      <div id="l-content">
-        <div id="l-sidebar">
-          <div class="p-sidebar-section">
-            <h1><a href="index.html">YAF</a></h1>
-            <ul>
-              <li><a href="docs.html">Documentation</a></li>
-              <li><a href="download.html">Downloads</a></li>
-            </ul>
-          </div><!-- p-sidebar-section -->
-        </div><!-- l-sidebar -->
-<h1><a name="name">NAME</a></h1><p><b>yaf deep packet inspection</b></p>
+
+<h1 id="NAME">NAME</h1>
+
+<p><b>yaf deep packet inspection</b></p>
 
 <h1 id="DESCRIPTION">DESCRIPTION</h1>
 
@@ -37,19 +23,11 @@
 
 <p>In order to enable DPI in <b>yaf</b> the following should be added to the command line:</p>
 
-<ul>
-
 <p><code>--plugin-name=/usr/local/lib/yaf/dpacketplugin.la</code></p>
-
-</ul>
 
 <p>You can also add the option switch to specify which protocols to perform DPI:</p>
 
-<ul>
-
 <p><code>--plugin-opts=&quot;53 80 21&quot;</code></p>
-
-</ul>
 
 <p>The above will perform DPI for DNS, HTTP, and FTP.</p>
 
@@ -57,47 +35,31 @@
 
 <p>In order to perform DPI on DNSSEC resource records, add &quot;DNSSEC&quot; to the <b>--plugin-opts</b> option:</p>
 
-<ul>
-
 <p><code>--plugin-opts=DNSSEC</code></p>
 
 <p><code>--plugin-opts=&quot;DNSSEC 53&quot;</code></p>
-
-</ul>
 
 <h1 id="DPI-CONFIG-FILE-FORMAT">DPI CONFIG FILE FORMAT</h1>
 
 <p>The yafDPIRules.conf file should be in the same location as the yafApplabelRules.conf file. The file follows a similar format to yafApplabelRules.conf. The file is a list of label, element pair statements. A label statement begins with the keyword &#39;label&#39;, and has the following form:</p>
 
-<ul>
-
 <p>label &lt;N&gt; element &lt;N2&gt; &lt;element-rule&gt;</p>
 
-</ul>
-
-<p>where &lt;N&gt; is the application label (usually the well-known port) found in the yafApplabelRules.conf file (an unsigned 16-bit decimal integer in the range 0 to 65535), &lt;N2&gt; is the Information Element ID found in the <i>/usr/local/yaf/CERT_IE.h</i> and below, and &lt;element-rule&gt; is a PCRE regular expression and will be stored and associated with the ID number preceding it. There can be multiple lines for a single application label, however each should have a different &lt;N2&gt;. There should be parentheses around the substring you want to capture and store. If there is more than 1 set of parentheses in the regular expression, the most outer set is the substring captured. (See PCRE documentation for details on regular expressions and substring matching.)</p>
+<p>where &lt;N&gt; is the application label (usually the well-known port) found in the yafApplabelRules.conf file (an unsigned 16-bit decimal integer in the range 0 to 65535), &lt;N2&gt; is the Information Element ID found in the <a href="https://tools.netsa.cert.org/cert-ipfix-registry/cert_ipfix_formatted.html">CERT IPFIX Registry</a> and below, and &lt;element-rule&gt; is a PCRE regular expression and will be stored and associated with the ID number preceding it. There can be multiple lines for a single application label, however each should have a different &lt;N2&gt;. There should be parentheses around the substring you want to capture and store. If there is more than 1 set of parentheses in the regular expression, the most outer set is the substring captured. (See PCRE documentation for details on regular expressions and substring matching.)</p>
 
 <h2 id="User-Defined-Elements">User Defined Elements</h2>
 
 <p>To define your own information elements, use the following form:</p>
 
-<ul>
-
 <p>label &lt;N&gt; user &lt;E&gt; name &lt;element-name&gt; &lt;element-rule&gt;</p>
 
-</ul>
-
-<p>where &lt;N&gt; is the application label found in yafApplabelRules.conf file. &lt;E&gt; is the Information Element ID in the range of 0 to 65535 to be given to the element upon export. This number should be unique to this file and should NOT be defined in <i>/usr/local/yaf/CERT_IE.h</i>. This element will be added to the template upon processing of this file, and must be added to the <b>yaf</b> collecting process in order to properly decode the IPFIX message. &lt;element-name&gt; is the name you want to give to this IPFIX Information Element. This name can consist of letters and numbers and underscores; it can not contain special characters or spaces. &lt;label-rule&gt; is the PCRE regular expression and will be stored and associated with the Information Element ID and name preceding it. There is a limit of 30 additional fields per protocol that YAF will store and execute. To find out if <b>yaf</b> accepted your elements, run <b>yaf</b> with --verbose. All user elements will be exported using the CERT Private Enterprise Number (PEN) 6871. ONLY user labels for protocols FTP, HTTP, IMAP, SMTP, RTSP, SSH, and SIP will be added. Elements will be added to the template in the order they are listed in the yafDPIRules.conf file in the form of an fbBasicList_t. By default, HTTP exports 20 basicLists, FTP exports 5 basicLists, IMAP exports 7 basicLists, RTSP exports 12 basicLists, SIP exports 7 basicLists, SMTP exports 11 basicLists, and 1 basicList is exported for SSH.</p>
+<p>where &lt;N&gt; is the application label found in yafApplabelRules.conf file. &lt;E&gt; is the Information Element ID in the range of 0 to 65535 to be given to the element upon export. This number should be unique to this file and should NOT be defined in the CERT IPFIX Registry. This element will be added to the template upon processing of this file, and must be added to the <b>yaf</b> collecting process in order to properly decode the IPFIX message. &lt;element-name&gt; is the name you want to give to this IPFIX Information Element. This name can consist of letters and numbers and underscores; it can not contain special characters or spaces. &lt;label-rule&gt; is the PCRE regular expression and will be stored and associated with the Information Element ID and name preceding it. There is a limit of 30 additional fields per protocol that YAF will store and execute. To find out if <b>yaf</b> accepted your elements, run <b>yaf</b> with --verbose. All user elements will be exported using the CERT Private Enterprise Number (PEN) 6871. ONLY user labels for protocols FTP, HTTP, IMAP, SMTP, RTSP, SSH, and SIP will be added. Elements will be added to the template in the order they are listed in the yafDPIRules.conf file in the form of an fbBasicList_t. By default, HTTP exports 20 basicLists, FTP exports 5 basicLists, IMAP exports 7 basicLists, RTSP exports 12 basicLists, SIP exports 7 basicLists, SMTP exports 11 basicLists, and 1 basicList is exported for SSH.</p>
 
 <p>A &quot;#&quot; smybol starts a comment for the entire line. If a rule is not properly formatted, all subsequent rules may not be processed. It is acceptable to comment out any <b>yaf</b> DPI rules. <b>yaf</b> rules commented out will not be executed against the payload but they will still exist in the template and record. User-defined information elements are added based on the configuration file at run time.</p>
 
 <p>Optionally, this file may contain two limit statements to configure the DPI plugin. A limit statement begins with the keyword &#39;limit&#39;, and has the following form:</p>
 
-<ul>
-
 <p>limit [field|total] &lt;limit-value&gt;</p>
-
-</ul>
 
 <p>If the &quot;field&quot; label is present, the &lt;limit-value&gt; will be the number of bytes <b>yaf</b> will export for any given field in this file. This does not affect the DNS Deep Packet Inspection or SSL Certificate Capture. FOr DNS, a domain name can have a maximum of 255 characters, so the limit is not configurable.</p>
 
@@ -107,27 +69,17 @@
 
 <p>There are also 2 configuration parameters related to SSL export. By default, <b>yaf</b> parses the X.509 certificates and exports the information described below under SSL/TLS. If the following line is present:</p>
 
-<ul>
-
 <p>cert_export_enabled = 1</p>
-
-</ul>
 
 <p><b>yaf</b> will export the full X.509 certificate in the format described below under Full Certificate Export. Setting this variable to 1 disables the traditional SSL certificate decode and export. If the second configuration variable is present:</p>
 
-<ul>
-
 <p>cert_hash_enabled = 1</p>
-
-</ul>
 
 <p><b>yaf</b> will export the hash of the X.509 certificate as found in the certificate. This is typically the SHA-256 hash of the binary certificate but it can vary on the hashing algorithm used. The hashing algorithm can be identified by the sslCertSignature field. If both cert_export_enabled and cert_hash_enabled are set to 1, <b>yaf</b> will export both the full X.509 certificate and perform the traditional decode of the X.509 certificate. It is not recommended to do both. If cert_export_enabled is set to 1, <b>super_mediator</b> can perform the extraction of relevant fields as is done by <b>yaf</b>, plus it provides the option to perform SHA-1 or MD5 hashes of the certificate.</p>
 
 <h1 id="DPI-in-Action">DPI in Action</h1>
 
 <p>Upon <b>yaf</b> startup and capture, you will be able to see if the rule files and their regular expressions were accepted using the <b>--verbose</b> flag.</p>
-
-<ul>
 
 <p>[2013-05-03 19:39:25] DPI Running for ALL Protocols</p>
 
@@ -136,8 +88,6 @@
 <p>[2013-05-03 19:39:25] Initializing Rules from DPI File /usr/local/etc/yafDPIRules.conf</p>
 
 <p>[2013-05-03 19:39:25] DPI rule scanner accepted 63 rules from the DPI Rule File</p>
-
-</ul>
 
 <p>An unacceptable regular expression will be brought to your attention with the above statements. If you choose certain protocols for inspection using the <code>--plugin-opts</code> flag, only the appropriate rule statements will be loaded into the DPI Rule Scanner.</p>
 
@@ -165,7 +115,7 @@
 
 <h2 id="DPI-Templates-Information-Elements-by-Protocol">DPI Templates &amp; Information Elements by Protocol</h2>
 
-<p><b>yaf</b>&#39;s output consists of an IPFIX message stream. <b>yaf</b> uses a variety of templates for IPFIX data records; As of <b>yaf</b> 2.0, <b>yaf</b> uses a subTemplateMultiList to export optional information elements, such as Deep Packet Inspection fields, relating to the flow. Below are templates that may appear in this subTemplateMultiList depending on the application label of the flow. For more information on <b>yaf</b> information elements see <b>yaf(1)</b>. For more information on IPFIX Structured lists, see the Internet Draft, Export of Structured Data in IPFIX, &lt;RFC 6313&gt;. Most of the elements are exported as a basicList. An IPFIX basicList represents a list of zero or more instances of any Information Element (IE 291).</p>
+<p><b>yaf</b>&#39;s output consists of an IPFIX message stream. <b>yaf</b> uses a variety of templates for IPFIX data records; As of <b>yaf</b> 2.0, <b>yaf</b> uses a subTemplateMultiList to export optional information elements, such as Deep Packet Inspection fields, relating to the flow. Below are templates that may appear in this subTemplateMultiList depending on the application label of the flow. For more information on <b>yaf</b> information elements see <a href="yaf.html"><b>yaf(1)</b></a>. For more information on IPFIX Structured lists, see the Internet Draft, Export of Structured Data in IPFIX, &lt;RFC 6313&gt;. Most of the elements are exported as a basicList. An IPFIX basicList represents a list of zero or more instances of any Information Element (IE 291).</p>
 
 <h2 id="FTP">FTP</h2>
 
@@ -1693,24 +1643,13 @@
 
 <h1 id="AUTHORS">AUTHORS</h1>
 
-<p>Emily Sarneso &lt;ecoff@cert.org&gt; and the CERT Network Situational Awareness Group Engineering Team, http://www.cert.org/netsa</p>
+<p>Emily Sarneso and the CERT Network Situational Awareness Group Engineering Team &lt;netsa-help@cert.org&gt;, http://www.cert.org/netsa</p>
 
 <h1 id="SEE-ALSO">SEE ALSO</h1>
 
-<p><b>yaf(1)</b>, <b>yafscii(1)</b>, PCRE Documentation</p>
+<p><a href="yaf.html"><b>yaf(1)</b></a>, <a href="yafscii.html"><b>yafscii(1)</b></a>, PCRE Documentation</p>
 
-      </div><!-- l-content -->
-      <div id="l-footer">
-        &copy; 2006-2021 Carnegie Mellon University
-        <span id="l-contact">
-          <a href="https://www.sei.cmu.edu/legal/index.cfm">Legal</a> |
-          <a href="https://www.sei.cmu.edu/legal/privacy-notice/index.cfm">Privacy Notice</a> |
-          <img alt="email address" src="/site/contact_email.png" />
-        </span>
-      </div>
-    </div><!-- p-body -->
 </body>
-
 
 </html>
 

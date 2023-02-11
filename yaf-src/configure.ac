@@ -3,7 +3,7 @@ dnl ------------------------------------------------------------------------
 dnl configure.in
 dnl autotools build system for YAF applications
 dnl ------------------------------------------------------------------------
-dnl Copyright (C) 2005-2021 Carnegie Mellon University. All Rights Reserved.
+dnl Copyright (C) 2005-2023 Carnegie Mellon University. All Rights Reserved.
 dnl ------------------------------------------------------------------------
 dnl Authors: Brian Trammell
 dnl ------------------------------------------------------------------------
@@ -11,9 +11,9 @@ dnl GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
 dnl Government Purpose License Rights (GPLR) pursuant to DFARS 252.227-7013
 dnl ------------------------------------------------------------------------
 
-AC_INIT([yaf], [2.12.2], [netsa-help@cert.org],[yaf])
+AC_INIT([yaf], [2.13.0], [netsa-help@cert.org],[yaf])
 AC_CONFIG_AUX_DIR([autoconf])
-AC_COPYRIGHT([Copyright (C) 2006-2021 by Carnegie Mellon University
+AC_COPYRIGHT([Copyright (C) 2006-2023 by Carnegie Mellon University
 GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
 Government Purpose License Rights (GPLR) pursuant to DFARS 252.227-7013])
 AC_CANONICAL_BUILD
@@ -346,33 +346,46 @@ dnl ----------------------------------------------------------------------
 dnl Check for libndpi
 dnl ----------------------------------------------------------------------
 
-AC_ARG_ENABLE(ndpi,
-    AS_HELP_STRING([--enable-ndpi], [Enable NDPI application labeling]),
-[
+AC_ARG_ENABLE(ndpi, [
+    AS_HELP_STRING([--enable-ndpi], [Enable NDPI application labeling [default=no]]),
+],[
     if test "x$withval" != "xno"; then
-        PKG_CHECK_MODULES(libndpi, [libndpi >= 2.0 libndpi < 3.0.0],
+        AC_MSG_NOTICE([Running tests for NDPI appliation labeling])
+        # The nDPI API can change at arbitary times, and checking for
+        # a maximum version is pointless
+        PKG_CHECK_MODULES(libndpi, [libndpi >= 2.0],
         [],[
-            AC_MSG_ERROR([Cannot find a suitable libndpi (>= 2.0, < 3.0.0) (Try setting PKG_CONFIG_PATH): $libndpi_PKG_ERRORS])
+            AC_MSG_ERROR([Cannot find a suitable libndpi (>= 2.0) (Try setting PKG_CONFIG_PATH): $libndpi_PKG_ERRORS])
         ])
 
-        # Check whether the header is in a "/libndpi" subdirectory
-
         # Save variables
-        yf_save_LDFLAGS="$LDFLAGS"
-        yf_save_CFLAGS="$CFLAGS"
+        yf_save_LIBS="${LIBS}"
+        yf_save_CFLAGS="${CFLAGS}"
 
-        LDFLAGS="$libndpi_LDFLAGS"
-        CFLAGS="$libndpi_CFLAGS"
+        LIBS="${libndpi_LIBS} ${yf_save_LIBS}"
+        CFLAGS="${yf_save_CFLAGS} ${libndpi_CFLAGS}"
 
-        # Check for header
+        # Verify that the compiler can find all the libraries needed
+        # for nDPI since nDPI does not always include the libs in the
+        # libndpi.pc file.  We also do this to get accurate results
+        # from the next AC_CHECK_FUNCS command.
+        AC_CHECK_FUNC([ndpi_detection_process_packet], [], [
+            AC_MSG_FAILURE([Unable to use -lndpi.  This is probably due to missing -L flags.  Add the required flags to LDFLAGS and try again.])
+        ])
+
+        # Check for a function added after 2.8.  Note that
+        # initialization is misspelled in some releases
+        AC_CHECK_FUNCS([ndpi_finalize_initialization ndpi_finalize_initalization])
+
+        # Check whether the header is in a "/libndpi" subdirectory
         AC_CHECK_HEADER([ndpi_main.h],
         [
             ndpi=true
             AC_DEFINE(YAF_ENABLE_NDPI, 1, [Define to 1 to enable ndpi])
         ],[
             # Didn't find header, add /libndpi and check again
-            libndpi_CFLAGS="$libndpi_CFLAGS/libndpi"
-            CFLAGS="$libndpi_CFLAGS"
+            libndpi_CFLAGS="${libndpi_CFLAGS}/libndpi"
+            CFLAGS="${yf_save_CFLAGS} ${libndpi_CFLAGS}"
             AS_UNSET([ac_cv_header_ndpi_main_h])
 
             AC_CHECK_HEADER([ndpi_main.h],
@@ -385,9 +398,14 @@ AC_ARG_ENABLE(ndpi,
             ], AC_INCLUDES_DEFAULT)
         ], AC_INCLUDES_DEFAULT)
 
+        # Check for types that indicate API changes
+        AC_CHECK_TYPES([ndpi_init_prefs, struct ndpi_id_struct], [], [], [
+#include <ndpi_api.h>
+        ])
+
         # Restore libraries
-        LDFLAGS="$yf_save_LDFLAGS"
-        CFLAGS="$yf_save_CFLAGS"
+        LIBS="${yf_save_LIBS}"
+        CFLAGS="${yf_save_CFLAGS}"
     fi
 ])
 

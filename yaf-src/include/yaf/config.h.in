@@ -137,6 +137,15 @@
 /* Define to 1 if you have the `memset' function. */
 #undef HAVE_MEMSET
 
+/* Define to 1 if you have the `ndpi_finalize_initalization' function. */
+#undef HAVE_NDPI_FINALIZE_INITALIZATION
+
+/* Define to 1 if you have the `ndpi_finalize_initialization' function. */
+#undef HAVE_NDPI_FINALIZE_INITIALIZATION
+
+/* Define to 1 if the system has the type `ndpi_init_prefs'. */
+#undef HAVE_NDPI_INIT_PREFS
+
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
 
@@ -244,6 +253,9 @@
 
 /* Define to 1 if you have the `strtoull' function. */
 #undef HAVE_STRTOULL
+
+/* Define to 1 if the system has the type `struct ndpi_id_struct'. */
+#undef HAVE_STRUCT_NDPI_ID_STRUCT
 
 /* Define to 1 if you have the <syslog.h> header file. */
 #undef HAVE_SYSLOG_H

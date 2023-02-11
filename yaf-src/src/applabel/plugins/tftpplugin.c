@@ -11,9 +11,9 @@
  * @sa rfc 1350  href="http://www.ietf.org/rfc/rfc1350.txt"
  *
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Ecoff <ecoff@cert.org>
+ ** Authors: Emily Ecoff
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -122,7 +122,7 @@ tftpplugin_LTX_ycTFTPScanScan(
 {
 #define NUM_CAPT_VECTS 60
     int      vects[NUM_CAPT_VECTS];
-    uint16_t payloadOffset = 0;
+    uint32_t offset = 0;
     int      rc;
     uint16_t tempVar = 0;
     uint16_t opcode;
@@ -138,7 +138,7 @@ tftpplugin_LTX_ycTFTPScanScan(
     }
 
     opcode = ntohs(*(uint16_t *)payload);
-    payloadOffset += 2;
+    offset += 2;
 
     if ((opcode > 5) || (opcode == 0)) {
         return 0;
@@ -167,13 +167,13 @@ tftpplugin_LTX_ycTFTPScanScan(
 #endif /* if YAF_ENABLE_HOOKS */
     } else if ((opcode == 3) || (opcode == 4)) {
         /* DATA or ACK packet */
-        tempVar = ntohs(*(uint16_t *)(payload + payloadOffset));
+        tempVar = ntohs(*(uint16_t *)(payload + offset));
         if (tempVar != 1) {
             return 0;
         }
     } else if (opcode == 5) {
         /* Error Packet */
-        tempVar = ntohs(*(uint16_t *)(payload + payloadOffset));
+        tempVar = ntohs(*(uint16_t *)(payload + offset));
         /* Error codes are 1-7 */
         if (tempVar > 8) {
             return 0;

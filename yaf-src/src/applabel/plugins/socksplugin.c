@@ -6,9 +6,9 @@
  * http://en.wikipedia.org/wiki/SOCKS
  **
  ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2021 Carnegie Mellon University. All Rights Reserved.
+ ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
  ** ------------------------------------------------------------------------
- ** Authors: Emily Sarneso <ecoff@cert.org>
+ ** Authors: Emily Sarneso
  ** ------------------------------------------------------------------------
  ** @OPENSOURCE_HEADER_START@
  ** Use of the YAF system and related source code is subject to the terms
@@ -97,7 +97,7 @@ socksplugin_LTX_ycSocksScanScan(
     yfFlow_t       *flow,
     yfFlowVal_t    *val)
 {
-    uint8_t      offsetptr = 0;
+    uint32_t     offset = 0;
     uint32_t     socks_ip;
     unsigned int num_auth_methods = 0;
     uint8_t      auth_method;
@@ -112,15 +112,15 @@ socksplugin_LTX_ycSocksScanScan(
             return 0;
         }
 
-        offsetptr += 2;
+        offset += 2;
 
-        if ((size_t)offsetptr + 6 > payloadSize) {
+        if ((size_t)offset + 6 > payloadSize) {
             return 0;
         }
 
-        /*socks_port = ntohs(*(uint16_t *)(payload + offsetptr));*/
-        offsetptr += 2;
-        socks_ip = ntohl(*(uint32_t *)(payload + offsetptr));
+        /*socks_port = ntohs(*(uint16_t *)(payload + offset));*/
+        offset += 2;
+        socks_ip = ntohl(*(uint32_t *)(payload + offset));
 
         if (socks_ip != flow->key.addr.v4.dip) {
             if (socks_ip > 0xFF) {
@@ -133,21 +133,21 @@ socksplugin_LTX_ycSocksScanScan(
         if ((num_auth_methods + 2) > payloadSize) {
             return 0;
         }
-        offsetptr += 2;
+        offset += 2;
         for (loop = 0; loop < num_auth_methods; loop++) {
-            auth_method = *(payload + offsetptr + loop);
+            auth_method = *(payload + offset + loop);
             if (auth_method == 4 || auth_method > 9) {
                 /* not assigned */
                 return 0;
             }
         }
-        offsetptr += loop;
+        offset += loop;
 
-        if (offsetptr == payloadSize) {
+        if (offset == payloadSize) {
             return SOCKS_PORT_NUMBER;
         }
 
-        if ((*(payload + offsetptr) != 5)) {
+        if ((*(payload + offset) != 5)) {
             return 0;
         }
     } else {
