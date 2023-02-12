@@ -5,10 +5,10 @@ on: [push, pull_request]
 jobs:
   build:
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         sudo apt install autoconf automake build-essential git libglib2.0-dev libpcap0.8-dev libsnappy-dev libtool libltdl-dev liblzo2-dev make rpm ruby ruby-dev xsltproc zlib1g zlib1g-dev
@@ -17,7 +17,7 @@ jobs:
       run: |
         make build_deb
     - name: Upload packages
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: netsa-pkg
         path: packaging/output/*.deb
