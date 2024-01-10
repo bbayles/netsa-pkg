@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2006-2020 by Carnegie Mellon University.
+** Copyright (C) 2006-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -20,7 +62,7 @@ extern "C" {
 
 #include <silk/silk.h>
 
-RCSIDENTVAR(rcsID_SKSITE_H, "$SiLK: sksite.h ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENTVAR(rcsID_SKSITE_H, "$SiLK: sksite.h c05ad63a27aa 2023-05-12 19:43:56Z mthomas $");
 
 #include <silk/silk_types.h>
 
@@ -192,6 +234,9 @@ typedef struct sk_class_iter_st         sk_class_iter_t;
  *
  *    sksiteSensorgroupIterator() creates an iterator over all
  *    sensor groups.
+ *
+ *    sksiteSensorSensorgroupIterator() creates an iterator over all the
+ *    sensor groups that a sensor is a member of.
  */
 typedef struct sk_sensorgroup_iter_st   sk_sensorgroup_iter_t;
 
@@ -390,6 +435,21 @@ sksiteIsSensorInClass(
     sk_class_id_t       class_id);
 
 /**
+ *    Return 1 if the sensor with ID sensor_id is defined to be in
+ *    the sensor-group with ID sensorgroup_id.  Return 0 otherwise.
+ *
+ *    Use sksiteSensorgroupAddSensor() to add a sensor to a sensor group.  Use
+ *    sksiteSensorgroupAddSensorgroup() to add multiple sensors to a sensor
+ *    group.
+ *
+ *    Since SiLK 3.21.0.
+ */
+int
+sksiteIsSensorInSensorgroup(
+    sk_sensor_id_t      sensor_id,
+    sk_sensorgroup_id_t sensorgroup_id);
+
+/**
  *    Set iter to be an iterator that loops over all defined sensors.
  *    Use sksiteSensorIteratorNext() to visit each sensor ID.
  */
@@ -413,6 +473,22 @@ void
 sksiteSensorClassIterator(
     sk_sensor_id_t      sensor_id,
     sk_class_iter_t    *iter);
+
+/**
+ *    Set iter to be an iterator that loops over all of the sensor groups that
+ *    the given sensor is a member of.  Use sksiteSensorgroupIteratorNext() to
+ *    visit each sensor-group ID.  The iterator is valid even when 'sensor_id'
+ *    is not a known sensor ID.
+ *
+ *    Use sksiteIsSensorInSensorgroup() to determine whether a sensor is in a
+ *    specific sensor-group.
+ *
+ *    Since SiLK 3.21.0.
+ */
+void
+sksiteSensorSensorgroupIterator(
+    sk_sensor_id_t          sensor_id,
+    sk_sensorgroup_iter_t  *iter);
 
 /**
  *    Check whether 'name' is a valid sensor name.
@@ -587,9 +663,9 @@ sksiteClassGetName(
  *    Use sksiteClassCreate() to create a class and
  *    sksiteSensorCreate() to create a sensor.
  *
- *    Use sksiteSensorClassIterator() to visit the classes that own a
- *    sensor; use sksiteClassSensorIterator() to visit the sensors
- *    that a class owns.
+ *    Call sksiteSensorClassIterator() to visit the classes that use a
+ *    sensor; call sksiteClassSensorIterator() to visit the sensors
+ *    that a class uses.
  *
  *    See also sksiteClassAddSensorgroup().
  */
@@ -600,6 +676,9 @@ sksiteClassAddSensor(
 
 /**
  *    Add every sensor in the given sensorgroup to the given class.
+ *
+ *    Adding a sensorgroup to a class adds the group's sensors to the class;
+ *    no record is kept that the sensorgroup has been added to the class.
  *
  *    Return 0 on success.  Return -1 if 'class_id' is not a known
  *    class, if 'sensorgroup_id' is not a known sensorgroup, or on
@@ -632,7 +711,7 @@ sksiteClassIterator(
  *    Use sksiteSensorClassIterator() to iterate over all classes that
  *    a sensor belongs to.
  *
- *    Use sksiteIsSensorInClass() to determine whether a class owns a
+ *    Call sksiteIsSensorInClass() to determine whether a class uses a
  *    specific sensor.
  *
  *    Use sksiteClassAddSensor() and sksiteClassAddSensorgroup() to
@@ -812,8 +891,11 @@ sksiteSensorgroupGetName(
  *    Use sksiteSensorgroupCreate() to create a sensorgroup and
  *    sksiteSensorCreate() to create a sensor.
  *
- *    Use sksiteSensorgroupSensorIterator() to visit the sensors that
- *    a sensorgroup owns.
+ *    Use sksiteSensorgroupSensorIterator() to visit the sensors are members of
+ *    a sensorgroup.
+ *
+ *    Use sksiteSensorSensorgroupIterator() to visit the sensorgroups that a
+ *    sensor is a member of.
  *
  *    See also sksiteSensorgroupAddSensorgroup().
  */
@@ -825,6 +907,12 @@ sksiteSensorgroupAddSensor(
 /**
  *    Add every sensor in the sensorgroup 'src_sensorgroup' to the sensorgroup
  *    'dest_sensorgroup'.
+ *
+ *    Adding 'src_sensorgroup' to 'dest_sensorgroup' adds src_sensorgroup's
+ *    sensors to dest_sensorgroup; no record is kept that src_sensorgroup has
+ *    been added to dest_sensorgroup.  When this call completes, calling
+ *    sksiteSensorSensorgroupIterator() on a sensor in src_sensorgroup gives
+ *    an iterator that returns both src_sensorgroup and dest_sensorgroup.
  *
  *    Return 0 on success.  Return -1 if 'src_sensorgroup' is not a
  *    known sensorgroup, if 'dest_sensorgroup' is not a known
@@ -855,13 +943,11 @@ sksiteSensorgroupIterator(
  *    Use sksiteSensorgroupAddSensor() and
  *    sksiteSensorgroupAddSensorgroup() to add sensors to a
  *    sensorgroup.
- *
- *    FIXME: I think the iterator needs to be an sk_sensor_iter_t.
  */
 void
 sksiteSensorgroupSensorIterator(
     sk_sensorgroup_id_t     sensorgroup_id,
-    sk_sensorgroup_iter_t  *iter);
+    sk_sensor_iter_t       *iter);
 
 /** Flowtypes *********************************************************/
 
@@ -1359,20 +1445,34 @@ typedef enum sksite_validate_enum_en {
     SKSITE_ERR_FLOWTYPE_UNKNOWN_TYPE,
     /** Class/type pair has unknown type for given class */
     SKSITE_ERR_FLOWTYPE_TYPE_NOT_IN_CLASS,
-    /** unknown sensor name */
+    /** Unknown sensor name */
     SKSITE_ERR_UNKNOWN_SENSOR,
-    /** unknown sensor numeric id */
+    /** Unknown sensor numeric id */
     SKSITE_ERR_UNKNOWN_SENSOR_ID,
-    /** unknown type for given class */
+    /** Unknown type for given class */
     SKSITE_ERR_TYPE_NOT_IN_CLASSES,
-    /** sensor not available in given class(es) */
+    /** Sensor not available in given class(es) */
     SKSITE_ERR_SENSOR_NOT_IN_CLASSES,
     /** Class name is unknown */
     SKSITE_ERR_CLASS_UNKNOWN,
     /** Class name is unknown */
     SKSITE_ERR_TYPE_UNKNOWN,
-    /** Site file does not default a default class */
+    /** Site file does not name a default class */
     SKSITE_ERR_CLASS_NO_DEFAULT,
+    /** Sensorgroup name is unknown */
+    SKSITE_ERR_SENSORGROUP_UNKNOWN,
+    /** Token exceeds maximum class/type/sensor/flowtype length */
+    SKSITE_ERR_LONG_TOKEN = 64,
+    /** The file name in an @@\FILE construct exceeds PATH_MAX */
+    SKSITE_ERR_LONG_FILE,
+    /** Token contains an '@' without an '@' at the start. */
+    SKSITE_ERR_BAD_FILE_BEGIN,
+    /** Token contains an unknown @@\X escape */
+    SKSITE_ERR_BAD_ESCAPE,
+    /** Error opening or reading the file named by @@\FILE */
+    SKSITE_ERR_FILE_IO,
+    /** An @@\FILE may not use @@ syntax */
+    SKSITE_ERR_FILE_RECURSE,
     /** Error parsing numeric sensor id or range */
     SKSITE_ERR_UTILS_OFFSET = 255
 } sksite_validate_enum_t;
@@ -1421,6 +1521,11 @@ sksiteErrorIteratorGetCode(
 
 
 /**
+ *    Changed in SiLK 3.20.0 to return the same value as
+ *    sksiteErrorIteratorGetMessage().
+ *
+ *    Its previous behavior was:
+ *
  *    Returns the current token---that is, the class/type pair or the
  *    sensor that was found to be invalid.  This token is a pointer
  *    into the character pointer array that was passed to
@@ -1446,11 +1551,20 @@ sksiteErrorIteratorGetMessage(
 
 /** Special Support Functions *****************************************/
 
+
 /**
  *    Treats 'ft_name_list' as a comma separated list of tokens
  *    representing "class/type" pairs---where a slash('/') separates
  *    the class and type---and appends to 'ft_vector' the numeric
  *    sk_flowtype_id_t of each class/type pair that was found.
+ *
+ *    As of SiLK 3.20.0, the special token "@FILE" tells the library to read
+ *    tokens from the file 'FILE'.  The "FILE" string may contain escapes "@,"
+ *    meaning "," and "@@" meaning "@".  Note that this has the potential to
+ *    interfere with the default_classes_token.  In particular, if
+ *    default_classes_token is @, there is no way to distinguish "@/in" as
+ *    "use the 'in' type from the default class" and "read values from the
+ *    file '/in'".
  *
  *    When the 'all_classes_token' is not NULL and a parsed "class"
  *    matches this string, the specified "type" is checked for in all
@@ -1515,6 +1629,10 @@ sksiteParseFlowtypeList(
  *    representing class names and appends to 'class_vector' the
  *    numeric sk_class_id_t of each class that was found.
  *
+ *    As of SiLK 3.20.0, the special token "@FILE" tells the library to read
+ *    tokens from the file 'FILE'.  The "FILE" string may contain escapes "@,"
+ *    meaning "," and "@@" meaning "@".
+ *
  *    When the 'all_classes_token' is not NULL and a parsed class
  *    matches this string, all sk_class_id_t's are added to
  *    'class_vector'.
@@ -1567,6 +1685,10 @@ sksiteParseClassList(
  *    specified in the 'classes_vector' and appends to 'ft_vector' the
  *    numeric sk_flowtype_id_t of each type that was found.
  *
+ *    As of SiLK 3.20.0, the special token "@FILE" tells the library to read
+ *    tokens from the file 'FILE'.  The "FILE" string may contain escapes "@,"
+ *    meaning "," and "@@" meaning "@".
+ *
  *    When the 'all_types_token' is not NULL and a parsed "type"
  *    matches this string, all types are appended to 'ft_vector' for
  *    each class specified in 'classes_vector'.
@@ -1616,64 +1738,103 @@ sksiteParseTypeList(
     const char                 *default_type_token,
     sksite_error_iterator_t   **out_error_iter);
 
+
 /**
- *    Treats 'sensor_name_list' as a comma separated list of tokens
- *    representing sensor names (or perhaps numeric sensor IDs or
- *    ranges of sensor IDs) and appends to 'sensor_vector' the numeric
- *    sk_sensor_id_t of each sensor that was found.
+ *    Flag for sksiteParseSensorList() indicating the parser should accept
+ *    sensor IDs in addition to sensor names.  Ranges of sensor IDs are not
+ *    allowed.
  *
- *    When the 'flags' value is 0, the function rejects any token that
- *    is not a sensor name.  When the 'flags' value is 1, the function
- *    allows sensor names and numeric sensor IDs.  When the 'flags'
- *    value is 2, the function allows sensor names, numeric sensor
- *    IDs, and ranges of IDs.
+ *    Since SiLK 3.21.0
+ */
+#define SKSITE_SENSORS_ALLOW_ID      0x01
+
+/**
+ *    Flag for sksiteParseSensorList() indicating the parser should accept
+ *    sensor IDs and ranges of sensor IDs in addition to sensor names.
  *
- *    When 'classes_vector' is not NULL, it must be a vector of
- *    sk_class_id_t's.  The function appends an error to
- *    'out_error_iter' when it parses a sensor name or ID that does
- *    not belong to one of the specified classes.
+ *    Since SiLK 3.21.0
+ */
+#define SKSITE_SENSORS_ALLOW_RANGE   0x02
+
+/**
+ *    Flag for sksiteParseSensorList() indicating the parser should accept
+ *    sensorgroups defined in the silk.conf file.
  *
- *    When the 'all_sensors_token' is not NULL and a parsed sensor
- *    matches this string, all sk_sensor_id_t's are added to
- *    'sensor_vector' (perhaps limited to all sensors in the specified
- *    sk_class_id_t's).
+ *    Since SiLK 3.21.0
+ */
+#define SKSITE_SENSORS_ALLOW_GROUP   0x04
+
+/**
+ *    Treats `sensor_name_list` as a comma separated list of tokens
+ *    representing sensor names (and perhaps additional values as indicated by
+ *    `flags`) and appends to `sensor_vector` the numeric sk_sensor_id_t of
+ *    each sensor that was found.
  *
- *    Creates a new error iterator when 'out_error_iter' is not NULL
- *    and an error must be reported.  Any previous error iterator in
- *    that location is lost.
+ *    As of SiLK 3.20.0, the special token "@FILE" tells the library to read
+ *    tokens from the file 'FILE'.  The "FILE" string may contain escapes "@,"
+ *    meaning "," and "@@" meaning "@".
  *
- *    Appends an error to 'out_error_iter' when the sensor is not
- *    recognized as a sensor name, is not a valid sensor ID, or is not
- *    a member at least one of the classes specified in
- *    'classes_vector'.  When ranges are allowed, the starting and
- *    ending point of the range must be valid but interior sensor IDs
- *    need not exist; however, if they do exist, they must be a member
- *    of the classes specified in 'classes_vector'.
+ *    When the `flags` value is 0, the function rejects any token that is not
+ *    a sensor name.  Enabling the parsing of additional tokens may be enabled
+ *    by setting `flags`:
  *
- *    The values are appended to 'sensor_vector' in the order which
- *    they appear in the list, though duplicate values are not added
- *    to the vector.  Values in 'sensor_vector' when the function was
- *    called remain in place are are ignored by this function.
+ *      When the `flags & SKSITE_SENSORS_ALLOW_ID` is non-zero, the function
+ *      allows sensor names and numeric sensor IDs.
  *
- *    Returns 0 and does not fill 'out_error_iter' on success.
- *    Returns 0 and does not modify the 'sensor_vector' or the
- *    'out_error_iter' when 'sensor_name_list' is the empty string or
- *    contains only commas.
+ *      When the `flags & SKSITE_SENSORS_ALLOW_RANGE` value is non-zero, the
+ *      function allows sensor names, numeric sensor IDs, and ranges of IDs.
  *
- *    Returns -1 and does not fill 'out_error_iter' for the following
- *    conditions: when 'sensor_vector' or 'sensor_name_list' is NULL,
- *    when the element size of 'sensor_vector' is not
- *    sizeof(sk_sensor_id_t), when 'classes_vector' is provided and
- *    its element size is not sizeof(sk_class_id_t), and when a memory
- *    allocation error occurs.
+ *      When `flags & SKSITE_SENSORS_ALLOW_GROUP` is non-zero, the function
+ *      allows sensor-groups defined in the silk.conf file to be recognized.
  *
- *    Returns a positive value and fills 'out_error_iter' (if not
- *    NULL) when one or more tokens are found that are not valid
- *    sensor names, sensor IDs, sensor ranges, or a member of the
- *    sk_class_id_t's specifed in 'classes_vector'.  The return value
- *    is the number of invalid tokens found.
+ *    The tokens in `sensor_name_list` are checked in this order: (1)as the
+ *    name of a sensor, (2)as the `all_sensors_token` if non-NULL, (3)as the
+ *    name of a sensor-group, (4)as a sensor-id or a range of sensor-ids.
  *
- *    Since SiLK 3.11.0.
+ *    When `classes_vector` is not NULL, it must be a vector of
+ *    sk_class_id_t's.  The function appends an error to `out_error_iter` when
+ *    it parses a sensor name or ID that does not belong to one of the
+ *    specified classes.
+ *
+ *    When the `all_sensors_token` is not NULL and a parsed sensor matches
+ *    this string, all sk_sensor_id_t's are added to `sensor_vector` (perhaps
+ *    limited to all sensors in the specified sk_class_id_t's).
+ *
+ *    Creates a new error iterator when `out_error_iter` is not NULL and an
+ *    error must be reported.  Any previous error iterator in that location is
+ *    lost.
+ *
+ *    Appends an error to `out_error_iter` when the sensor is not recognized
+ *    as a sensor name, is not a valid sensor ID, or is not a member at least
+ *    one of the classes specified in `classes_vector`.  When ranges are
+ *    allowed, the starting and ending point of the range must be valid but
+ *    interior sensor IDs need not exist; however, if they do exist, they must
+ *    be a member of the classes specified in `classes_vector`.
+ *
+ *    The values are appended to `sensor_vector` in the order which they
+ *    appear in the list, though duplicate values appearing in
+ *    `sensor_name_list` are not added to the vector.  Values in
+ *    `sensor_vector` when the function was called remain in place and are
+ *    ignored by this function.
+ *
+ *    Returns 0 and does not fill `out_error_iter` on success.  Returns 0 and
+ *    does not modify the `sensor_vector` or the `out_error_iter` when
+ *    `sensor_name_list` is the empty string or contains only commas.
+ *
+ *    Returns -1 and does not fill `out_error_iter` for the following
+ *    conditions: when `sensor_vector` or `sensor_name_list` is NULL, when the
+ *    element size of `sensor_vector` is not sizeof(sk_sensor_id_t), when
+ *    `classes_vector` is provided and its element size is not
+ *    sizeof(sk_class_id_t), and when a memory allocation error occurs.
+ *
+ *    Returns a positive value and fills `out_error_iter` (if not NULL) when
+ *    one or more tokens are found that are not valid sensor names, sensor
+ *    IDs, sensor ranges, or a member of the sk_class_id_t's specifed in
+ *    `classes_vector`.  The return value is the number of invalid tokens
+ *    found.
+ *
+ *    Since SiLK 3.11.0.  Changed in SiLK 3.20.0 to accept "@FILE" tokens.
+ *    Changed in SiLK 3.21.0 to support sensor-group names.
  */
 int
 sksiteParseSensorList(
@@ -1682,6 +1843,48 @@ sksiteParseSensorList(
     const sk_vector_t          *classes_vector,
     const char                 *all_sensors_token,
     unsigned int                flags,
+    sksite_error_iterator_t   **out_error_iter);
+
+/**
+ *    Treats 'group_name_list' as a comma separated list of tokens
+ *    representing sensor-group names and appends to 'group_vector' the
+ *    numeric sk_sensorgroup_id_t of each sensor-group that was found.
+ *
+ *    The special token "@FILE" tells the library to read tokens from the file
+ *    'FILE'.  The "FILE" string may contain escapes "@," meaning "," and "@@"
+ *    meaning "@".
+ *
+ *    Creates a new error iterator when 'out_error_iter' is not NULL and an
+ *    error must be reported.  Any previous error iterator in that location is
+ *    lost.
+ *
+ *    Appends an error to 'out_error_iter' when the group is not recognized as
+ *    a sensor-group name.
+ *
+ *    The values are appended to 'group_vector' in the order which they appear
+ *    in the list, though duplicate values are not added to the vector.
+ *    Values in 'group_vector' when the function was called remain in place
+ *    and are ignored by this function.
+ *
+ *    Returns 0 and does not fill 'out_error_iter' on success.  Returns 0 and
+ *    does not modify the 'group_vector' or the 'out_error_iter' when
+ *    'group_name_list' is the empty string or contains only commas.
+ *
+ *    Returns -1 and does not fill 'out_error_iter' for the following
+ *    conditions: when 'group_vector' or 'group_name_list' is NULL, when the
+ *    element size of 'group_vector' is not sizeof(sk_sensorgroup_id_t), and
+ *    when a memory allocation error occurs.
+ *
+ *    Returns a positive value and fills 'out_error_iter' (if not NULL) when
+ *    one or more tokens are found that are not valid sensor-group names.  The
+ *    return value is the number of invalid tokens found.
+ *
+ *    Since SiLK 3.21.0.
+ */
+int
+sksiteParseSensorgroupList(
+    sk_vector_t                *group_vector,
+    const char                 *group_name_list,
     sksite_error_iterator_t   **out_error_iter);
 
 
@@ -2055,6 +2258,7 @@ sksiteFileformatFromName(
  *    the internals as opaque.
  */
 
+/* Above: typedef struct sk_sensor_iter_st sk_sensor_iter_t; */
 struct sk_sensor_iter_st {
     /** vector of candidates */
     sk_vector_t        *si_vector;
@@ -2064,6 +2268,7 @@ struct sk_sensor_iter_st {
     int                 si_contains_pointers;
 };
 
+/* Above: typedef struct sk_class_iter_st sk_class_iter_t; */
 struct sk_class_iter_st {
     /** vector of candidates */
     sk_vector_t        *ci_vector;
@@ -2073,6 +2278,7 @@ struct sk_class_iter_st {
     int                 ci_contains_pointers;
 };
 
+/* Above: typedef struct sk_sensorgroup_iter_st sk_sensorgroup_iter_t; */
 struct sk_sensorgroup_iter_st {
     /** vector of candidates */
     sk_vector_t        *gi_vector;
@@ -2082,6 +2288,7 @@ struct sk_sensorgroup_iter_st {
     int                 gi_contains_pointers;
 };
 
+/* Above: typedef struct sk_flowtype_iter_st sk_flowtype_iter_t; */
 struct sk_flowtype_iter_st {
     /** vector of candidates */
     sk_vector_t        *fi_vector;

@@ -6,6 +6,7 @@ use strict;
 use SiLKTests;
 
 my $rwfglob = check_silk_app('rwfglob');
+
 my $cmd = "$rwfglob --data-rootdir=. --print-missing --start-date=2009/02/12:12 --end-date=2009/02/12:14 --sensors=4,6-8,10 2>&1";
 my $md5 = "2b996e4d61bc6ac96c13ee4a7db1c2c5";
 

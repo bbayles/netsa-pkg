@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2006-2020 by Carnegie Mellon University.
+** Copyright (C) 2006-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -19,16 +61,24 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: sksite.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: sksite.c 05d39531ae59 2023-05-17 15:23:40Z mthomas $");
 
 #include <silk/sksite.h>
 #include <silk/skstream.h>
 #include <silk/utils.h>
 #include <silk/skstringmap.h>
+#include <silk/redblack.h>
 #include "sksiteconfig.h"
 #ifdef __CYGWIN__
 #include "skcygwin.h"
 #endif
+
+#ifdef  SKSITE_TRACE_LEVEL
+#define TRACEMSG_LEVEL 1
+#endif
+/* use TRACEMSG_LEVEL as our tracing variable */
+#define TRACEMSG(msg) TRACEMSG_TO_TRACEMSGLVL(1, msg)
+#include <silk/sktracemsg.h>
 
 
 /* TYPEDEFS AND DEFINES */
@@ -39,14 +89,64 @@ RCSIDENT("$SiLK: sksite.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
 /* if all other attempts to get a data root directory fail, use this */
 #define FALLBACK_DATA_ROOTDIR "/data"
 
-/* characters that may not appear in a flowtype (including a class
- * name and a type name) whitespace, '"', '\'', '\\', '/' */
-#define SITE_BAD_CHARS_FLOWTYPE  "\t\n\v\f\r \b\a\"'\\/"
+/* characters that may not appear in a flowtype (including a class name and a
+ * type name): whitespace, double-quote('"'), single-quote('\''),
+ * backslash('\\'), forward-slash('/'), comma (',') */
+#define SITE_BAD_CHARS_FLOWTYPE  "\t\n\v\f\r \b\a\"'\\/,"
 
-/* characters that may not appear in a sensor name */
+/* characters that may not appear in a sensor name: all characters that may
+ * not appear in a flowtype plus underscore ('_') */
 #define SITE_BAD_CHARS_SENSOR    "_" SITE_BAD_CHARS_FLOWTYPE
 
+
+/*
+ *  For each SKSITE_ERR_ code, define the default format to use
+ */
+
+#define SKSITE_ERR_CLASS_NO_DEFAULT_MSG                         \
+    "The configuration file does not specify a default class"
+
+#define SKSITE_ERR_CLASS_UNKNOWN_MSG            \
+    "The class name '%s' is not recognized"
+
+#define SKSITE_ERR_FLOWTYPE_NO_DELIM_MSG                                \
+    "The flowtype '%s' does not include the class-type separator '%c'"
+
+#define SKSITE_ERR_FLOWTYPE_TYPE_NOT_IN_CLASS_MSG               \
+    "The flowtype '%s' uses a type that is not in the class"
+
+#define SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS_MSG           \
+    "The flowtype '%s' uses an unrecognized class name"
+
+#define SKSITE_ERR_FLOWTYPE_UNKNOWN_TYPE_MSG            \
+    "The flowtype '%s' uses an unrecognized type name"
+
+#define SKSITE_ERR_SENSOR_NOT_IN_CLASSES_MSG                    \
+    "Sensor '%s' is not a member of the specified class(es)"
+
+#define SKSITE_ERR_TYPE_NOT_IN_CLASSES_MSG \
+    "The type name '%s' is not recognized in the specified class(es)"
+
+#define SKSITE_ERR_TYPE_UNKNOWN_MSG             \
+    "The type name '%s' is not recognized"
+
+#define SKSITE_ERR_UNKNOWN_SENSOR_MSG           \
+    "The sensor name '%s' is not recognized"
+
+#define SKSITE_ERR_UNKNOWN_SENSOR_ID_MSG                \
+    "The sensor ID %s is not recognized"
+
+#define SKSITE_ERR_SENSORGROUP_UNKNOWN_MSG              \
+    "The sensor-group name '%s' is not recognized"
+
+#define SKSITE_ERR_UTILS_OFFSET_MSG                     \
+    "Sensor range/ID '%s' is invalid: %s"
+
+
 /** Local Datatypes ***************************************************/
+
+/* internal type for string lengths */
+typedef unsigned int    site_strlen_t;
 
 typedef struct sensor_struct_st {
     /* unique name for this sensor */
@@ -55,8 +155,10 @@ typedef struct sensor_struct_st {
     const char         *sn_description;
     /* vector of classes it belongs to */
     sk_vector_t        *sn_class_list;
+    /* vector of groups it belongs to (for grouping in rwuniq,etc) */
+    sk_vector_t        *sn_sensorgroup_list;
     /* length of the name */
-    size_t              sn_name_strlen;
+    site_strlen_t       sn_name_strlen;
     /* the sensor's id--must be its position in the array */
     sk_sensor_id_t      sn_id;
 } sensor_struct_t;
@@ -67,7 +169,7 @@ typedef struct sensorgroup_struct_st {
     /* vector of sensors (by sk_sensor_id_t) in this group */
     sk_vector_t        *sg_sensor_list;
     /* length of the name */
-    size_t              sg_name_strlen;
+    site_strlen_t       sg_name_strlen;
     /* the group's id--must be its position in the array */
     sk_sensorgroup_id_t sg_id;
 } sensorgroup_struct_t;
@@ -82,7 +184,7 @@ typedef struct class_struct_st {
     /* vector of class's default flowtypes (by sk_flowtype_id_t) */
     sk_vector_t        *cl_default_flowtype_list;
     /* length of the name */
-    size_t              cl_name_strlen;
+    site_strlen_t       cl_name_strlen;
     /* the class's id--must be its position in the array */
     sk_class_id_t       cl_id;
 } class_struct_t;
@@ -93,9 +195,9 @@ typedef struct flowtype_struct_st {
     /* unique name for this flowtype within its class */
     const char         *ft_type;
     /* length of name */
-    size_t              ft_name_strlen;
+    site_strlen_t       ft_name_strlen;
     /* length of type */
-    size_t              ft_type_strlen;
+    site_strlen_t       ft_type_strlen;
     /* the class ID */
     sk_class_id_t       ft_class;
     /* the flowtype's id--must be its position in the array */
@@ -105,6 +207,18 @@ typedef struct flowtype_struct_st {
 /* The %-conversion characters supported by the path-format; exported
  * so it can be checked during silk.conf parsing */
 const char path_format_conversions[] = "%CFHNTYdfmnx";
+
+
+typedef enum site_token_status_en {
+    /* Parsed a token */
+    SITE_TOKEN_OK = 0,
+    /* No more data */
+    SITE_TOKEN_END_OF_DATA = 1,
+    /* Encountered an error; added error to iterator */
+    SITE_TOKEN_ERR = -1,
+    /* Encountered an error; unable to push error onto error iter */
+    SITE_TOKEN_ERR_FATAL = -2
+} site_token_status_t;
 
 
 /** Options ***********************************************************/
@@ -143,9 +257,12 @@ static int          configured = 0;
 /* The list of sensors (vector of pointers to sensor_struct_t), the
  * max field width, and the min and max known IDs. */
 static sk_vector_t     *sensor_list;
-static size_t           sensor_max_name_strlen = MIN_FIELD_SIZE;
+static site_strlen_t    sensor_max_name_strlen = MIN_FIELD_SIZE;
 static int              sensor_min_id = -1;
 static int              sensor_max_id = -1;
+
+/* Data structure to find sensors by name */
+static struct rbtree   *sensor_map;
 
 /* Default class for fglob. */
 static sk_class_id_t    default_class = SK_INVALID_CLASS;
@@ -153,22 +270,25 @@ static sk_class_id_t    default_class = SK_INVALID_CLASS;
 /* The list of classes (vector of pointers to class_struct_t), the max
  * field width, and the max known ID. */
 static sk_vector_t     *class_list;
-static size_t           class_max_name_strlen = MIN_FIELD_SIZE;
+static site_strlen_t    class_max_name_strlen = MIN_FIELD_SIZE;
 static int              class_max_id = -1;
 
 /* The list of sensorgroups (vector of pointers to
  * sensorgroup_struct_t), the max field width, and the max known
  * ID. */
 static sk_vector_t     *sensorgroup_list;
-static size_t           sensorgroup_max_name_strlen = MIN_FIELD_SIZE;
+static site_strlen_t    sensorgroup_max_name_strlen = MIN_FIELD_SIZE;
 static int              sensorgroup_max_id = -1;
+
+/* Data structure to find sensorgroups by name */
+static struct rbtree   *sensorgroup_map;
 
 /* The list of flowtypes (vector of pointers to flowtype_struct_t),
  * the max field width of the flowtype, the max field width of the
  * type, and the max known ID. */
 static sk_vector_t     *flowtype_list;
-static size_t           flowtype_max_name_strlen = MIN_FIELD_SIZE;
-static size_t           flowtype_max_type_strlen = MIN_FIELD_SIZE;
+static site_strlen_t    flowtype_max_name_strlen = MIN_FIELD_SIZE;
+static site_strlen_t    flowtype_max_type_strlen = MIN_FIELD_SIZE;
 static int              flowtype_max_id = -1;
 
 /** Local Function Prototypes *****************************************/
@@ -187,6 +307,31 @@ siteSensorgroupFree(
 static void
 siteFlowtypeFree(
     flowtype_struct_t  *ft);
+static int
+siteSensorCompare(
+    const void         *obj1,
+    const void         *obj2,
+    const void         *ctx);
+static sk_sensor_id_t
+siteSensorLookup2(
+    const char         *sensor_name,
+    site_strlen_t       sensor_name_len);
+static int
+siteSensorgroupCompare(
+    const void         *obj1,
+    const void         *obj2,
+    const void         *ctx);
+static sk_sensorgroup_id_t
+siteSensorgroupLookup2(
+    const char         *sensorgroup_name,
+    site_strlen_t       sensorgroup_name_len);
+static int
+siteErrorIterPush(
+    sksite_error_iterator_t    *iter,
+    int                         error_code,
+    const char                 *format,
+    ...)
+    SK_CHECK_PRINTF(3, 4);
 
 
 /**********************************************************************/
@@ -234,6 +379,9 @@ sksiteInitialize(
     sensorgroup_list = skVectorNew(sizeof(sensorgroup_struct_t *));
     flowtype_list = skVectorNew(sizeof(flowtype_struct_t *));
 
+    sensor_map = rbinit(siteSensorCompare, NULL);
+    sensorgroup_map = rbinit(siteSensorgroupCompare, NULL);
+
     return 0;
 }
 
@@ -264,7 +412,7 @@ sksiteOptionsUsage(
 
     char *cp, *ep, *sp;
     char path[PATH_MAX];
-    char buf[2 * PATH_MAX];
+    char buf[3 * PATH_MAX];
 
     /* print where we would get the silk.conf file, as well as the
      * other places we might look. */
@@ -388,6 +536,43 @@ siteFindConfigPath(
     return buffer;
 }
 
+/*
+ *    Used by rbtree to compare two sensor_struct_t.
+ */
+static int
+siteSensorCompare(
+    const void *v_a,
+    const void *v_b,
+    const void  UNUSED(*ctx))
+{
+    const sensor_struct_t *a = (const sensor_struct_t *)v_a;
+    const sensor_struct_t *b = (const sensor_struct_t *)v_b;
+
+    int rv = (int)a->sn_name_strlen - (int)b->sn_name_strlen;
+    if (0 != rv) {
+        return rv;
+    }
+    return strcmp(a->sn_name, b->sn_name);
+}
+
+/*
+ *    Used by rbtree to compare two sensorgroup_struct_t.
+ */
+static int
+siteSensorgroupCompare(
+    const void *v_a,
+    const void *v_b,
+    const void  UNUSED(*ctx))
+{
+    const sensorgroup_struct_t *a = (const sensorgroup_struct_t *)v_a;
+    const sensorgroup_struct_t *b = (const sensorgroup_struct_t *)v_b;
+
+    int rv = (int)a->sg_name_strlen - (int)b->sg_name_strlen;
+    if (0 != rv) {
+        return rv;
+    }
+    return strcmp(a->sg_name, b->sg_name);
+}
 
 int
 sksiteConfigure(
@@ -510,6 +695,16 @@ sksiteTeardown(
     }
     teardown = 1;
 
+    /* destroy the maps first to avoid having to remove individual items from
+     * them */
+    if (sensor_map) {
+        rbdestroy(sensor_map);
+        sensor_map = NULL;
+    }
+    if (sensorgroup_map) {
+        rbdestroy(sensorgroup_map);
+        sensorgroup_map = NULL;
+    }
     if (class_list) {
         class_struct_t *cl;
         count = skVectorGetCount(class_list);
@@ -687,7 +882,9 @@ sksiteSensorCreate(
     const char         *sensor_name)
 {
     sensor_struct_t *sn = NULL;
+    const sensor_struct_t *added;
     const size_t vcap = skVectorGetCapacity(sensor_list);
+    site_strlen_t sensor_name_len;
 
     /* check bounds and length/legality of name */
     if (sensor_id >= SK_MAX_NUM_SENSORS) {
@@ -697,13 +894,27 @@ sksiteSensorCreate(
         return -1;
     }
 
+    sensor_name_len = strlen(sensor_name);
+
     /* verify sensor does not exist */
     if (sksiteSensorExists(sensor_id)) {
         return -1;
     }
-    if (sksiteSensorLookup(sensor_name) != SK_INVALID_SENSOR) {
+    if (siteSensorLookup2(sensor_name, sensor_name_len) != SK_INVALID_SENSOR) {
         return -1;
     }
+#if 0
+    /* Since there is no distinction between sensors and sensorgroups when
+     * parsing the --sensors switch, them sharing a name causes the sensor to
+     * hide the sensorgroup. */
+    if (siteSensorgroupLookup2(sensor_name, sensor_name_len)
+        != SK_INVALID_SENSORGROUP)
+    {
+        skAppPrintErr(
+            "Warning: A sensorgroup already exists with the name '%s'",
+            sensor_name);
+    }
+#endif  /* 0 */
 
     if (sensor_id >= vcap) {
         if (skVectorSetCapacity(sensor_list, sensor_id + 1)) {
@@ -715,16 +926,18 @@ sksiteSensorCreate(
     if (sn == NULL) {
         goto alloc_error;
     }
+    sn->sn_name_strlen = sensor_name_len;
     sn->sn_name = strdup(sensor_name);
     sn->sn_class_list = skVectorNew(sizeof(sk_class_id_t));
+    sn->sn_sensorgroup_list = skVectorNew(sizeof(sk_sensorgroup_id_t));
     if ((sn->sn_name == NULL) ||
-        (sn->sn_class_list == NULL))
+        (sn->sn_class_list == NULL) ||
+        (sn->sn_sensorgroup_list == NULL))
     {
         goto alloc_error;
     }
 
     sn->sn_id = sensor_id;
-    sn->sn_name_strlen = strlen(sensor_name);
     if (sn->sn_name_strlen > sensor_max_name_strlen) {
         sensor_max_name_strlen = sn->sn_name_strlen;
     }
@@ -738,6 +951,14 @@ sksiteSensorCreate(
     if (skVectorSetValue(sensor_list, sensor_id, &sn)) {
         goto alloc_error;
     }
+
+    added = (sensor_struct_t *)rbsearch(sn, sensor_map);
+    if (NULL == added) {
+        goto alloc_error;
+    }
+    assert(added == sn);
+    /* assert(siteSensorLookup2(sn->sn_name, sn->sn_name_strlen) */
+    /*        == sensor_id); */
 
     return 0;
 
@@ -758,8 +979,14 @@ siteSensorFree(
     sensor_struct_t    *sn)
 {
     if (sn != NULL) {
+        if (sensor_map) {
+            rbdelete(sn, sensor_map);
+        }
         if (sn->sn_class_list != NULL) {
             skVectorDestroy(sn->sn_class_list);
+        }
+        if (sn->sn_sensorgroup_list != NULL) {
+            skVectorDestroy(sn->sn_sensorgroup_list);
         }
         if (sn->sn_name != NULL) {
             free((char*)sn->sn_name);
@@ -772,19 +999,33 @@ siteSensorFree(
 }
 
 
+/**
+ *    Implements sksiteSensorLookup() and requires the name's length as the
+ *    second argument.
+ */
+static sk_sensor_id_t
+siteSensorLookup2(
+    const char         *sensor_name,
+    site_strlen_t       sensor_name_len)
+{
+    const sensor_struct_t *sn;
+    sensor_struct_t target;
+
+    target.sn_name = sensor_name;
+    target.sn_name_strlen = sensor_name_len;
+    sn = (const sensor_struct_t *)rbfind(&target, sensor_map);
+    if (sn) {
+        return sn->sn_id;
+    }
+    return SK_INVALID_SENSOR;
+}
+
+
 sk_sensor_id_t
 sksiteSensorLookup(
     const char         *sensor_name)
 {
-    sk_sensor_id_t id;
-    sensor_struct_t *sn;
-
-    for (id = 0; 0 == skVectorGetValue(&sn, sensor_list, id); ++id) {
-        if ((sn != NULL) && (strcmp(sn->sn_name, sensor_name) == 0)) {
-            return id;
-        }
-    }
-    return SK_INVALID_SENSOR;
+    return siteSensorLookup2(sensor_name, strlen(sensor_name));
 }
 
 
@@ -864,6 +1105,24 @@ sksiteIsSensorInClass(
 }
 
 
+int
+sksiteIsSensorInSensorgroup(
+    sk_sensor_id_t      sensor_id,
+    sk_sensorgroup_id_t group_id)
+{
+    sk_sensorgroup_iter_t gi;
+    sk_sensorgroup_id_t check_id;
+
+    sksiteSensorSensorgroupIterator(sensor_id, &gi);
+    while (sksiteSensorgroupIteratorNext(&gi, &check_id)) {
+        if (check_id == group_id) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
 void
 sksiteSensorIterator(
     sk_sensor_iter_t   *iter)
@@ -887,6 +1146,23 @@ sksiteSensorClassIterator(
         iter->ci_vector = NULL;
     } else {
         iter->ci_vector = sn->sn_class_list;
+    }
+}
+
+
+void
+sksiteSensorSensorgroupIterator(
+    sk_sensor_id_t          sensor_id,
+    sk_sensorgroup_iter_t  *iter)
+{
+    sensor_struct_t *sn = NULL;
+
+    iter->gi_index = 0;
+    iter->gi_contains_pointers = 0;
+    if (skVectorGetValue(&sn, sensor_list, sensor_id) || (NULL == sn)) {
+        iter->gi_vector = NULL;
+    } else {
+        iter->gi_vector = sn->sn_sensorgroup_list;
     }
 }
 
@@ -1371,19 +1647,37 @@ sksiteSensorgroupCreate(
     const char         *sensorgroup_name)
 {
     sensorgroup_struct_t *sg = NULL;
+    const sensorgroup_struct_t *added;
     const size_t vcap = skVectorGetCapacity(sensorgroup_list);
+    site_strlen_t sensorgroup_name_len;
 
     if (sensorgroup_id >= SK_MAX_NUM_SENSORGROUPS) {
         return -1;
     }
 
+    sensorgroup_name_len = strlen(sensorgroup_name);
+
     /* verify sensorgroup does not exist */
     if (sksiteSensorgroupExists(sensorgroup_id)) {
         return -1;
     }
-    if (sksiteSensorgroupLookup(sensorgroup_name) != SK_INVALID_SENSORGROUP) {
+    if (siteSensorgroupLookup2(sensorgroup_name, sensorgroup_name_len)
+        != SK_INVALID_SENSORGROUP)
+    {
         return -1;
     }
+#if 0
+    /* Since there is no distinction between sensors and sensorgroups when
+     * parsing the --sensors switch, them sharing a name causes the sensor to
+     * hide the sensorgroup. */
+    if (siteSensorLookup2(sensorgroup_name, sensorgroup_name_len)
+        != SK_INVALID_SENSOR)
+    {
+        skAppPrintErr(
+            "Warning: A sensor already exists with the name '%s'",
+            sensor_name);
+    }
+#endif  /* 0 */
 
     if (sensorgroup_id >= vcap) {
         if (skVectorSetCapacity(sensorgroup_list, sensorgroup_id + 1)) {
@@ -1417,6 +1711,12 @@ sksiteSensorgroupCreate(
         goto alloc_error;
     }
 
+    added = (sensorgroup_struct_t *)rbsearch(sg, sensorgroup_map);
+    if (NULL == added) {
+        goto alloc_error;
+    }
+    assert(added == sg);
+
     return 0;
 
   alloc_error:
@@ -1436,6 +1736,9 @@ siteSensorgroupFree(
     sensorgroup_struct_t   *sg)
 {
     if (sg != NULL) {
+        if (sensorgroup_map) {
+            rbdelete(sg, sensorgroup_map);
+        }
         if (sg->sg_sensor_list != NULL) {
             skVectorDestroy(sg->sg_sensor_list);
         }
@@ -1447,19 +1750,32 @@ siteSensorgroupFree(
 }
 
 
+/**
+ *    Implements sksiteSensorgroupLookup() and requires the group name's
+ *    length as the second argument.
+ */
+static sk_sensorgroup_id_t
+siteSensorgroupLookup2(
+    const char         *sensorgroup_name,
+    site_strlen_t       sensorgroup_name_len)
+{
+    const sensorgroup_struct_t *sg;
+    sensorgroup_struct_t target;
+
+    target.sg_name = sensorgroup_name;
+    target.sg_name_strlen = sensorgroup_name_len;
+    sg = (const sensorgroup_struct_t *)rbfind(&target, sensorgroup_map);
+    if (sg) {
+        return sg->sg_id;
+    }
+    return SK_INVALID_SENSORGROUP;
+}
+
 sk_sensorgroup_id_t
 sksiteSensorgroupLookup(
     const char         *sensorgroup_name)
 {
-    sk_sensorgroup_id_t id;
-    sensorgroup_struct_t *sg;
-
-    for (id = 0; 0 == skVectorGetValue(&sg, sensorgroup_list, id); ++id) {
-        if ((sg != NULL) && (strcmp(sg->sg_name, sensorgroup_name) == 0)) {
-            return id;
-        }
-    }
-    return SK_INVALID_SENSORGROUP;
+    return siteSensorgroupLookup2(sensorgroup_name, strlen(sensorgroup_name));
 }
 
 
@@ -1537,9 +1853,16 @@ sksiteSensorgroupAddSensor(
             return 0;           /* Already there */
         }
     }
+    /* add sensor to the group */
     if (skVectorAppendValue(sg->sg_sensor_list, &sensor_id)) {
         return -1;              /* Memory failure */
     }
+    /* add group to the sensor */
+    if (skVectorAppendValue(sn->sn_sensorgroup_list, &group_id)) {
+        /* should undo the previous append */
+        return -1;              /* Memory failure */
+    }
+
     return 0;
 }
 
@@ -1582,17 +1905,17 @@ sksiteSensorgroupIterator(
 void
 sksiteSensorgroupSensorIterator(
     sk_sensorgroup_id_t     group_id,
-    sk_sensorgroup_iter_t  *iter)
+    sk_sensor_iter_t       *iter)
 {
     sensorgroup_struct_t *sg;
 
+    iter->si_index = 0;
+    iter->si_contains_pointers = 0;
     if (skVectorGetValue(&sg, sensorgroup_list, group_id) || (NULL == sg)) {
-        iter->gi_vector = NULL;
-        return;
+        iter->si_vector = NULL;
+    } else {
+        iter->si_vector = sg->sg_sensor_list;
     }
-    iter->gi_index = 0;
-    iter->gi_vector = sg->sg_sensor_list;
-    iter->gi_contains_pointers = 0;
 }
 
 /** Flowtypes *********************************************************/
@@ -1970,7 +2293,7 @@ sksiteFlowtypeAssert(
 /* typedef struct sksite_error_iterator_st sksite_error_iterator_t; */
 struct sksite_error_iterator_st {
     sk_vector_t  *error_vector;
-    size_t        pos;
+    site_strlen_t pos;
 };
 
 typedef struct sksite_validation_error_st {
@@ -2036,33 +2359,59 @@ sksiteErrorIteratorFree(
     }
 }
 
+SK_DIAGNOSTIC_FORMAT_NONLITERAL_PUSH
 static int
 siteErrorIterPush(
     sksite_error_iterator_t    *iter,
     int                         error_code,
-    const char                 *error_string)
+    const char                 *format,
+    ...)
 {
     sksite_validation_error_t err;
+    char buf[1024];
+    va_list args;
+    ssize_t sz;
+    int rv = -1;
 
     assert(iter);
+    va_start(args, format);
     if (iter->error_vector) {
         memset(&err, 0, sizeof(err));
         err.error_code = error_code;
-        if (error_string) {
-            err.error_string = strdup(error_string);
-            if (NULL == err.error_string) {
-                skAppPrintOutOfMemory("string copy");
-                return -1;
+
+        sz = vsnprintf(buf, sizeof(buf), format, args);
+        if ((size_t)sz < sizeof(buf)) {
+            err.error_string = strdup(buf);
+        } else if (sz < 0) {
+            skAppPrintErr("vsnprintf() returned negative value");
+            skAbort();
+        } else {
+            size_t len = sz + 1;;
+            err.error_string = (char *)calloc(len, sizeof(char));
+            if (err.error_string) {
+                va_end(args);
+                va_start(args, format);
+                sz = vsnprintf(err.error_string, len, format, args);
             }
+        }
+
+        if (NULL == err.error_string) {
+            skAppPrintOutOfMemory("copy string");
+            goto END;
         }
         if (skVectorAppendValue(iter->error_vector, &err)) {
             skAppPrintOutOfMemory("vector entry");
             free(err.error_string);
-            return -1;
+            goto END;
         }
     }
-    return 0;
+
+    rv = 0;
+  END:
+    va_end(args);
+    return rv;
 }
+SK_DIAGNOSTIC_FORMAT_NONLITERAL_POP
 
 
 static int
@@ -2130,7 +2479,6 @@ siteErrorIterGetter(
     int                             action,
     int                            *error_code)
 {
-    static char err_buf[1024];
     sksite_validation_error_t err;
 
     /* if action is 1, error_code not be NULL */
@@ -2150,75 +2498,7 @@ siteErrorIterGetter(
     if (2 == action) {
         return err.error_string;
     }
-    assert(3 == action);
-
-    switch (err.error_code) {
-      case SKSITE_ERR_FLOWTYPE_NO_DELIM:
-        snprintf(err_buf, sizeof(err_buf),
-                 "The flowtype '%s' does not include the '/' delimiter",
-                 err.error_string);
-        break;
-      case SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS:
-        snprintf(err_buf, sizeof(err_buf),
-                 "The flowtype '%s' uses an unrecognized class name",
-                 err.error_string);
-        break;
-      case SKSITE_ERR_FLOWTYPE_UNKNOWN_TYPE:
-        snprintf(err_buf, sizeof(err_buf),
-                 "The flowtype '%s' uses an unrecognized type name",
-                 err.error_string);
-        break;
-      case SKSITE_ERR_FLOWTYPE_TYPE_NOT_IN_CLASS:
-        snprintf(err_buf, sizeof(err_buf),
-                 "The flowtype '%s' uses a type that is not in the class",
-                 err.error_string);
-        break;
-      case SKSITE_ERR_UNKNOWN_SENSOR:
-        snprintf(err_buf, sizeof(err_buf),
-                 "The sensor name '%s' is not recognized",
-                 err.error_string);
-        break;
-      case SKSITE_ERR_UNKNOWN_SENSOR_ID:
-        snprintf(err_buf, sizeof(err_buf),
-                 "The sensor ID %s is not recognized",
-                 err.error_string);
-        break;
-      case SKSITE_ERR_CLASS_UNKNOWN:
-        snprintf(err_buf, sizeof(err_buf),
-                 "The class name '%s' is not recognized",
-                 err.error_string);
-        break;
-      case SKSITE_ERR_CLASS_NO_DEFAULT:
-        snprintf(err_buf, sizeof(err_buf),
-                 "The configuration file does not specify a default class");
-        break;
-      case SKSITE_ERR_TYPE_NOT_IN_CLASSES:
-        snprintf(err_buf, sizeof(err_buf),
-                 ("The type name '%s' is not recognized"
-                  " in the specified class(es)"),
-                 err.error_string);
-        break;
-      case SKSITE_ERR_TYPE_UNKNOWN:
-        snprintf(err_buf, sizeof(err_buf),
-                 "The type name '%s' is not recognized",
-                 err.error_string);
-        break;
-      case SKSITE_ERR_SENSOR_NOT_IN_CLASSES:
-        snprintf(err_buf, sizeof(err_buf),
-                 "Sensor '%s' is not a member of the specified class(es)",
-                 err.error_string);
-        break;
-      default:
-        snprintf(err_buf, sizeof(err_buf),
-                 "Sensor range/ID '%s' is invalid: %s",
-                 err.error_string,
-                 skStringParseStrerror(err.error_code
-                                       - SKSITE_ERR_UTILS_OFFSET));
-        break;
-    }
-
-    err_buf[sizeof(err_buf)-1] = '\0';
-    return err_buf;
+    return err.error_string;
 }
 
 
@@ -2238,11 +2518,18 @@ sksiteErrorIteratorGetCode(
       case SKSITE_ERR_FLOWTYPE_TYPE_NOT_IN_CLASS:
       case SKSITE_ERR_UNKNOWN_SENSOR:
       case SKSITE_ERR_UNKNOWN_SENSOR_ID:
-      case SKSITE_ERR_CLASS_UNKNOWN:
-      case SKSITE_ERR_CLASS_NO_DEFAULT:
       case SKSITE_ERR_TYPE_NOT_IN_CLASSES:
-      case SKSITE_ERR_TYPE_UNKNOWN:
       case SKSITE_ERR_SENSOR_NOT_IN_CLASSES:
+      case SKSITE_ERR_CLASS_UNKNOWN:
+      case SKSITE_ERR_TYPE_UNKNOWN:
+      case SKSITE_ERR_CLASS_NO_DEFAULT:
+      case SKSITE_ERR_SENSORGROUP_UNKNOWN:
+      case SKSITE_ERR_LONG_TOKEN:
+      case SKSITE_ERR_LONG_FILE:
+      case SKSITE_ERR_BAD_FILE_BEGIN:
+      case SKSITE_ERR_BAD_ESCAPE:
+      case SKSITE_ERR_FILE_IO:
+      case SKSITE_ERR_FILE_RECURSE:
         return error_code;
       default:
         return SKSITE_ERR_UTILS_OFFSET;
@@ -2269,72 +2556,425 @@ sksiteErrorIteratorGetMessage(
 
 /** Compatibility Functions *******************************************/
 
+#define SITE_TOKENIZER_MAX_LEN  4000
+
+#define SITE_TOKEN_MAX_DEPTH  2
+
 struct site_tokenizer_st {
-    char                buf[4000];
-    const char         *pos;
-    size_t              len;
+    /* buffer to hold the current token */
+    char                buf[SITE_TOKENIZER_MAX_LEN];
+    /* maximum length of name allowed in `buf` */
+    site_strlen_t       len;
+    /* position(s) within the argument(s) being parsed */
+    const char         *pos[SITE_TOKEN_MAX_DEPTH];
+    /* current depth within the 'pos' array */
+    unsigned int        depth;
+    /* To support a file name ("@foo" so struct is named `at`) */
+    struct at_st {
+        /* current length of name in `file` */
+        site_strlen_t len;
+        /* available space remaining in `file` */
+        site_strlen_t rem;
+        /* the open stream */
+        skstream_t   *stream;
+        /* file name */
+        char          file[PATH_MAX + 1];
+        /* buffer holding the current line read from the file */
+        char          line_buf[1024];
+    }                   at;
 };
 typedef struct site_tokenizer_st site_tokenizer_t;
+
 
 static void
 siteTokenizerInit(
     site_tokenizer_t   *state,
     const char         *list,
-    size_t              max_length)
+    site_strlen_t       max_length)
 {
+    assert(max_length < sizeof(state->buf));
     memset(state, 0, sizeof(*state));
-    state->pos = list;
+    state->depth = 0;
+    state->pos[state->depth] = list;
     state->len = max_length;
+    state->at.rem = sizeof(state->at.file) - 1;
+}
+
+/*
+ *  Cleans a buffer in place to remove leading commas and whitespace before
+ *  the first token, trailing commas and whitespace after the final token, any
+ *  whitespace that surrounds the comma delimter, and repeated commas.
+ *  Returns the length of the resulting string.
+ */
+static int
+siteTokenizerCleanFileInputLine(
+    char   *buffer)
+{
+    char *cp;    /* search for comma */
+    char *ep;    /* end of next token position */
+    char *dp;    /* destination position */
+    char *sp;    /* source/start of token position */
+
+    dp = sp = buffer;
+
+    for (;;) {
+        /* `sp` is either at the start of the buffer or just after a comma;
+         * move over any leading whitespace or commas */
+        while (isspace(*sp) || ',' == *sp) {
+            ++sp;
+        }
+        /* `sp` is at start of token or at end of the string. Search forward
+         * for a comma.  If found, set `ep` to char just before the comma. If
+         * not found, either `sp` is at the end of the buffer or there is a
+         * final token to process in which case `ep` is set to the end of the
+         * buffer. */
+        cp = strchr(sp, ',');
+        if (cp) {
+            ep = cp - 1;
+        } else if (*sp) {
+            /* no comma but still have data; this is the final token */
+            ep = sp + strlen(sp) - 1;
+        } else {
+            /* `sp` is at the end of the string, remove trailing comma added
+             * after the most recent token (if any) end exit loop */
+            if (dp > buffer) {
+                assert(',' == *(dp - 1));
+                --dp;
+            }
+            break;
+        }
+        /* move backward from `ep` over any trailing whitespace */
+        while (ep > sp && isspace(*ep)) {
+            --ep;
+        }
+        /* `sp` at start of token and `ep` at the end. Copy it. After this,
+         * `dp` is on char just after the copied token. */
+        if (sp == dp) {
+            /* no need to copy, just move */
+            dp = ep + 1;
+        } else {
+            while (sp <= ep) {
+                *dp = *sp;
+                ++dp;
+                ++sp;
+            }
+        }
+        if (NULL == cp) {
+            /* if no comma was found; exit loop */
+            break;
+        }
+        /* include a comma in the destination, though we may remove it if
+         * there are no more tokens. We do this so `sp` and `dp` stay in sync
+         * for case where the incoming buffer is fine as-is. */
+        *dp = ',';
+        ++dp;
+        /* move `sp` to just after the comma */
+        sp = cp + 1;
+    }
+
+    /* close string and return the length */
+    *dp = '\0';
+    return dp - buffer;
 }
 
 
 /*
- *    Return 0 if the function parses a token.  Return 1 if the
- *    function has reached the end of the input.  Return -1 if the
- *    token is too large for the buffer.
+ *    Return SITE_TOKEN_OK if the function parses a token.  Return
+ *    SITE_TOKEN_END_OF_DATA if the function has reached the end of the input.
+ *    Return SITE_TOKEN_ERR if an error was added to the error_iter or
+ *    SITE_TOKEN_ERR_FATAL if an attempt to push an error onto error_iter
+ *    fails.
  */
-static int
+static site_token_status_t
 siteTokenizerNext(
-    site_tokenizer_t   *state,
-    char              **name)
+    site_tokenizer_t         *state,
+    char                    **name,
+    sksite_error_iterator_t  *error_iter)
 {
     const char *ep;
+    const char *sp;
     size_t len;
-    int rv = 0;
+    site_token_status_t rv = SITE_TOKEN_OK;
+    /* used to remember location of a bad @x escape */
+    const char *bad = NULL;
+    /* skStream return code */
+    ssize_t strrv;
 
     assert(state);
     assert(name);
-    assert(state->pos);
+    assert(state->pos[state->depth]);
 
+    /* set output name */
     *name = state->buf;
-    while (*state->pos) {
-        ep = strchr(state->pos, ',');
-        if (ep == state->pos) {
-            /* double comma, ignore */
-            ++state->pos;
+
+    /* loop until find token, reach end of data, or error */
+    for (;;) {
+
+        memset(state->buf, 0, sizeof(state->buf));
+        memset(state->at.file, 0, sizeof(state->at.file));
+        state->at.len = 0;
+        state->at.rem = sizeof(state->at.file) - 1;
+
+        /* if there is an open stream, try to read a line from it */
+        while (state->at.stream) {
+            /* if state->depth is set, we already have a partial line (though
+             * we may be at the end of that line) */
+            if (state->depth) {
+                if (*state->pos[state->depth]) {
+                    /* more entries on this line */
+                    break;
+                }
+                /* finished with this line */
+                --state->depth;
+            }
+
+            /* read next line from file */
+            strrv = skStreamGetLine(state->at.stream, state->at.line_buf,
+                                    sizeof(state->at.line_buf), NULL);
+            if (SKSTREAM_OK == strrv) {
+                TRACEMSG(("L%d, read line \"%s\"",
+                          __LINE__, state->at.line_buf));
+                /* we have a line; trim leading and trailing whitespace and
+                 * whitespace around commas */
+                len = siteTokenizerCleanFileInputLine(state->at.line_buf);
+                if (0 == len) {
+                    continue;
+                }
+                ++state->depth;
+                state->pos[state->depth] = state->at.line_buf;
+                TRACEMSG(("L%d, trimmed line \"%s\"",
+                          __LINE__, state->pos[state->depth]));
+                break;
+            }
+
+            /* either end of file or error reading */
+            if (SKSTREAM_ERR_EOF != strrv) {
+                char msgbuf[PATH_MAX * 2];
+                skStreamLastErrMessage(state->at.stream, strrv,
+                                       msgbuf, sizeof(msgbuf) - 1);
+                rv = SITE_TOKEN_ERR;
+                if (siteErrorIterPush(
+                        error_iter, SKSITE_ERR_FILE_IO,
+                        "Error reading file: %s", msgbuf))
+                {
+                    rv = SITE_TOKEN_ERR_FATAL;
+                }
+            }
+            skStreamDestroy(&state->at.stream);
+            memset(state->at.file, 0, sizeof(state->at.file));
+            state->at.len = 0;
+            state->at.rem = sizeof(state->at.file) - 1;
+            if (SKSTREAM_ERR_EOF != strrv) {
+                return rv;
+            }
+            /* finished with the file; continue reading the option's
+             * arguments */
+        }
+
+        /* ignore leading comma or multiple commas */
+        while (',' == *state->pos[state->depth]) {
+            ++state->pos[state->depth];
+        }
+
+        if (!*state->pos[state->depth]) {
+            /* no more data on this line or in this argument */
+            if (0 == state->depth) {
+                /* no more data */
+                return SITE_TOKEN_END_OF_DATA;
+            }
+            /* pop back to the option's argument */
+            --state->depth;
             continue;
         }
-        if (ep) {
-            len = ep - state->pos;
-            ++ep;
-        } else {
-            /* no more commas; set 'ep' to end of string */
-            len = strlen(state->pos);
-            ep = state->pos + len;
-        }
-        if (len >= state->len) {
-            /* token too long.  copy what we can and return error */
-            if (len > sizeof(state->buf)) {
-                len = sizeof(state->buf) - 1;
+
+        TRACEMSG(("L%d, state->depth = %u, state->pos[] = '%s'\n"
+                  "state->buf = '%s'\n" "state->file = '%s'",
+                  __LINE__, state->depth, state->pos[state->depth],
+                  state->buf, state->at.file));
+
+        /* record the starting position */
+        sp = state->pos[state->depth];
+
+        /* if first char is not '@', then treat as an ordinary token. */
+        if ('@' != *state->pos[state->depth]) {
+            ep = strchr(state->pos[state->depth], ',');
+            if (ep) {
+                /* record length, move 'ep' to start of next token */
+                len = ep - state->pos[state->depth];
+                ++ep;
+            } else {
+                /* get length; move 'ep' to the NUL */
+                len = strlen(state->pos[state->depth]);
+                ep = state->pos[state->depth] + len;
             }
-            rv = -1;
+            if (len >= state->len) {
+                /* token too long */
+                rv = SITE_TOKEN_ERR;
+                len = state->len;
+            }
+            strncpy(state->buf, state->pos[state->depth], len);
+            state->buf[len] = '\0';
+            state->pos[state->depth] = ep;
+            if (SITE_TOKEN_ERR == rv) {
+                if (siteErrorIterPush(
+                        error_iter, SKSITE_ERR_LONG_TOKEN,
+                        ("Token's length (%ld) is longer than maximum"
+                         " allowed (%u); token begins with \"%s\""),
+                        ep - sp, state->len, state->buf))
+                {
+                    return SITE_TOKEN_ERR_FATAL;
+                }
+            }
+            return rv;
         }
-        strncpy(state->buf, state->pos, len);
-        state->buf[len] = '\0';
-        state->pos = ep;
-        return rv;
+
+        TRACEMSG(("L%d, state->depth = %u, state->pos[] = '%s',"
+                  " state->buf = '%s'",
+                  __LINE__, state->depth, state->pos[state->depth],
+                  state->buf));
+
+        /* we are at the start of a file name; find its end */
+        ++state->pos[state->depth];
+        while (*state->pos[state->depth]) {
+            len = strcspn(state->pos[state->depth], ",@");
+            ep = state->pos[state->depth] + len;
+            TRACEMSG(("L%d, state->pos[state->depth] = '%s', len = %zu",
+                      __LINE__, state->pos[state->depth], len));
+            if (len >= state->at.rem) {
+                /* file name too long */
+                len = state->at.rem;
+                rv = SITE_TOKEN_ERR;
+            }
+            /* copy the text we just spanned */
+            strncpy(state->at.file + state->at.len,
+                    state->pos[state->depth], len);
+            state->at.len += len;
+            state->at.rem -= len;
+            state->at.file[state->at.len] = '\0';
+            state->pos[state->depth] = ep + (',' == *ep);
+            TRACEMSG(("L%d, ep = '%s'", __LINE__, ep));
+            if ('@' != *ep) {
+                /* end of filename */
+                break;
+            }
+            /* next character must be a ',' or '@' */
+            ++ep;
+            TRACEMSG(("L%d, ep = '%s'", __LINE__, ep));
+            if ('@' == *ep || ',' == *ep) {
+                /* got what we expected; ignore the first '@' by moving
+                 * state->pos[] forward; move 'ep' to next char */
+                len = 1;
+                ++state->pos[state->depth];
+                ++ep;
+            } else {
+                /* illegal character; record the character if this is the
+                 * first bad one */
+                if (!bad) {
+                    bad = ep;
+                }
+                if ('\0' == *ep) {
+                    len = 1;
+                } else {
+                    len = 2;
+                    ++ep;
+                }
+            }
+            /* add the text to the file name */
+            if (len >= state->at.rem) {
+                len = state->at.rem;
+                rv = SITE_TOKEN_ERR;
+            }
+            strncpy(state->at.file + state->at.len,
+                    state->pos[state->depth], len);
+            state->at.len += len;
+            state->at.rem -= len;
+            state->at.file[state->at.len] = '\0';
+            state->pos[state->depth] = ep;
+        }
+
+        /* error about a long token */
+        if (rv) {
+            /* shorten amount of filename displayed */
+            state->at.file[((state->at.len < 80) ? state->at.len : 80)] = '\0';
+            if (siteErrorIterPush(
+                    error_iter, SKSITE_ERR_LONG_FILE,
+                    ("Filename's length (%ld) is longer than maximum"
+                     " allowed (%u); filename begins \"%s\""),
+                    state->pos[state->depth] - sp - 1, state->at.len,
+                    state->at.file))
+            {
+                return SITE_TOKEN_ERR_FATAL;
+            }
+            return SITE_TOKEN_ERR;
+        }
+
+        /* If we found bad escape, return that error now */
+        if (bad) {
+            if ('\0' == *bad) {
+                if (siteErrorIterPush(
+                        error_iter, SKSITE_ERR_BAD_ESCAPE,
+                        ("Token '@%s' contains a single @ at end of token:"
+                         " After the initial '@', only the '@@' and '@,'"
+                         " sequences are allowed"),
+                        state->at.file))
+                {
+                    return SITE_TOKEN_ERR_FATAL;
+                }
+            } else if (siteErrorIterPush(
+                           error_iter, SKSITE_ERR_BAD_ESCAPE,
+                           ("Token '@%s' contains illegal sequence '@%c':"
+                            " After the initial '@', only the '@@' and '@,'"
+                            " sequences are allowed"),
+                           state->at.file, *bad))
+            {
+                return SITE_TOKEN_ERR_FATAL;
+            }
+            return SITE_TOKEN_ERR;
+        }
+
+        /* If the token was a single "@" (which means at.file is empty),
+         * return that token since sometime that is used to mean "default" */
+        if ('\0' == state->at.file[0]) {
+            state->buf[0] = *sp;
+            state->buf[1] = '\0';
+            TRACEMSG(("L%d, Found file name '%s'; returning token '%s'",
+                      __LINE__, state->at.file, state->buf));
+            return SITE_TOKEN_OK;
+        }
+
+        /* Will not accept @FILE inside a file */
+        if (state->depth > 0) {
+            if (siteErrorIterPush(
+                    error_iter, SKSITE_ERR_FILE_RECURSE,
+                    ("Bad token '@%s' found in file '%s': "
+                     "May not recursively use @FILE construct within a file"),
+                    state->at.file, skStreamGetPathname(state->at.stream)))
+            {
+                return SITE_TOKEN_ERR_FATAL;
+            }
+            return SITE_TOKEN_ERR;
+        }
+
+        /* Attempt to open the file */
+        TRACEMSG(("L%d, Found file name '%s'", __LINE__, state->at.file));
+        if ((strrv = skStreamCreate(&state->at.stream, SK_IO_READ,
+                                    SK_CONTENT_TEXT))
+            || (strrv = skStreamBind(state->at.stream, state->at.file))
+            || (strrv = skStreamSetCommentStart(state->at.stream, "#"))
+            || (strrv = skStreamOpen(state->at.stream)))
+        {
+            char msgbuf[PATH_MAX * 2];
+            skStreamLastErrMessage(state->at.stream, strrv,
+                                   msgbuf, sizeof(msgbuf)-1);
+            skStreamDestroy(&state->at.stream);
+            if (siteErrorIterPush(error_iter, SKSITE_ERR_FILE_IO,
+                                  "%s", msgbuf))
+            {
+                return SITE_TOKEN_ERR_FATAL;
+            }
+            return SITE_TOKEN_ERR;
+        }
     }
-    return 1;
 }
 
 
@@ -2358,10 +2998,11 @@ sksiteParseFlowtypeList(
     const char                 *default_types_token,
     sksite_error_iterator_t   **out_error_iter)
 {
-    const char delimiter = '/';
+    const char separator = '/';
     sksite_error_iterator_t *error_iter = NULL;
     sk_bitmap_t *bitmap;
     site_tokenizer_t tokens;
+    site_token_status_t sts;
     size_t vector_count;
     int invalid_count = 0;
     char *type_name;
@@ -2395,13 +3036,24 @@ sksiteParseFlowtypeList(
 
     /* parse the name_list as a comma separated list of tokens */
     siteTokenizerInit(&tokens, ft_name_list, (2 + 2*SK_MAX_STRLEN_FLOWTYPE));
-    while (siteTokenizerNext(&tokens, &name) != 1) {
-        /* convert the delimiter to '\0' */
-        type_name = strchr(name, delimiter);
+    while ((sts = siteTokenizerNext(&tokens, &name, error_iter))
+           != SITE_TOKEN_END_OF_DATA)
+    {
+        if (SITE_TOKEN_OK != sts) {
+            if (SITE_TOKEN_ERR_FATAL == sts) {
+                goto END;
+            }
+            ++invalid_count;
+            continue;
+        }
+
+        /* convert the separator between class and type to '\0' */
+        type_name = strchr(name, separator);
         if (NULL == type_name) {
             ++invalid_count;
             if (siteErrorIterPush(
-                    error_iter, SKSITE_ERR_FLOWTYPE_NO_DELIM, name))
+                    error_iter, SKSITE_ERR_FLOWTYPE_NO_DELIM,
+                    SKSITE_ERR_FLOWTYPE_NO_DELIM_MSG, name, separator))
             {
                 goto END;
             }
@@ -2456,9 +3108,10 @@ sksiteParseFlowtypeList(
                 }
                 if (found_type == skVectorGetCount(ft_vector)) {
                     ++invalid_count;
-                    *(type_name-1) = delimiter;
+                    *(type_name-1) = separator;
                     if (siteErrorIterPush(
-                            error_iter, SKSITE_ERR_FLOWTYPE_UNKNOWN_TYPE,name))
+                            error_iter, SKSITE_ERR_FLOWTYPE_UNKNOWN_TYPE,
+                            SKSITE_ERR_FLOWTYPE_UNKNOWN_TYPE_MSG, name))
                     {
                         goto END;
                     }
@@ -2476,16 +3129,18 @@ sksiteParseFlowtypeList(
                 if (SK_INVALID_CLASS == class_id) {
                     ++invalid_count;
                     if (siteErrorIterPush(
-                            error_iter, SKSITE_ERR_CLASS_NO_DEFAULT, NULL))
+                            error_iter, SKSITE_ERR_CLASS_NO_DEFAULT,
+                            SKSITE_ERR_CLASS_NO_DEFAULT_MSG))
                     {
                         goto END;
                     }
                 }
             } else {
                 ++invalid_count;
-                *(type_name-1) = delimiter;
+                *(type_name-1) = separator;
                 if (siteErrorIterPush(
-                        error_iter, SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS, name))
+                        error_iter, SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS,
+                        SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS_MSG, name))
                 {
                     goto END;
                 }
@@ -2515,9 +3170,10 @@ sksiteParseFlowtypeList(
                 /* the type cannot be valid since the first thing we
                  * checked was for valid class/type pair */
                 ++invalid_count;
-                *(type_name-1) = delimiter;
+                *(type_name-1) = separator;
                 if (siteErrorIterPush(
-                        error_iter,SKSITE_ERR_FLOWTYPE_TYPE_NOT_IN_CLASS,name))
+                        error_iter, SKSITE_ERR_FLOWTYPE_TYPE_NOT_IN_CLASS,
+                        SKSITE_ERR_FLOWTYPE_TYPE_NOT_IN_CLASS_MSG, name))
                 {
                     goto END;
                 }
@@ -2533,6 +3189,7 @@ sksiteParseFlowtypeList(
         if (skBitmapGetBit(bitmap, id)) {
             skVectorRemoveValue(ft_vector, vector_count, NULL);
         } else {
+            skBitmapSetBit(bitmap, id);
             ++vector_count;
         }
     }
@@ -2565,6 +3222,7 @@ sksiteParseClassList(
     sksite_error_iterator_t *error_iter = NULL;
     sk_bitmap_t *bitmap;
     site_tokenizer_t tokens;
+    site_token_status_t sts;
     sk_class_iter_t ci;
     size_t vector_count;
     int invalid_count = 0;
@@ -2594,8 +3252,18 @@ sksiteParseClassList(
     }
 
     /* parse the name_list as a comma separated list of tokens */
-    siteTokenizerInit(&tokens, class_name_list, SK_MAX_STRLEN_FLOWTYPE+1);
-    while (siteTokenizerNext(&tokens, &name) != 1) {
+    siteTokenizerInit(&tokens, class_name_list, SK_MAX_STRLEN_FLOWTYPE + 1);
+    while ((sts = siteTokenizerNext(&tokens, &name, error_iter))
+           != SITE_TOKEN_END_OF_DATA)
+    {
+        if (SITE_TOKEN_OK != sts) {
+            if (SITE_TOKEN_ERR_FATAL == sts) {
+                goto END;
+            }
+            ++invalid_count;
+            continue;
+        }
+
         /* look up token as a class name */
         id = sksiteClassLookup(name);
         if (SK_INVALID_CLASS != id) {
@@ -2611,7 +3279,8 @@ sksiteParseClassList(
             } else {
                 ++invalid_count;
                 if (siteErrorIterPush(
-                        error_iter, SKSITE_ERR_CLASS_NO_DEFAULT, NULL))
+                        error_iter, SKSITE_ERR_CLASS_NO_DEFAULT,
+                        SKSITE_ERR_CLASS_NO_DEFAULT_MSG))
                 {
                     goto END;
                 }
@@ -2627,7 +3296,8 @@ sksiteParseClassList(
         } else {
             ++invalid_count;
             if (siteErrorIterPush(
-                       error_iter, SKSITE_ERR_CLASS_UNKNOWN, name))
+                    error_iter, SKSITE_ERR_CLASS_UNKNOWN,
+                    SKSITE_ERR_CLASS_UNKNOWN_MSG, name))
             {
                 goto END;
             }
@@ -2642,6 +3312,7 @@ sksiteParseClassList(
         if (skBitmapGetBit(bitmap, id)) {
             skVectorRemoveValue(class_vector, vector_count, NULL);
         } else {
+            skBitmapSetBit(bitmap, id);
             ++vector_count;
         }
     }
@@ -2675,6 +3346,7 @@ sksiteParseTypeList(
     sksite_error_iterator_t *error_iter = NULL;
     sk_bitmap_t *bitmap;
     site_tokenizer_t tokens;
+    site_token_status_t sts;
     sk_flowtype_iter_t ft_iter;
     unsigned int found_type;
     size_t vector_count;
@@ -2710,8 +3382,18 @@ sksiteParseTypeList(
     }
 
     /* parse the name_list as a comma separated list of tokens */
-    siteTokenizerInit(&tokens, type_name_list, SK_MAX_STRLEN_FLOWTYPE+1);
-    while (siteTokenizerNext(&tokens, &name) != 1) {
+    siteTokenizerInit(&tokens, type_name_list, SK_MAX_STRLEN_FLOWTYPE + 1);
+    while ((sts = siteTokenizerNext(&tokens, &name, error_iter))
+           != SITE_TOKEN_END_OF_DATA)
+    {
+        if (SITE_TOKEN_OK != sts) {
+            if (SITE_TOKEN_ERR_FATAL == sts) {
+                goto END;
+            }
+            ++invalid_count;
+            continue;
+        }
+
         found_type = 0;
 
         if (all_types_token
@@ -2752,7 +3434,8 @@ sksiteParseTypeList(
         if (!found_type) {
             ++invalid_count;
             if (siteErrorIterPush(
-                    error_iter, SKSITE_ERR_TYPE_NOT_IN_CLASSES, name))
+                    error_iter, SKSITE_ERR_TYPE_NOT_IN_CLASSES,
+                    SKSITE_ERR_TYPE_NOT_IN_CLASSES_MSG, name))
             {
                 goto END;
             }
@@ -2767,6 +3450,7 @@ sksiteParseTypeList(
         if (skBitmapGetBit(bitmap, id)) {
             skVectorRemoveValue(ft_vector, vector_count, NULL);
         } else {
+            skBitmapSetBit(bitmap, id);
             ++vector_count;
         }
     }
@@ -2802,9 +3486,11 @@ sksiteParseSensorList(
     sk_bitmap_t *sensor_mask = NULL;
     char numbuf[64];
     site_tokenizer_t tokens;
+    site_token_status_t sts;
     size_t vector_count;
     int invalid_count = 0;
     char *name;
+    sk_sensorgroup_id_t group_id;
     sk_sensor_iter_t sensor_iter;
     sk_sensor_id_t min_sensor_id;
     sk_sensor_id_t max_sensor_id;
@@ -2859,8 +3545,18 @@ sksiteParseSensorList(
     }
 
     /* parse the name_list as a comma separated list of tokens */
-    siteTokenizerInit(&tokens, sensor_name_list, SK_MAX_STRLEN_SENSOR+1);
-    while (siteTokenizerNext(&tokens, &name) != 1) {
+    siteTokenizerInit(&tokens, sensor_name_list, SK_MAX_STRLEN_SENSOR + 1);
+    while ((sts = siteTokenizerNext(&tokens, &name, error_iter))
+           != SITE_TOKEN_END_OF_DATA)
+    {
+        if (SITE_TOKEN_OK != sts) {
+            if (SITE_TOKEN_ERR_FATAL == sts) {
+                goto END;
+            }
+            ++invalid_count;
+            continue;
+        }
+
         /* look up token as a sensor name */
         id = sksiteSensorLookup(name);
         if (SK_INVALID_SENSOR != id) {
@@ -2869,7 +3565,8 @@ sksiteParseSensorList(
             } else {
                 ++invalid_count;
                 if (siteErrorIterPush(
-                        error_iter, SKSITE_ERR_SENSOR_NOT_IN_CLASSES, name))
+                        error_iter, SKSITE_ERR_SENSOR_NOT_IN_CLASSES,
+                        SKSITE_ERR_SENSOR_NOT_IN_CLASSES_MSG, name))
                 {
                     goto END;
                 }
@@ -2885,16 +3582,31 @@ sksiteParseSensorList(
                 }
             }
 
-        } else if (!flags || !isdigit((int)(*name))) {
+        } else if ((flags & SKSITE_SENSORS_ALLOW_GROUP)
+                   && ((group_id = sksiteSensorgroupLookup(name))
+                       != SK_INVALID_SENSORGROUP))
+        {
+            sksiteSensorgroupSensorIterator(group_id, &sensor_iter);
+            while (sksiteSensorIteratorNext(&sensor_iter, &id)) {
+                if (NULL == sensor_mask || skBitmapGetBit(sensor_mask, id)) {
+                    if (skVectorAppendValue(sensor_vector, &id)) { goto END; }
+                }
+            }
+
+        } else if ((0 == (flags & (SKSITE_SENSORS_ALLOW_ID
+                                   | SKSITE_SENSORS_ALLOW_RANGE)))
+                   || !isdigit((int)(*name)))
+        {
             /* either not a number or numbers not supported */
             ++invalid_count;
-            if (siteErrorIterPush(error_iter, SKSITE_ERR_UNKNOWN_SENSOR, name))
+            if (siteErrorIterPush(error_iter, SKSITE_ERR_UNKNOWN_SENSOR,
+                                  SKSITE_ERR_UNKNOWN_SENSOR_MSG, name))
             {
                 goto END;
             }
 
         } else {
-            if (1 == flags) {
+            if (0 == (flags & SKSITE_SENSORS_ALLOW_RANGE)) {
                 /* parse as a single number */
                 val_min = 0;
                 p_err = skStringParseUint32(&val_min, name, min_sensor_id,
@@ -2910,15 +3622,17 @@ sksiteParseSensorList(
                 /* error parsing a number or range */
                 ++invalid_count;
                 if (siteErrorIterPush(
-                        error_iter, SKSITE_ERR_UTILS_OFFSET + p_err, name))
+                        error_iter, SKSITE_ERR_UTILS_OFFSET + p_err,
+                        SKSITE_ERR_UTILS_OFFSET_MSG, name,
+                        skStringParseStrerror(p_err)))
                 {
                     goto END;
                 }
             } else if (p_err > 0) {
                 /* text after a number */
                 ++invalid_count;
-                if (siteErrorIterPush(
-                        error_iter, SKSITE_ERR_UNKNOWN_SENSOR, name))
+                if (siteErrorIterPush(error_iter, SKSITE_ERR_UNKNOWN_SENSOR,
+                                      SKSITE_ERR_UNKNOWN_SENSOR_MSG, name))
                 {
                     goto END;
                 }
@@ -2927,7 +3641,8 @@ sksiteParseSensorList(
                 snprintf(numbuf, sizeof(numbuf), "%" PRIu32, val_min);
                 ++invalid_count;
                 if (siteErrorIterPush(
-                        error_iter, SKSITE_ERR_UNKNOWN_SENSOR_ID, numbuf))
+                        error_iter, SKSITE_ERR_UNKNOWN_SENSOR_ID,
+                        SKSITE_ERR_UNKNOWN_SENSOR_ID_MSG, numbuf))
                 {
                     goto END;
                 }
@@ -2936,7 +3651,8 @@ sksiteParseSensorList(
                 snprintf(numbuf, sizeof(numbuf), "%" PRIu32, val_max);
                 ++invalid_count;
                 if (siteErrorIterPush(
-                        error_iter, SKSITE_ERR_UNKNOWN_SENSOR_ID, numbuf))
+                        error_iter, SKSITE_ERR_UNKNOWN_SENSOR_ID,
+                        SKSITE_ERR_UNKNOWN_SENSOR_ID_MSG, numbuf))
                 {
                     goto END;
                 }
@@ -2965,9 +3681,9 @@ sksiteParseSensorList(
                     } else {
                         snprintf(numbuf, sizeof(numbuf), "%" PRIu32, val_min);
                         ++invalid_count;
-                        if (siteErrorIterPush(error_iter,
-                                              SKSITE_ERR_SENSOR_NOT_IN_CLASSES,
-                                              numbuf))
+                        if (siteErrorIterPush(
+                                error_iter, SKSITE_ERR_SENSOR_NOT_IN_CLASSES,
+                                SKSITE_ERR_SENSOR_NOT_IN_CLASSES_MSG, numbuf))
                         {
                             goto END;
                         }
@@ -2989,6 +3705,7 @@ sksiteParseSensorList(
         if (skBitmapGetBit(sensor_mask, id)) {
             skVectorRemoveValue(sensor_vector, vector_count, NULL);
         } else {
+            skBitmapSetBit(sensor_mask, id);
             ++vector_count;
         }
     }
@@ -3004,6 +3721,103 @@ sksiteParseSensorList(
   END:
     sksiteErrorIteratorFree(error_iter);
     skBitmapDestroy(&sensor_mask);
+    if (0 == rv) {
+        return invalid_count;
+    }
+    return rv;
+}
+
+
+int
+sksiteParseSensorgroupList(
+    sk_vector_t                *group_vector,
+    const char                 *group_name_list,
+    sksite_error_iterator_t   **out_error_iter)
+{
+    sksite_error_iterator_t *error_iter = NULL;
+    sk_bitmap_t *bitmap = NULL;
+    site_tokenizer_t tokens;
+    site_token_status_t sts;
+    size_t vector_count;
+    int invalid_count = 0;
+    char *name;
+    sk_sensorgroup_id_t id;
+    int rv = -1;
+
+    sksiteConfigure(0);
+
+    if (NULL == group_vector || NULL == group_name_list) {
+        goto END;
+    }
+    if (skVectorGetElementSize(group_vector) != sizeof(sk_sensorgroup_id_t)) {
+        goto END;
+    }
+    if ('\0' == *group_name_list) {
+        rv = 0;
+        goto END;
+    }
+    vector_count = skVectorGetCount(group_vector);
+
+    /* create the object that holds invalid tokens */
+    if (out_error_iter) {
+        if (siteErrorIterCreate(&error_iter)) {
+            goto END;
+        }
+    }
+
+    /* parse the name_list as a comma separated list of tokens */
+    siteTokenizerInit(&tokens, group_name_list, SITE_TOKENIZER_MAX_LEN - 1);
+    while ((sts = siteTokenizerNext(&tokens, &name, error_iter))
+           != SITE_TOKEN_END_OF_DATA)
+    {
+        if (SITE_TOKEN_OK != sts) {
+            if (SITE_TOKEN_ERR_FATAL == sts) {
+                goto END;
+            }
+            ++invalid_count;
+            continue;
+        }
+
+        /* look up token as a group name */
+        id = sksiteSensorgroupLookup(name);
+        if (SK_INVALID_SENSORGROUP != id) {
+            /* found it */
+            if (skVectorAppendValue(group_vector, &id)) { goto END; }
+        } else {
+            ++invalid_count;
+            if (siteErrorIterPush(error_iter, SKSITE_ERR_SENSORGROUP_UNKNOWN,
+                                  SKSITE_ERR_SENSORGROUP_UNKNOWN_MSG, name))
+            {
+                goto END;
+            }
+        }
+    }
+
+    /* remove duplicates */
+    if (skBitmapCreate(&bitmap, 1 + sksiteSensorgroupGetMaxID())) {
+        goto END;
+    }
+    while (0 == skVectorGetValue(&id, group_vector, vector_count)) {
+        if (skBitmapGetBit(bitmap, id)) {
+            skVectorRemoveValue(group_vector, vector_count, NULL);
+        } else {
+            skBitmapSetBit(bitmap, id);
+            ++vector_count;
+        }
+    }
+    skBitmapDestroy(&bitmap);
+
+    /* set out_error_iter if we encountered invalid tokens */
+    if (NULL != out_error_iter && invalid_count > 0) {
+        *out_error_iter = error_iter;
+        error_iter = NULL;
+    }
+
+    rv = 0;
+
+  END:
+    sksiteErrorIteratorFree(error_iter);
+    skBitmapDestroy(&bitmap);
     if (0 == rv) {
         return invalid_count;
     }
@@ -3542,7 +4356,7 @@ sksiteParseFilename(
     ++ep;
 
     if (out_sensor) {
-        *out_sensor = sksiteSensorLookup(sp);
+        *out_sensor = siteSensorLookup2(sp, ep - sp - 1);
     }
 
     /* move to start of time; convert "YYYYMMDD." into a single
@@ -3616,11 +4430,11 @@ sksiteParseGeneratePath(
     if (*old_suffix != '\0' && suffix == NULL) {
         /* there was a suffix on 'filename' and the caller didn't
          * provide a new suffix; append old suffix to new name */
-        strncpy(new_suffix, old_suffix, sizeof(new_suffix));
-        if (new_suffix[sizeof(new_suffix)-1] != '\0') {
+        if (strlen(old_suffix) >= sizeof(new_suffix)) {
             /* suffix too long */
             return NULL;
         }
+        strncpy(new_suffix, old_suffix, sizeof(new_suffix));
         suffix = new_suffix;
     }
 
@@ -3664,7 +4478,7 @@ sksiteValidateFlowtypes(
     sk_vector_t                *flowtypes_vec,
     int                         flowtype_count,
     const char                **flowtype_strings,
-    char                        delimiter,
+    char                        separator,
     sksite_error_iterator_t   **out_error_iter)
 {
     BITMAP_DECLARE(flowtype_seen, SK_MAX_NUM_FLOWTYPES);
@@ -3722,14 +4536,15 @@ sksiteValidateFlowtypes(
         ft_string = flowtype_strings[i];
 
         /* copy class part of the string into a separate buffer */
-        if ('\0' == delimiter) {
+        if ('\0' == separator) {
             type_name = ft_string + strlen(ft_string);
         } else {
-            type_name = strchr(ft_string, delimiter);
+            type_name = strchr(ft_string, separator);
             if (NULL == type_name) {
                 ++invalid_count;
                 if (siteErrorIterPush(
-                        error_iter, SKSITE_ERR_FLOWTYPE_NO_DELIM, ft_string))
+                        error_iter, SKSITE_ERR_FLOWTYPE_NO_DELIM,
+                        SKSITE_ERR_FLOWTYPE_NO_DELIM_MSG, ft_string, separator))
                 {
                     goto END;
                 }
@@ -3739,7 +4554,8 @@ sksiteValidateFlowtypes(
         if ((type_name - ft_string) > ((int)sizeof(class_name) - 1)) {
             ++invalid_count;
             if (siteErrorIterPush(
-                    error_iter, SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS, ft_string))
+                    error_iter, SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS,
+                    SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS_MSG, ft_string))
             {
                 goto END;
             }
@@ -3795,9 +4611,9 @@ sksiteValidateFlowtypes(
                 }
                 if (!found_type) {
                     ++invalid_count;
-                    if (siteErrorIterPush(error_iter,
-                                          SKSITE_ERR_FLOWTYPE_UNKNOWN_TYPE,
-                                          ft_string))
+                    if (siteErrorIterPush(
+                            error_iter, SKSITE_ERR_FLOWTYPE_UNKNOWN_TYPE,
+                            SKSITE_ERR_FLOWTYPE_UNKNOWN_TYPE_MSG, ft_string))
                     {
                         goto END;
                     }
@@ -3809,9 +4625,9 @@ sksiteValidateFlowtypes(
             class_id = sksiteClassLookup(class_name);
             if (SK_INVALID_CLASS == class_id) {
                 ++invalid_count;
-                if (siteErrorIterPush(error_iter,
-                                      SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS,
-                                      ft_string))
+                if (siteErrorIterPush(
+                        error_iter, SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS,
+                        SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS_MSG, ft_string))
                 {
                     goto END;
                 }
@@ -3830,13 +4646,20 @@ sksiteValidateFlowtypes(
         } else {
             /* Invalid class/type */
             ++invalid_count;
-            if (siteErrorIterPush(
-                    error_iter,
-                    ((SK_INVALID_CLASS == sksiteClassLookup(class_name))
-                     ? SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS
-                     : SKSITE_ERR_FLOWTYPE_TYPE_NOT_IN_CLASS), ft_string))
-            {
-                goto END;
+            if (SK_INVALID_CLASS == sksiteClassLookup(class_name)) {
+                if (siteErrorIterPush(
+                        error_iter, SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS,
+                        SKSITE_ERR_FLOWTYPE_UNKNOWN_CLASS_MSG, ft_string))
+                {
+                    goto END;
+                }
+            } else {
+                if (siteErrorIterPush(
+                        error_iter, SKSITE_ERR_FLOWTYPE_TYPE_NOT_IN_CLASS,
+                        SKSITE_ERR_FLOWTYPE_TYPE_NOT_IN_CLASS_MSG, ft_string))
+                {
+                    goto END;
+                }
             }
         }
     }
@@ -3985,7 +4808,8 @@ sksiteValidateSensors(
             {
                 ++invalid_count;
                 if (siteErrorIterPush(
-                        error_iter, SKSITE_ERR_UNKNOWN_SENSOR, sen_string))
+                        error_iter, SKSITE_ERR_UNKNOWN_SENSOR,
+                        SKSITE_ERR_UNKNOWN_SENSOR_MSG, sen_string))
                 {
                     goto END;
                 }
@@ -3995,7 +4819,8 @@ sksiteValidateSensors(
             if (!sksiteSensorExists(sid)) {
                 ++invalid_count;
                 if (siteErrorIterPush(
-                        error_iter, SKSITE_ERR_UNKNOWN_SENSOR_ID, sen_string))
+                        error_iter, SKSITE_ERR_UNKNOWN_SENSOR_ID,
+                        SKSITE_ERR_UNKNOWN_SENSOR_ID_MSG, sen_string))
                 {
                     goto END;
                 }
@@ -4027,9 +4852,9 @@ sksiteValidateSensors(
                 /* warn about unused sensor */
                 if (0 == found_sensor) {
                     ++invalid_count;
-                    if (siteErrorIterPush(error_iter,
-                                          SKSITE_ERR_SENSOR_NOT_IN_CLASSES,
-                                          sen_string))
+                    if (siteErrorIterPush(
+                            error_iter, SKSITE_ERR_SENSOR_NOT_IN_CLASSES,
+                            SKSITE_ERR_SENSOR_NOT_IN_CLASSES_MSG, sen_string))
                     {
                         goto END;
                     }

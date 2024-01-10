@@ -33,20 +33,29 @@ the type and the location of the input file.  To read from the
 standard input, specify C<stdin> or C<-> as the argument to the
 switch.
 
+Each occurrence of a unique key adds a counter value to the Bag file
+for that key, where the counter is the value specified by
+B<--default-count>, a value specified on a line in the textual input,
+or a fallback value of 1.  If the addition causes an overflow of the
+maximum counter value (18446744073709551614), the counter is set to
+the maximum.  A message is printed to the standard error the first
+time an overflow condition is detected.
+
 =head2 SET INPUT
 
-When creating a Bag from an IPset, the value associated with each IP
+When creating a Bag from an IPset, the count associated with each IP
 address is the value specified by the B<--default-count> switch or 1
 if the switch is not provided.
 
 If the B<--key-type> is C<sip-country>, C<dip-country>, or
 C<any-country>, each IP address is mapped to its country code using
-the country code mapping file (see L</FILES>) and that value is stored
-in the Bag file.
+the country code mapping file (see L</FILES>) and that key is added to
+the Bag file with the B<--default-count> value.
 
 If the B<--key-type> is C<sip-pmap>, C<dip-pmap>, or C<any-ip-pmap>,
 each IP address is mapped to a value found in the prefix map file
-specified in B<--pmap-file> and that value is stored in the Bag file.
+specified in B<--pmap-file> and that value is added to the Bag file
+with the B<--default-count> value.
 
 =head2 BAG (TEXTUAL) INPUT
 
@@ -55,31 +64,39 @@ is processed a line at a time.  Comments begin with a 'C<#>'-character
 and continue to the end of the line; they are stripped from each line.
 Any line that is blank or contains only whitespace is ignored.  All
 other lines must contain a valid key or key-counter pair; whitespace
-around the key and counter is ignored.
+around the key and counter is ignored.  The key and counter are
+separated by a one-character delimiter.  The default delimiter is
+vertical bar (C<'|'>); use B<--delimiter> to specify a different
+delimiter.
 
-A line may contain only a key or it may contain a key and counter
-separated by a delimiter.  Use B<--delimiter> to specify the
-delimiter; the accepted formats of the key are described below.  If
-the delimiter character is not present on a line, the line must
-contain only a key, or a line may contain a key followed by a
-delimiter with no additional text on the line.  In both cases, the
-count is set to 1.  Otherwise, the line must contain a key before the
-delimiter and an integer counter after the delimiter.  These lines may
-have a delimiter after the counter; this delimiter and any text
-following it are ignored.
+Each line that is not ignored must begin with a key.  The accepted
+formats of the key are described below.
 
-The B<--default-count> switch B<overrides> any counter value present
-on the line, and any text appearing after the delimiter that follows
-the key is ignored.
+When the B<--default-count> switch is given, B<rwbagtool> only parses
+the key and ignores everything on a line to the right of the first
+delimiter.  To re-iterate, the B<--default-count> switch overrides any
+counter present on the line.
 
-For each key-count pair, the key is inserted into Bag with its count
-or, if the key is already present in the Bag, its total count is
-incremented by the count from this line.  When using the
-B<--default-count> switch, the count for a key that appears in the
-input I<N> times is the product of I<N> and I<DEFAULTCOUNT>.
+If the delimiter is not present on a line, B<rwbagtool> parses the key
+and adds the B<--default-count> value (or the fallback value of 1) to
+the Bag for that key.
+
+When B<--default-count> is not given, any text between the first
+delimiter and optional second delimiter on a line is treated as the
+counter.  If the counter contains only whitespace, the counter for the
+key is incremented by 1; otherwise, the counter must be a (decimal)
+number from 0 to 18446744073709551614 inclusive.  If a second
+delimiter is present, it and any text that follows it is ignored.
 
 B<rwbagbuild> prints an error and exits when a key or counter cannot
 be parsed.
+
+B<Format of the counter>
+
+The counter is any non-negative (decimal) integer value from 0 to
+18446744073709551614 inclusive (the maximum is one less than the
+maximum unsigned 64-bit value).  When writing the Bag file, keys whose
+counter is zero are not written to the file.
 
 B<Format of the Key>
 
@@ -105,7 +122,8 @@ entries to the Bag
 =item sIPv6, dIPv6, nhIPv6, any-IPv6
 
 key is an IPv6 address.  An IPv4 address is mapped into the
-::ffff:0:0/96 netblock.  All keys must be IP addresses.
+::ffff:0:0/96 netblock.  All keys must be IP addresses (integers are
+not allowed).
 
 =item flags, initialFlags, sessionFlags
 
@@ -213,8 +231,8 @@ exact match for an option.  A parameter to an option may be specified
 as B<--arg>=I<param> or S<B<--arg> I<param>>, though the first form is
 required for options that take optional parameters.
 
-The following two switches control the type of input; one and
-only one must be provided:
+The first two switches control the type of input; exactly one must be
+provided:
 
 =over 4
 
@@ -254,8 +272,9 @@ port.
 
 =item B<--default-count>=I<DEFAULTCOUNT>
 
-Override the counts of all values in the input text or IPset with the
-value of I<DEFAULTCOUNT>.  I<DEFAULTCOUNT> must be a positive integer.
+Override the counts of B<all> values in the input text or IPset with
+the value of I<DEFAULTCOUNT>.  I<DEFAULTCOUNT> must be a positive
+integer from 1 to 18446744073709551614 inclusive.
 
 =item B<--key-type>=I<FIELD_TYPE>
 
@@ -405,7 +424,7 @@ a generic time value, in seconds resolution
 
 =item sip-country
 
-the country code of the source IP addresss.  For textual input, the
+the country code of the source IP address.  For textual input, the
 key column must contain an IP address or an integer.  B<rwbagbuild>
 maps the IP address to a country code and stores the country code in
 the bag.  Uses the mapping file specified by the SILK_COUNTRY_CODES
@@ -944,7 +963,7 @@ The B<--default-count> switch is poorly named.
 
 =cut
 
-$SiLK: rwbagbuild.pod f040f1c10ff5 2019-10-11 20:00:55Z mthomas $
+$SiLK: rwbagbuild.pod c35222643509 2023-08-03 21:43:50Z mthomas $
 
 Local Variables:
 mode:text

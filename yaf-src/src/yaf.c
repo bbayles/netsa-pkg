@@ -1,60 +1,55 @@
-/**
-** yaf.c
-** Yet Another Flow generator
-* **
-** ------------------------------------------------------------------------
-** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
-** ------------------------------------------------------------------------
-** Authors: Brian Trammell
-** ------------------------------------------------------------------------
-** @OPENSOURCE_HEADER_START@
-** Use of the YAF system and related source code is subject to the terms
-** of the following licenses:
-**
-** GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
-** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
-**
-** NO WARRANTY
-**
-** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
-** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
-** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
-** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
-** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
-** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
-** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
-** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
-** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
-** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
-** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
-** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
-** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
-** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
-** DELIVERABLES UNDER THIS LICENSE.
-**
-** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
-** Mellon University, its trustees, officers, employees, and agents from
-** all claims or demands made against them (and any related losses,
-** expenses, or attorney's fees) arising out of, or relating to Licensee's
-** and/or its sub licensees' negligent use or willful misuse of or
-** negligent conduct or willful misconduct regarding the Software,
-** facilities, or other rights or assistance granted by Carnegie Mellon
-** University under this License, including, but not limited to, any
-** claims of product liability, personal injury, death, damage to
-** property, or violation of any laws or regulations.
-**
-** Carnegie Mellon University Software Engineering Institute authored
-** documents are sponsored by the U.S. Department of Defense under
-** Contract FA8721-05-C-0003. Carnegie Mellon University retains
-** copyrights in all material produced under this contract. The U.S.
-** Government retains a non-exclusive, royalty-free license to publish or
-** reproduce these documents, or allow others to do so, for U.S.
-** Government purposes only pursuant to the copyright license under the
-** contract clause at 252.227.7013.
-**
-** @OPENSOURCE_HEADER_END@
-** ------------------------------------------------------------------------
-*/
+/*
+ *  Copyright 2006-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+/*
+ *  yaf.c
+ *  Yet Another Flow generator
+ *
+ *  ------------------------------------------------------------------------
+ *  Authors: Brian Trammell
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
+ *
+ *  Copyright 2023 Carnegie Mellon University.
+ *
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
+ *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
+ *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ *  ------------------------------------------------------------------------
+ */
 
 #define _YAF_SOURCE_
 #include <yaf/autoinc.h>
@@ -93,6 +88,13 @@
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
+
+/* wrap this around string literals that are assigned to variables of type
+ * "char *" to quiet compiler warnings */
+#define C(String) (char *)String
+
+#define DEFAULT_VXLAN_PORT 4789
+#define DEFAULT_GENEVE_PORT 6081
 
 /* I/O configuration */
 static yfConfig_t yaf_config = YF_CONFIG_INIT;
@@ -164,6 +166,10 @@ static gboolean yaf_opt_ip4_mode = FALSE;
 static gboolean yaf_opt_ip6_mode = FALSE;
 static uint16_t yaf_reqtype;
 static gboolean yaf_opt_gre_mode = FALSE;
+static gboolean yaf_opt_vxlan_mode = FALSE;
+static gboolean yaf_opt_geneve_mode = FALSE;
+static GArray  *yaf_opt_vxlan_ports = NULL;
+static GArray  *yaf_opt_geneve_ports = NULL;
 static gboolean yaf_opt_mac_mode = FALSE;
 
 /* GOption managed core export options */
@@ -198,16 +204,51 @@ typedef void (*yfClose_fn)(
     void *);
 static yfClose_fn yaf_close_fn = NULL;
 
+#ifdef USE_GOPTION
 #define AF_OPTION_WRAP "\n\t\t\t\t"
+#else
+#define AF_OPTION_WRAP " "
+#endif
 
-/*local functions */
+/* Local functions prototypes */
+
+static void
+yaf_opt_save_vxlan_ports(
+    const gchar  *option_name,
+    const gchar  *yaf_opt_vxlan_ports_str,
+    gpointer      data,
+    GError      **error);
+
+static void
+yaf_opt_save_geneve_ports(
+    const gchar  *option_name,
+    const gchar  *yaf_opt_geneve_ports_str,
+    gpointer      data,
+    GError      **error);
+
+static void
+yaf_opt_finalize_decode_ports(
+    void);
+
+static void
+yaf_opt_ports_str_2_array(
+    const gchar  *option_name,
+    const gchar  *ports_str,
+    GArray       *ports_array,
+    GError      **error);
+
+static void
+yaf_opt_remove_array_dups(
+    GArray *g);
+
 #if YAF_ENABLE_HOOKS
 static void
 pluginOptParse(
     GError **err);
-
 #endif /* if YAF_ENABLE_HOOKS */
-/* Local derived configutation */
+
+
+/* Local derived configuration */
 
 static AirOptionEntry yaf_optent_core[] = {
     AF_OPTION("in", 'i', 0, AF_OPT_TYPE_STRING, &yaf_config.inspec,
@@ -287,6 +328,18 @@ static AirOptionEntry yaf_optent_dec[] = {
               NULL),
     AF_OPTION("gre-decode", 0, 0, AF_OPT_TYPE_NONE, &yaf_opt_gre_mode,
               AF_OPTION_WRAP "Decode GRE encapsulated packets", NULL),
+    AF_OPTION("vxlan-decode", 0, 0, AF_OPT_TYPE_NONE, &yaf_opt_vxlan_mode,
+              AF_OPTION_WRAP "Decode VxLAN encapsulated packets", NULL),
+    AF_OPTION("vxlan-decode-ports", 0, 0, AF_OPT_TYPE_CALLBACK,
+              yaf_opt_save_vxlan_ports,
+              AF_OPTION_WRAP "Decode VxLAN packets only over these ports",
+              "port[,port...]"),
+    AF_OPTION("geneve-decode", 0, 0, AF_OPT_TYPE_NONE, &yaf_opt_geneve_mode,
+              AF_OPTION_WRAP "Decode Geneve encapsulated packets", NULL),
+    AF_OPTION("geneve-decode-ports", 0, 0, AF_OPT_TYPE_CALLBACK,
+              yaf_opt_save_geneve_ports,
+              AF_OPTION_WRAP "Decode Geneve packets only over these ports",
+              "port[,port...]"),
     AF_OPTION_END
 };
 
@@ -511,7 +564,7 @@ yfVersionString(
 {
     GString *resultString;
 
-    resultString = g_string_new("");
+    resultString = g_string_new(NULL);
 
     g_string_append_printf(resultString, "%s  Build Configuration:\n",
                            verNumStr);
@@ -898,6 +951,44 @@ yfLuaGetStrField(
     return (char *)g_strdup(result);
 }
 
+static void
+yfLuaGetSaveTablePort(
+    lua_State   *L,
+    const char  *table,
+    GArray      *ports_array)
+{
+    lua_getglobal(L, table);
+    if (!lua_isnil(L, -1)) {
+        if (lua_istable(L, -1)) {
+            gboolean warned = FALSE;
+            long     i, port;
+            int      len = yfLuaGetLen(L, -1);
+
+            /* Add the ports to the array */
+            for (i = 1; i <= len; ++i) {
+                lua_rawgeti(L, -1, i);
+                if (lua_isnumber(L, -1)) {
+                    port = (long)lua_tonumber(L, -1);
+                    if (port < 0 || port > UINT16_MAX) {
+                        g_warning("Ignoring out-of-range port entry %ld in %s",
+                                  port, table);
+                    }
+                    g_array_append_val(ports_array, port);
+                } else if (!warned) {
+                    warned = TRUE;
+                    g_warning("Ignoring non-number entry in %s", table);
+                }
+                lua_pop(L, 1);
+            }
+
+            /* Finished with the table */
+            lua_pop(L, 1);
+        } else {
+            air_opterr("%s is not a valid table. Should be in the form:"
+                       " %s = { 4789, 6081, ...}", table, table);
+        }
+    }
+}
 
 /**
  * yfLuaLoadConfig
@@ -1094,6 +1185,8 @@ yfLuaLoadConfig(
         yf_lua_checktablebool("ip4_only", yaf_opt_ip4_mode);
         yf_lua_checktablebool("ip6_only", yaf_opt_ip6_mode);
         yf_lua_checktablebool("nofrag", yaf_opt_nofrag);
+        yf_lua_checktablebool("vxlan", yaf_opt_vxlan_mode);
+        yf_lua_checktablebool("geneve", yaf_opt_geneve_mode);
     }
 
     /* export options */
@@ -1109,6 +1202,9 @@ yfLuaLoadConfig(
         yf_lua_checktablebool("flow_stats", yaf_opt_extra_stats_mode);
         yf_lua_checktablebool("delta", yaf_config.deltaMode);
         yf_lua_checktablebool("mac", yaf_opt_mac_mode);
+#if YAF_ENABLE_METADATA_EXPORT
+        yf_lua_checktablebool("metadata", yaf_config.tmpl_metadata);
+#endif
     }
 
     /* tls options */
@@ -1184,6 +1280,11 @@ yfLuaLoadConfig(
     }
 #endif /* if YAF_ENABLE_HOOKS */
 
+    /* Use these ports to trigger VxLAN or Geneve decoding */
+    yfLuaGetSaveTablePort(L, "vxlan_ports", yaf_opt_vxlan_ports);
+    yfLuaGetSaveTablePort(L, "geneve_ports", yaf_opt_geneve_ports);
+
+
     /* pcap options */
     lua_getglobal(L, "pcap");
     if (!lua_isnil(L, -1)) {
@@ -1228,6 +1329,10 @@ yfParseOptions(
     GString      *versionString;
 
     aoctx = air_option_context_new("", argc, argv, yaf_optent_core);
+
+    /* Initialize opt variables */
+    yaf_opt_vxlan_ports = g_array_new(FALSE, TRUE, sizeof(uint16_t));
+    yaf_opt_geneve_ports = g_array_new(FALSE, TRUE, sizeof(uint16_t));
 
     air_option_context_add_group(
         aoctx, "decode", "Decoder Options:",
@@ -1277,6 +1382,7 @@ yfParseOptions(
     if (!privc_setup(&err)) {
         air_opterr("%s", err->message);
     }
+    yaf_opt_finalize_decode_ports();
 
 #if YAF_ENABLE_APPLABEL
     if (yaf_opt_applabel_rules && (FALSE == yaf_opt_applabel_mode)) {
@@ -1386,11 +1492,11 @@ yfParseOptions(
 
 #if YAF_ENABLE_APPLABEL
     if (yaf_opt_payload_applabels) {
-        gchar **labels = g_strsplit(yaf_opt_payload_applabels, ",", -1);
-        GArray *applabels = NULL;
-        char *ep;
+        gchar      **labels = g_strsplit(yaf_opt_payload_applabels, ",", -1);
+        GArray      *applabels = NULL;
+        char        *ep;
         unsigned int i;
-        long applabel;
+        long         applabel;
 
         /* count entries in the list to size the GArray */
         for (i = 0; labels[i] != NULL; ++i)
@@ -1525,7 +1631,7 @@ yfParseOptions(
 
         /* Default to stdin for no input */
         if (!yaf_config.inspec || !strlen(yaf_config.inspec)) {
-            yaf_config.inspec = "-";
+            yaf_config.inspec = C("-");
         }
     }
 
@@ -1541,14 +1647,15 @@ yfParseOptions(
 
     yaf_config.tombstone_configured_id = yaf_opt_configured_id;
     yaf_config.no_tombstone = yaf_opt_no_tombstone;
-    yaf_config.ingressInt = yaf_opt_ingress_int;
-    yaf_config.egressInt = yaf_opt_egress_int;
+    yaf_config.layer2IdExportMode = yaf_opt_vxlan_mode || yaf_opt_geneve_mode;
+    yaf_config.ingressInt = (uint32_t)yaf_opt_ingress_int;
+    yaf_config.egressInt = (uint32_t)yaf_opt_egress_int;
 
     /* Pre-process output options */
     if (yaf_opt_ipfix_transport) {
         /* set default port */
         if (!yaf_config.connspec.svc) {
-            yaf_config.connspec.svc = yaf_opt_ipfix_tls ? "4740" : "4739";
+            yaf_config.connspec.svc = yaf_opt_ipfix_tls ? C("4740") : C("4739");
         }
 
         /* Require a hostname for IPFIX output */
@@ -1662,7 +1769,7 @@ yfParseOptions(
             } else {
                 /* Default to stdout for no output without rotation */
                 if (!yaf_config.no_output) {
-                    yaf_config.outspec = "-";
+                    yaf_config.outspec = C("-");
                 }
             }
         }
@@ -1751,6 +1858,145 @@ yfParseOptions(
     air_option_context_free(aoctx);
 }
 
+
+/**
+ * @brief Parse the comma separated ports string and append the values into
+ * the GArray
+ *
+ * @param option_name The option that called this function
+ * @param ports_str A comma separated string of ports between 0 and 65535
+ *        inclusive
+ * @param ports_array The GArray to append the ports to
+ * @param error The return location for a recoverable error
+ */
+static void
+yaf_opt_ports_str_2_array(
+    const gchar  *option_name,
+    const gchar  *ports_str,
+    GArray       *ports_array,
+    GError      **error)
+{
+    gchar **ports = g_strsplit(ports_str, ",", -1);
+    char   *ep;
+    long    port;
+
+    /* Append the ports into the array */
+    for (uint16_t i = 0; ports[i] != NULL; ++i) {
+        ep = ports[i];
+        errno = 0;
+        port = strtol(ports[i], &ep, 0);
+        if (port >= 0 && port <= UINT16_MAX && ep != ports[i] && 0 == errno) {
+            g_array_append_val(ports_array, port);
+        } else {
+            g_warning("Ignoring out-of-range port entry %ld in %s",
+                      port, option_name);
+        }
+    }
+    g_strfreev(ports);
+}
+
+/**
+ * @brief OptionArgFunc to read vxlan-decode-ports from command line options
+ *
+ * @param option_name The name of the option being parsed
+ * @param yaf_opt_vxlan_ports_str The value to be parsed
+ * @param data User data added to the GOptionGroup ogroup
+ * @param error The return location for a recoverable error
+ */
+static void
+yaf_opt_save_vxlan_ports(
+    const gchar  *option_name,
+    const gchar  *yaf_opt_vxlan_ports_str,
+    gpointer      data,
+    GError      **error)
+{
+    yaf_opt_ports_str_2_array(option_name, yaf_opt_vxlan_ports_str,
+                              yaf_opt_vxlan_ports, error);
+}
+
+/**
+ * @brief OptionArgFunc to read geneve-decode-ports from command line options
+ *
+ * @param option_name The name of the option being parsed
+ * @param yaf_opt_geneve_ports_str The value to be parsed
+ * @param data User data added to the GOptionGroup ogroup
+ * @param error The return location for a recoverable error
+ */
+static void
+yaf_opt_save_geneve_ports(
+    const gchar  *option_name,
+    const gchar  *yaf_opt_geneve_ports_str,
+    gpointer      data,
+    GError      **error)
+{
+    yaf_opt_ports_str_2_array(option_name, yaf_opt_geneve_ports_str,
+                              yaf_opt_geneve_ports, error);
+}
+
+/**
+ * @brief Remove duplicate uint16's from GArray in-place.
+ *
+ * @param g The GArray to edit
+ */
+static void
+yaf_opt_remove_array_dups(
+    GArray  *g)
+{
+    if (g->len <= 1) {
+        return;
+    }
+    guint i = 0, j = 0;
+    while (i < (g->len - 1)) {
+        j = i + 1;
+        uint16_t a = g_array_index(g, uint16_t, i);
+        while (j < g->len) {
+            uint16_t b = g_array_index(g, uint16_t, j);
+            if (a == b) {
+                g_array_remove_index(g, j);
+            } else {
+                j++;
+            }
+        }
+        i++;
+    }
+}
+
+/**
+ * @brief Finalize the GArrays used in yaf options.
+ *
+ */
+static void
+yaf_opt_finalize_decode_ports(
+    void)
+{
+    /* Make sure the ports array is NULL if the decoding mode is not enabled */
+    if (!yaf_opt_vxlan_mode && yaf_opt_vxlan_ports) {
+        g_array_free(yaf_opt_vxlan_ports, TRUE);
+        yaf_opt_vxlan_ports = NULL;
+    }
+    if (!yaf_opt_geneve_mode && yaf_opt_geneve_ports) {
+        g_array_free(yaf_opt_geneve_ports, TRUE);
+        yaf_opt_geneve_ports = NULL;
+    }
+
+    /* Finalize the ports arrays by setting defaults and removing duplicates */
+    if (yaf_opt_vxlan_mode) {
+        if (yaf_opt_vxlan_ports->len > 0) {
+            yaf_opt_remove_array_dups(yaf_opt_vxlan_ports);
+        } else {
+            uint16_t default_port = DEFAULT_VXLAN_PORT;
+            g_array_append_val(yaf_opt_vxlan_ports, default_port);
+        }
+    }
+    if (yaf_opt_geneve_mode) {
+        if (yaf_opt_geneve_ports->len > 0) {
+            yaf_opt_remove_array_dups(yaf_opt_geneve_ports);
+        } else {
+            uint16_t default_port = DEFAULT_GENEVE_PORT;
+            g_array_append_val(yaf_opt_geneve_ports, default_port);
+        }
+    }
+}
 
 #ifdef YAF_ENABLE_HOOKS
 /*
@@ -2033,7 +2279,11 @@ main(
     ctx.pbufring = rgaAlloc(ctx.pbuflen, 128);
 
     /* Set up decode context */
-    ctx.dectx = yfDecodeCtxAlloc(datalink, yaf_reqtype, yaf_opt_gre_mode);
+    ctx.dectx = yfDecodeCtxAlloc(datalink,
+                                 yaf_reqtype,
+                                 yaf_opt_gre_mode,
+                                 yaf_opt_vxlan_ports,
+                                 yaf_opt_geneve_ports);
 
     /* Set up flow table */
     ctx.flowtab = yfFlowTabAlloc(yaf_opt_idle * 1000,

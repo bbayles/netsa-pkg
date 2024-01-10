@@ -67,52 +67,52 @@
       know about them.  */
    enum yytokentype {
      TOK_NL = 258,
-     TOK_ATOM = 259,
-     TOK_INTEGER = 260,
-     TOK_STRING = 261,
-     TOK_CLASS = 262,
-     TOK_DEF_CLASS = 263,
-     TOK_DEF_TYPES = 264,
-     TOK_END_CLASS = 265,
-     TOK_END_GROUP = 266,
-     TOK_GROUP = 267,
-     TOK_INCLUDE = 268,
-     TOK_PATH_FORMAT = 269,
-     TOK_PACKING_LOGIC = 270,
-     TOK_SENSOR = 271,
-     TOK_SENSORS = 272,
-     TOK_TYPE = 273,
-     TOK_VERSION = 274,
-     ERR_UNK_CMD = 275,
-     ERR_UNREC = 276,
-     ERR_UNTERM_STRING = 277,
-     ERR_STR_TOO_LONG = 278,
-     ERR_INVALID_OCTAL_ESCAPE = 279
+     TOK_CLASS = 259,
+     TOK_DEF_CLASS = 260,
+     TOK_DEF_TYPES = 261,
+     TOK_END_CLASS = 262,
+     TOK_END_GROUP = 263,
+     TOK_GROUP = 264,
+     TOK_INCLUDE = 265,
+     TOK_PATH_FORMAT = 266,
+     TOK_PACKING_LOGIC = 267,
+     TOK_SENSOR = 268,
+     TOK_SENSORS = 269,
+     TOK_TYPE = 270,
+     TOK_VERSION = 271,
+     ERR_UNREC = 272,
+     ERR_UNTERM_STRING = 273,
+     ERR_STR_TOO_LONG = 274,
+     ERR_INVALID_OCTAL_ESCAPE = 275,
+     TOK_ATOM = 276,
+     TOK_INTEGER = 277,
+     TOK_STRING = 278,
+     ERR_UNK_CMD = 279
    };
 #endif
 /* Tokens.  */
 #define TOK_NL 258
-#define TOK_ATOM 259
-#define TOK_INTEGER 260
-#define TOK_STRING 261
-#define TOK_CLASS 262
-#define TOK_DEF_CLASS 263
-#define TOK_DEF_TYPES 264
-#define TOK_END_CLASS 265
-#define TOK_END_GROUP 266
-#define TOK_GROUP 267
-#define TOK_INCLUDE 268
-#define TOK_PATH_FORMAT 269
-#define TOK_PACKING_LOGIC 270
-#define TOK_SENSOR 271
-#define TOK_SENSORS 272
-#define TOK_TYPE 273
-#define TOK_VERSION 274
-#define ERR_UNK_CMD 275
-#define ERR_UNREC 276
-#define ERR_UNTERM_STRING 277
-#define ERR_STR_TOO_LONG 278
-#define ERR_INVALID_OCTAL_ESCAPE 279
+#define TOK_CLASS 259
+#define TOK_DEF_CLASS 260
+#define TOK_DEF_TYPES 261
+#define TOK_END_CLASS 262
+#define TOK_END_GROUP 263
+#define TOK_GROUP 264
+#define TOK_INCLUDE 265
+#define TOK_PATH_FORMAT 266
+#define TOK_PACKING_LOGIC 267
+#define TOK_SENSOR 268
+#define TOK_SENSORS 269
+#define TOK_TYPE 270
+#define TOK_VERSION 271
+#define ERR_UNREC 272
+#define ERR_UNTERM_STRING 273
+#define ERR_STR_TOO_LONG 274
+#define ERR_INVALID_OCTAL_ESCAPE 275
+#define TOK_ATOM 276
+#define TOK_INTEGER 277
+#define TOK_STRING 278
+#define ERR_UNK_CMD 279
 
 
 
@@ -121,10 +121,52 @@
 #line 1 "sksiteconfig_parse.y"
 
 /*
-** Copyright (C) 2006-2020 by Carnegie Mellon University.
+** Copyright (C) 2006-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -135,7 +177,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: sksiteconfig_parse.y ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: sksiteconfig_parse.y b94afc02f4c5 2023-09-07 14:09:10Z mthomas $");
 
 #include "sksiteconfig.h"
 #include <silk/sksite.h>
@@ -253,14 +295,14 @@ static void do_err_args_none(const char *cmd);
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 115 "sksiteconfig_parse.y"
+#line 157 "sksiteconfig_parse.y"
 {
     int integer;
     char *str;
     sk_vector_t *str_list;
 }
 /* Line 193 of yacc.c.  */
-#line 264 "sksiteconfig_parse.c"
+#line 306 "sksiteconfig_parse.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -273,7 +315,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 277 "sksiteconfig_parse.c"
+#line 319 "sksiteconfig_parse.c"
 
 #ifdef short
 # undef short
@@ -560,51 +602,51 @@ static const yytype_uint16 yyprhs[] =
 static const yytype_int8 yyrhs[] =
 {
       26,     0,    -1,    -1,    26,     3,    -1,    26,    31,    -1,
-      37,    28,    50,    -1,     7,     1,     3,    -1,    -1,    28,
-       3,    -1,    28,    32,    -1,    39,    30,    46,    -1,    12,
+      37,    28,    50,    -1,     4,     1,     3,    -1,    -1,    28,
+       3,    -1,    28,    32,    -1,    39,    30,    46,    -1,     9,
        1,     3,    -1,    -1,    30,     3,    -1,    30,    33,    -1,
       27,    -1,    38,    -1,    29,    -1,    40,    -1,    41,    -1,
       42,    -1,    43,    -1,    44,    -1,    34,    -1,    47,    -1,
       48,    -1,    49,    -1,    36,    -1,    45,    -1,    35,    -1,
-      10,     1,     3,    -1,    11,     1,     3,    -1,    17,     1,
-       3,    -1,    18,     1,     3,    -1,    20,     1,     3,    -1,
-      21,     1,     3,    -1,     7,     1,     3,    -1,     8,     1,
-       3,    -1,    10,     1,     3,    -1,    12,     1,     3,    -1,
-      13,     1,     3,    -1,    14,     1,     3,    -1,    15,     1,
-       3,    -1,    16,     1,     3,    -1,    18,     1,     3,    -1,
-      19,     1,     3,    -1,    20,     1,     3,    -1,    21,     1,
-       3,    -1,     7,     1,     3,    -1,     8,     1,     3,    -1,
-      11,     1,     3,    -1,    12,     1,     3,    -1,    13,     1,
-       3,    -1,    14,     1,     3,    -1,    15,     1,     3,    -1,
-      16,     1,     3,    -1,    19,     1,     3,    -1,    20,     1,
-       3,    -1,    21,     1,     3,    -1,     7,    52,     3,    -1,
-       8,    52,     3,    -1,    12,    52,     3,    -1,    13,    52,
-       3,    -1,    13,     1,     3,    -1,    14,    52,     3,    -1,
-      14,     1,     3,    -1,    15,    52,     3,    -1,    15,     1,
-       3,    -1,    16,    51,    52,     3,    -1,    16,    51,    52,
-       6,     3,    -1,    16,     1,     3,    -1,    19,    51,     3,
-      -1,    19,     1,     3,    -1,    17,    53,     3,    -1,    17,
-       1,     3,    -1,    11,     3,    -1,    11,     1,     3,    -1,
-       9,    53,     3,    -1,     9,     1,     3,    -1,    17,    53,
-       3,    -1,    17,     1,     3,    -1,    18,    51,    52,     3,
-      -1,    18,    51,    52,    52,     3,    -1,    18,     1,     3,
-      -1,    10,     3,    -1,    10,     1,     3,    -1,     5,    -1,
-       4,    -1,     6,    -1,     5,    -1,    -1,    53,    52,    -1
+       7,     1,     3,    -1,     8,     1,     3,    -1,    14,     1,
+       3,    -1,    15,     1,     3,    -1,    24,     1,     3,    -1,
+      17,     1,     3,    -1,     4,     1,     3,    -1,     5,     1,
+       3,    -1,     7,     1,     3,    -1,     9,     1,     3,    -1,
+      10,     1,     3,    -1,    11,     1,     3,    -1,    12,     1,
+       3,    -1,    13,     1,     3,    -1,    15,     1,     3,    -1,
+      16,     1,     3,    -1,    24,     1,     3,    -1,    17,     1,
+       3,    -1,     4,     1,     3,    -1,     5,     1,     3,    -1,
+       8,     1,     3,    -1,     9,     1,     3,    -1,    10,     1,
+       3,    -1,    11,     1,     3,    -1,    12,     1,     3,    -1,
+      13,     1,     3,    -1,    16,     1,     3,    -1,    24,     1,
+       3,    -1,    17,     1,     3,    -1,     4,    52,     3,    -1,
+       5,    52,     3,    -1,     9,    52,     3,    -1,    10,    52,
+       3,    -1,    10,     1,     3,    -1,    11,    52,     3,    -1,
+      11,     1,     3,    -1,    12,    52,     3,    -1,    12,     1,
+       3,    -1,    13,    51,    52,     3,    -1,    13,    51,    52,
+      23,     3,    -1,    13,     1,     3,    -1,    16,    51,     3,
+      -1,    16,     1,     3,    -1,    14,    53,     3,    -1,    14,
+       1,     3,    -1,     8,     3,    -1,     8,     1,     3,    -1,
+       6,    53,     3,    -1,     6,     1,     3,    -1,    14,    53,
+       3,    -1,    14,     1,     3,    -1,    15,    51,    52,     3,
+      -1,    15,    51,    52,    52,     3,    -1,    15,     1,     3,
+      -1,     7,     3,    -1,     7,     1,     3,    -1,    22,    -1,
+      21,    -1,    23,    -1,    22,    -1,    -1,    53,    52,    -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   143,   143,   145,   146,   150,   151,   154,   156,   157,
-     161,   162,   165,   167,   168,   174,   175,   176,   177,   178,
-     179,   180,   181,   182,   186,   187,   188,   189,   193,   194,
-     200,   201,   202,   203,   204,   206,   210,   211,   212,   213,
-     214,   215,   216,   217,   218,   219,   220,   222,   226,   227,
-     228,   229,   230,   231,   232,   233,   234,   235,   236,   240,
-     246,   250,   256,   257,   261,   262,   266,   267,   271,   272,
-     273,   277,   278,   282,   283,   287,   288,   292,   293,   297,
-     298,   302,   303,   304,   308,   309,   314,   320,   321,   322,
-     326,   327
+       0,   183,   183,   185,   186,   190,   191,   194,   196,   197,
+     201,   202,   205,   207,   208,   214,   215,   216,   217,   218,
+     219,   220,   221,   222,   226,   227,   228,   229,   233,   234,
+     240,   241,   242,   243,   244,   246,   250,   251,   252,   253,
+     254,   255,   256,   257,   258,   259,   260,   262,   266,   267,
+     268,   269,   270,   271,   272,   273,   274,   275,   276,   280,
+     286,   290,   296,   297,   301,   302,   306,   307,   311,   312,
+     313,   317,   318,   322,   323,   327,   328,   332,   333,   337,
+     338,   342,   343,   344,   348,   349,   354,   360,   361,   362,
+     366,   367
 };
 #endif
 
@@ -613,17 +655,17 @@ static const yytype_uint16 yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "TOK_NL", "TOK_ATOM", "TOK_INTEGER",
-  "TOK_STRING", "TOK_CLASS", "TOK_DEF_CLASS", "TOK_DEF_TYPES",
-  "TOK_END_CLASS", "TOK_END_GROUP", "TOK_GROUP", "TOK_INCLUDE",
-  "TOK_PATH_FORMAT", "TOK_PACKING_LOGIC", "TOK_SENSOR", "TOK_SENSORS",
-  "TOK_TYPE", "TOK_VERSION", "ERR_UNK_CMD", "ERR_UNREC",
+  "$end", "error", "$undefined", "TOK_NL", "TOK_CLASS", "TOK_DEF_CLASS",
+  "TOK_DEF_TYPES", "TOK_END_CLASS", "TOK_END_GROUP", "TOK_GROUP",
+  "TOK_INCLUDE", "TOK_PATH_FORMAT", "TOK_PACKING_LOGIC", "TOK_SENSOR",
+  "TOK_SENSORS", "TOK_TYPE", "TOK_VERSION", "ERR_UNREC",
   "ERR_UNTERM_STRING", "ERR_STR_TOO_LONG", "ERR_INVALID_OCTAL_ESCAPE",
-  "$accept", "top_cmd_list", "block_class", "class_cmd_list",
-  "block_group", "group_cmd_list", "top_cmd", "class_cmd", "group_cmd",
-  "err_top", "err_grp", "err_cls", "cmd_class", "cmd_default_class",
-  "cmd_group", "cmd_include", "cmd_path_format", "cmd_packing_logic",
-  "cmd_sensor", "cmd_version", "cmd_group_sensors", "cmd_end_group",
+  "TOK_ATOM", "TOK_INTEGER", "TOK_STRING", "ERR_UNK_CMD", "$accept",
+  "top_cmd_list", "block_class", "class_cmd_list", "block_group",
+  "group_cmd_list", "top_cmd", "class_cmd", "group_cmd", "err_top",
+  "err_grp", "err_cls", "cmd_class", "cmd_default_class", "cmd_group",
+  "cmd_include", "cmd_path_format", "cmd_packing_logic", "cmd_sensor",
+  "cmd_version", "cmd_group_sensors", "cmd_end_group",
   "cmd_class_default_types", "cmd_class_sensors", "cmd_class_type",
   "cmd_end_class", "int", "str", "str_list", 0
 };
@@ -682,7 +724,7 @@ static const yytype_uint8 yydefact[] =
        0,     0,     0,     0,     0,     0,     0,    86,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     6,    59,    60,
       30,    31,    11,    61,    63,    62,    65,    64,    67,    66,
-      70,     0,    32,    33,    72,    71,    34,    35,     8,     0,
+      70,     0,    32,    33,    72,    71,    35,    34,     8,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     9,    27,    24,    25,    26,     5,
       13,     0,     0,     0,     0,     0,     0,     0,     0,     0,
@@ -692,9 +734,9 @@ static const yytype_uint8 yydefact[] =
        0,     0,     0,     0,    75,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,    69,    48,    49,    78,
       77,    91,    85,    50,    51,    52,    53,    54,    55,    80,
-      79,    83,     0,    56,    57,    58,    36,    37,    38,    76,
-      39,    40,    41,    42,    43,    74,    73,    44,    45,    46,
-      47,    81,     0,    82
+      79,    83,     0,    56,    58,    57,    36,    37,    38,    76,
+      39,    40,    41,    42,    43,    74,    73,    44,    45,    47,
+      46,    81,     0,    82
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
@@ -710,24 +752,24 @@ static const yytype_int16 yydefgoto[] =
 #define YYPACT_NINF -81
 static const yytype_int16 yypact[] =
 {
-     -81,     8,   -81,   -81,    95,   137,     2,    11,   101,   107,
-     113,   119,     9,    31,    42,    12,    60,    72,   -81,   -81,
+     -81,     8,   -81,   -81,    35,    47,     2,     9,    38,    41,
+      44,    51,    92,    26,    36,    94,    70,    74,   -81,   -81,
      -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,
-      36,   -81,   -81,   -81,    71,    88,    94,   100,   106,   112,
-     118,   127,   128,   142,   144,   145,   146,   -81,   137,   147,
-     148,   149,   150,   151,   152,    38,    68,   -81,   -81,   -81,
+      73,   -81,   -81,   -81,    91,   110,   112,   116,   117,   119,
+     120,   122,   123,   124,   125,   131,   132,   -81,    47,   142,
+     143,   144,   145,   146,   147,    75,    93,   -81,   -81,   -81,
      -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,
-     -81,    34,   -81,   -81,   -81,   -81,   -81,   -81,   -81,    97,
-     103,    30,    69,   109,   115,   121,   155,   156,   157,    59,
-      37,   158,   159,   160,   -81,   -81,   -81,   -81,   -81,   -81,
-     -81,   161,   162,   163,   143,   164,   165,   166,   168,   169,
-      89,   170,   171,   172,   173,   -81,   -81,   -81,   -81,   -81,
-     174,   175,   176,   177,    63,   178,   -81,   179,   180,   181,
-     182,   183,   184,   185,   123,   186,   137,   187,   188,   189,
+     -81,    11,   -81,   -81,   -81,   -81,   -81,   -81,   -81,   150,
+     151,    25,    37,   152,   153,   154,   155,   156,   157,    28,
+     111,   158,   159,   160,   -81,   -81,   -81,   -81,   -81,   -81,
+     -81,   161,   162,   163,    40,   164,   165,   166,   168,   169,
+      32,   170,   171,   172,   173,   -81,   -81,   -81,   -81,   -81,
+     174,   175,   176,   177,   108,   178,   -81,   179,   180,   181,
+     182,   183,   184,   185,   115,   186,    47,   187,   188,   189,
      190,   191,   192,   193,   -81,   194,   195,   196,   197,   198,
-     199,   130,   200,   201,   202,   203,   -81,   -81,   -81,   -81,
+     199,   118,   200,   201,   202,   203,   -81,   -81,   -81,   -81,
      -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,
-     -81,   -81,   134,   -81,   -81,   -81,   -81,   -81,   -81,   -81,
+     -81,   -81,   121,   -81,   -81,   -81,   -81,   -81,   -81,   -81,
      -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,   -81,
      -81,   -81,   204,   -81
 };
@@ -748,21 +790,21 @@ static const yytype_int8 yypgoto[] =
 static const yytype_int16 yytable[] =
 {
       34,    35,    52,    36,    39,    41,    43,    45,     2,   134,
-      46,     3,    37,    51,    47,     4,     5,    47,     6,     7,
-       8,     9,    10,    11,    12,    13,    14,    15,    16,    17,
-     151,   123,    49,   -90,   -90,   -90,   -90,   119,   135,    57,
-     120,    78,    47,    50,    71,    79,    80,    81,    82,    83,
-      84,    85,    86,    87,    88,    89,    90,    91,    92,    93,
-     133,    53,   -90,   -90,   -90,   -90,   160,    31,    32,    33,
-     125,   100,   126,    54,    58,   101,   102,   136,   103,   104,
-     105,   106,   107,   108,   109,   110,   111,   112,   113,   114,
-     150,    59,   -90,   -90,   -90,   -90,    30,    60,   121,    31,
-      32,    33,    38,    61,   122,    31,    32,    33,    40,    62,
-     127,    31,    32,    33,    42,    63,   128,    31,    32,    33,
-      44,    64,   129,    31,    32,    33,   170,    31,    32,    33,
-      65,    66,   172,   186,    31,    32,    33,   191,    31,    32,
-      33,    31,    32,    33,   143,    67,   144,    68,    69,    70,
-      72,    73,    74,    75,    76,    77,   130,   131,   132,   137,
+      37,     3,     4,     5,   119,     6,     7,     8,     9,    10,
+      11,    12,    13,    14,    15,    16,   123,    49,   -90,   133,
+     151,   -90,    17,   150,   120,   -90,    30,    50,   125,    38,
+     126,   143,    40,   144,    71,    42,   -90,   -90,   -90,   -90,
+     -90,   -90,    44,   -90,   -90,   -90,    31,    32,    33,    31,
+      32,    33,    31,    32,    33,    31,    32,    33,    31,    32,
+      33,    53,    31,    32,    33,    54,    57,   136,    78,    79,
+      80,    81,    82,    83,    84,    85,    86,    87,    88,    89,
+      90,    91,    92,    46,    58,    51,   100,   101,   102,    93,
+     103,   104,   105,   106,   107,   108,   109,   110,   111,   112,
+     113,   160,   135,    59,    47,    60,    47,   114,   170,    61,
+      62,   186,    63,    64,   191,    65,    66,    67,    68,    31,
+      32,    33,   172,    47,    69,    70,    31,    32,    33,    31,
+      32,    33,    31,    32,    33,    72,    73,    74,    75,    76,
+      77,   121,   122,   127,   128,   129,   130,   131,   132,   137,
      138,   139,   140,   141,   142,   145,   146,   147,   192,   148,
      149,   152,   153,   154,   155,     0,     0,   156,   157,   158,
      159,   162,   163,   164,   165,   166,   167,   168,   169,   171,
@@ -773,21 +815,21 @@ static const yytype_int16 yytable[] =
 static const yytype_int16 yycheck[] =
 {
        4,     5,    15,     1,     8,     9,    10,    11,     0,    89,
-       1,     3,     1,     1,     5,     7,     8,     5,    10,    11,
-      12,    13,    14,    15,    16,    17,    18,    19,    20,    21,
-     110,     1,     1,     3,     4,     5,     6,     3,     1,     3,
-       6,     3,     5,     1,    48,     7,     8,     9,    10,    11,
-      12,    13,    14,    15,    16,    17,    18,    19,    20,    21,
-       1,     1,     3,     4,     5,     6,     3,     4,     5,     6,
-       1,     3,     3,     1,     3,     7,     8,    90,    10,    11,
-      12,    13,    14,    15,    16,    17,    18,    19,    20,    21,
-       1,     3,     3,     4,     5,     6,     1,     3,     1,     4,
-       5,     6,     1,     3,     1,     4,     5,     6,     1,     3,
-       1,     4,     5,     6,     1,     3,     1,     4,     5,     6,
-       1,     3,     1,     4,     5,     6,     3,     4,     5,     6,
-       3,     3,   136,     3,     4,     5,     6,     3,     4,     5,
-       6,     4,     5,     6,     1,     3,     3,     3,     3,     3,
-       3,     3,     3,     3,     3,     3,     1,     1,     1,     1,
+       1,     3,     4,     5,     3,     7,     8,     9,    10,    11,
+      12,    13,    14,    15,    16,    17,     1,     1,     3,     1,
+     110,     3,    24,     1,    23,     3,     1,     1,     1,     1,
+       3,     1,     1,     3,    48,     1,    21,    22,    23,    21,
+      22,    23,     1,    21,    22,    23,    21,    22,    23,    21,
+      22,    23,    21,    22,    23,    21,    22,    23,    21,    22,
+      23,     1,    21,    22,    23,     1,     3,    90,     3,     4,
+       5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
+      15,    16,    17,     1,     3,     1,     3,     4,     5,    24,
+       7,     8,     9,    10,    11,    12,    13,    14,    15,    16,
+      17,     3,     1,     3,    22,     3,    22,    24,     3,     3,
+       3,     3,     3,     3,     3,     3,     3,     3,     3,    21,
+      22,    23,   136,    22,     3,     3,    21,    22,    23,    21,
+      22,    23,    21,    22,    23,     3,     3,     3,     3,     3,
+       3,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,   172,     1,
        1,     1,     1,     1,     1,    -1,    -1,     3,     3,     3,
        3,     3,     3,     3,     3,     3,     3,     3,     3,     3,
@@ -799,19 +841,19 @@ static const yytype_int16 yycheck[] =
    symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,    26,     0,     3,     7,     8,    10,    11,    12,    13,
-      14,    15,    16,    17,    18,    19,    20,    21,    27,    29,
+       0,    26,     0,     3,     4,     5,     7,     8,     9,    10,
+      11,    12,    13,    14,    15,    16,    17,    24,    27,    29,
       31,    34,    37,    38,    39,    40,    41,    42,    43,    44,
-       1,     4,     5,     6,    52,    52,     1,     1,     1,    52,
-       1,    52,     1,    52,     1,    52,     1,     5,    51,     1,
+       1,    21,    22,    23,    52,    52,     1,     1,     1,    52,
+       1,    52,     1,    52,     1,    52,     1,    22,    51,     1,
        1,     1,    51,     1,     1,    28,    30,     3,     3,     3,
        3,     3,     3,     3,     3,     3,     3,     3,     3,     3,
-       3,    52,     3,     3,     3,     3,     3,     3,     3,     7,
-       8,     9,    10,    11,    12,    13,    14,    15,    16,    17,
-      18,    19,    20,    21,    32,    36,    47,    48,    49,    50,
-       3,     7,     8,    10,    11,    12,    13,    14,    15,    16,
-      17,    18,    19,    20,    21,    33,    35,    45,    46,     3,
-       6,     1,     1,     1,    53,     1,     3,     1,     1,     1,
+       3,    52,     3,     3,     3,     3,     3,     3,     3,     4,
+       5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
+      15,    16,    17,    24,    32,    36,    47,    48,    49,    50,
+       3,     4,     5,     7,     8,     9,    10,    11,    12,    13,
+      14,    15,    16,    17,    24,    33,    35,    45,    46,     3,
+      23,     1,     1,     1,    53,     1,     3,     1,     1,     1,
        1,     1,     1,     1,    53,     1,    51,     1,     1,     1,
        1,     1,     1,     1,     3,     1,     1,     1,     1,     1,
        1,    53,     1,     1,     1,     1,     3,     3,     3,     3,
@@ -1633,315 +1675,315 @@ yyreduce:
   switch (yyn)
     {
         case 6:
-#line 151 "sksiteconfig_parse.y"
+#line 191 "sksiteconfig_parse.y"
     { do_err_args("class"); }
     break;
 
   case 11:
-#line 162 "sksiteconfig_parse.y"
+#line 202 "sksiteconfig_parse.y"
     { do_err_args("group"); }
     break;
 
   case 30:
-#line 200 "sksiteconfig_parse.y"
+#line 240 "sksiteconfig_parse.y"
     { do_err_ctx("top level", "end class"); }
     break;
 
   case 31:
-#line 201 "sksiteconfig_parse.y"
+#line 241 "sksiteconfig_parse.y"
     { do_err_ctx("top level", "end group"); }
     break;
 
   case 32:
-#line 202 "sksiteconfig_parse.y"
+#line 242 "sksiteconfig_parse.y"
     { do_err_ctx("top level", "sensors"); }
     break;
 
   case 33:
-#line 203 "sksiteconfig_parse.y"
+#line 243 "sksiteconfig_parse.y"
     { do_err_ctx("top level", "type"); }
     break;
 
   case 34:
-#line 204 "sksiteconfig_parse.y"
+#line 244 "sksiteconfig_parse.y"
     { do_err("Unknown command '%s'", (yyvsp[(1) - (3)].str));
                                     free((yyvsp[(1) - (3)].str)); }
     break;
 
   case 35:
-#line 206 "sksiteconfig_parse.y"
+#line 246 "sksiteconfig_parse.y"
     { do_err("Unrecognizable command"); }
     break;
 
   case 36:
-#line 210 "sksiteconfig_parse.y"
+#line 250 "sksiteconfig_parse.y"
     { do_err_ctx("group", "class"); }
     break;
 
   case 37:
-#line 211 "sksiteconfig_parse.y"
+#line 251 "sksiteconfig_parse.y"
     { do_err_ctx("group", "default-class"); }
     break;
 
   case 38:
-#line 212 "sksiteconfig_parse.y"
+#line 252 "sksiteconfig_parse.y"
     { do_err_ctx("group", "end class"); }
     break;
 
   case 39:
-#line 213 "sksiteconfig_parse.y"
+#line 253 "sksiteconfig_parse.y"
     { do_err_ctx("group", "group"); }
     break;
 
   case 40:
-#line 214 "sksiteconfig_parse.y"
+#line 254 "sksiteconfig_parse.y"
     { do_err_ctx("group", "include"); }
     break;
 
   case 41:
-#line 215 "sksiteconfig_parse.y"
+#line 255 "sksiteconfig_parse.y"
     { do_err_ctx("group", "path-format"); }
     break;
 
   case 42:
-#line 216 "sksiteconfig_parse.y"
+#line 256 "sksiteconfig_parse.y"
     {do_err_ctx("group", "packing-logic"); }
     break;
 
   case 43:
-#line 217 "sksiteconfig_parse.y"
+#line 257 "sksiteconfig_parse.y"
     { do_err_ctx("group", "sensor"); }
     break;
 
   case 44:
-#line 218 "sksiteconfig_parse.y"
+#line 258 "sksiteconfig_parse.y"
     { do_err_ctx("group", "type"); }
     break;
 
   case 45:
-#line 219 "sksiteconfig_parse.y"
+#line 259 "sksiteconfig_parse.y"
     { do_err_ctx("group", "version"); }
     break;
 
   case 46:
-#line 220 "sksiteconfig_parse.y"
+#line 260 "sksiteconfig_parse.y"
     { do_err("Unknown command '%s'", (yyvsp[(1) - (3)].str));
                                     free((yyvsp[(1) - (3)].str)); }
     break;
 
   case 47:
-#line 222 "sksiteconfig_parse.y"
+#line 262 "sksiteconfig_parse.y"
     { do_err("Unrecognizable command"); }
     break;
 
   case 48:
-#line 226 "sksiteconfig_parse.y"
+#line 266 "sksiteconfig_parse.y"
     { do_err_ctx("class", "class"); }
     break;
 
   case 49:
-#line 227 "sksiteconfig_parse.y"
+#line 267 "sksiteconfig_parse.y"
     { do_err_ctx("class", "default-class"); }
     break;
 
   case 50:
-#line 228 "sksiteconfig_parse.y"
+#line 268 "sksiteconfig_parse.y"
     { do_err_ctx("class", "end group"); }
     break;
 
   case 51:
-#line 229 "sksiteconfig_parse.y"
+#line 269 "sksiteconfig_parse.y"
     { do_err_ctx("class", "group"); }
     break;
 
   case 52:
-#line 230 "sksiteconfig_parse.y"
+#line 270 "sksiteconfig_parse.y"
     { do_err_ctx("class", "include"); }
     break;
 
   case 53:
-#line 231 "sksiteconfig_parse.y"
+#line 271 "sksiteconfig_parse.y"
     { do_err_ctx("class", "path-format"); }
     break;
 
   case 54:
-#line 232 "sksiteconfig_parse.y"
+#line 272 "sksiteconfig_parse.y"
     {do_err_ctx("class","packing-logic");}
     break;
 
   case 55:
-#line 233 "sksiteconfig_parse.y"
+#line 273 "sksiteconfig_parse.y"
     { do_err_ctx("class", "sensor"); }
     break;
 
   case 56:
-#line 234 "sksiteconfig_parse.y"
+#line 274 "sksiteconfig_parse.y"
     { do_err_ctx("class", "version"); }
     break;
 
   case 57:
-#line 235 "sksiteconfig_parse.y"
+#line 275 "sksiteconfig_parse.y"
     { do_err("Unknown command '%s'", (yyvsp[(1) - (3)].str)); }
     break;
 
   case 58:
-#line 236 "sksiteconfig_parse.y"
+#line 276 "sksiteconfig_parse.y"
     { do_err("Unrecognizable command"); }
     break;
 
   case 59:
-#line 240 "sksiteconfig_parse.y"
+#line 280 "sksiteconfig_parse.y"
     { do_class((yyvsp[(2) - (3)].str)); }
     break;
 
   case 60:
-#line 246 "sksiteconfig_parse.y"
+#line 286 "sksiteconfig_parse.y"
     { do_default_class((yyvsp[(2) - (3)].str)); }
     break;
 
   case 61:
-#line 250 "sksiteconfig_parse.y"
+#line 290 "sksiteconfig_parse.y"
     { do_group((yyvsp[(2) - (3)].str)); }
     break;
 
   case 62:
-#line 256 "sksiteconfig_parse.y"
+#line 296 "sksiteconfig_parse.y"
     { do_include((yyvsp[(2) - (3)].str)); }
     break;
 
   case 63:
-#line 257 "sksiteconfig_parse.y"
+#line 297 "sksiteconfig_parse.y"
     { do_err_args("include"); }
     break;
 
   case 64:
-#line 261 "sksiteconfig_parse.y"
+#line 301 "sksiteconfig_parse.y"
     { do_path_format((yyvsp[(2) - (3)].str)); }
     break;
 
   case 65:
-#line 262 "sksiteconfig_parse.y"
+#line 302 "sksiteconfig_parse.y"
     { do_err_args("path-format"); }
     break;
 
   case 66:
-#line 266 "sksiteconfig_parse.y"
+#line 306 "sksiteconfig_parse.y"
     { do_packing_logic((yyvsp[(2) - (3)].str)); }
     break;
 
   case 67:
-#line 267 "sksiteconfig_parse.y"
+#line 307 "sksiteconfig_parse.y"
     { do_err_args("packing-logic"); }
     break;
 
   case 68:
-#line 271 "sksiteconfig_parse.y"
+#line 311 "sksiteconfig_parse.y"
     { do_sensor((yyvsp[(2) - (4)].integer), (yyvsp[(3) - (4)].str), NULL); }
     break;
 
   case 69:
-#line 272 "sksiteconfig_parse.y"
+#line 312 "sksiteconfig_parse.y"
     { do_sensor((yyvsp[(2) - (5)].integer), (yyvsp[(3) - (5)].str), (yyvsp[(4) - (5)].str)); }
     break;
 
   case 70:
-#line 273 "sksiteconfig_parse.y"
+#line 313 "sksiteconfig_parse.y"
     { do_err_args("sensor"); }
     break;
 
   case 71:
-#line 277 "sksiteconfig_parse.y"
+#line 317 "sksiteconfig_parse.y"
     { if (do_version((yyvsp[(2) - (3)].integer))) { YYABORT; } }
     break;
 
   case 72:
-#line 278 "sksiteconfig_parse.y"
+#line 318 "sksiteconfig_parse.y"
     { do_err_args("version"); }
     break;
 
   case 73:
-#line 282 "sksiteconfig_parse.y"
+#line 322 "sksiteconfig_parse.y"
     { do_group_sensors((yyvsp[(2) - (3)].str_list)); }
     break;
 
   case 74:
-#line 283 "sksiteconfig_parse.y"
+#line 323 "sksiteconfig_parse.y"
     { do_err_args("sensors"); }
     break;
 
   case 75:
-#line 287 "sksiteconfig_parse.y"
+#line 327 "sksiteconfig_parse.y"
     { do_end_group(); }
     break;
 
   case 76:
-#line 288 "sksiteconfig_parse.y"
+#line 328 "sksiteconfig_parse.y"
     { do_err_args_none("end group"); }
     break;
 
   case 77:
-#line 292 "sksiteconfig_parse.y"
+#line 332 "sksiteconfig_parse.y"
     { do_class_default_types((yyvsp[(2) - (3)].str_list)); }
     break;
 
   case 78:
-#line 293 "sksiteconfig_parse.y"
+#line 333 "sksiteconfig_parse.y"
     { do_err_args("default-types"); }
     break;
 
   case 79:
-#line 297 "sksiteconfig_parse.y"
+#line 337 "sksiteconfig_parse.y"
     { do_class_sensors((yyvsp[(2) - (3)].str_list)); }
     break;
 
   case 80:
-#line 298 "sksiteconfig_parse.y"
+#line 338 "sksiteconfig_parse.y"
     { do_err_args("sensors"); }
     break;
 
   case 81:
-#line 302 "sksiteconfig_parse.y"
+#line 342 "sksiteconfig_parse.y"
     { do_class_type((yyvsp[(2) - (4)].integer), (yyvsp[(3) - (4)].str), NULL); }
     break;
 
   case 82:
-#line 303 "sksiteconfig_parse.y"
+#line 343 "sksiteconfig_parse.y"
     { do_class_type((yyvsp[(2) - (5)].integer), (yyvsp[(3) - (5)].str), (yyvsp[(4) - (5)].str)); }
     break;
 
   case 83:
-#line 304 "sksiteconfig_parse.y"
+#line 344 "sksiteconfig_parse.y"
     { do_err_args("type"); }
     break;
 
   case 84:
-#line 308 "sksiteconfig_parse.y"
+#line 348 "sksiteconfig_parse.y"
     { do_end_class(); }
     break;
 
   case 85:
-#line 309 "sksiteconfig_parse.y"
+#line 349 "sksiteconfig_parse.y"
     { do_err_args_none("end class"); }
     break;
 
   case 86:
-#line 314 "sksiteconfig_parse.y"
+#line 354 "sksiteconfig_parse.y"
     { (yyval.integer) = atoi((yyvsp[(1) - (1)].str)); free((yyvsp[(1) - (1)].str)); }
     break;
 
   case 90:
-#line 326 "sksiteconfig_parse.y"
+#line 366 "sksiteconfig_parse.y"
     { (yyval.str_list) = skVectorNew(sizeof(char*)); }
     break;
 
   case 91:
-#line 327 "sksiteconfig_parse.y"
+#line 367 "sksiteconfig_parse.y"
     { skVectorAppendValue((yyvsp[(1) - (2)].str_list), &(yyvsp[(2) - (2)].str)); (yyval.str_list) = (yyvsp[(1) - (2)].str_list); }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1945 "sksiteconfig_parse.c"
+#line 1987 "sksiteconfig_parse.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2155,7 +2197,7 @@ yyreturn:
 }
 
 
-#line 330 "sksiteconfig_parse.y"
+#line 370 "sksiteconfig_parse.y"
 
 
 /* SUPPORTING CODE */

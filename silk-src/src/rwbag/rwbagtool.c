@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2004-2020 by Carnegie Mellon University.
+** Copyright (C) 2004-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -17,7 +59,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: rwbagtool.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: rwbagtool.c 6a1929dbf54d 2023-09-13 14:12:09Z mthomas $");
 
 #include <silk/skbag.h>
 #include <silk/skipaddr.h>
@@ -89,7 +131,9 @@ typedef enum {
     OPT_MAXCOUNTER,
     OPT_INVERT,
     OPT_COVERSET,
-    OPT_OUTPUT_PATH
+    OPT_OUTPUT_PATH,
+    OPT_MODIFY_INPLACE,
+    OPT_BACKUP_PATH
 } appOptionsEnum;
 
 #define NUM_BAG_COMARISONS 5
@@ -111,6 +155,41 @@ static skBag_t *out_bag = NULL;
 
 /* where to write the resulting bag */
 static skstream_t *out_stream = NULL;
+
+/* the filename of the output file */
+static const char *output_path = NULL;
+
+/* whether --modify-inplace was given */
+static int modify_inplace = 0;
+
+/* when --modify-inplace is given, the name of the --backup-path if
+ * requested */
+static const char *backup_path = NULL;
+
+/* when --modify-inplace is given, the stat() of the original file; used to
+ * copy permission, owner, group to new file */
+static struct stat stat_orig;
+
+/* whether to remove the temporary file in the atexit() handler */
+static volatile sig_atomic_t remove_temp_file = 0;
+
+/* whether signals are being paused during file move */
+static volatile sig_atomic_t signal_deferred = 0;
+
+/* the ID of a signal that arrives while signals are defered */
+static volatile sig_atomic_t signal_pending = 0;
+
+/* whether a signal arrives while processing a signal */
+static volatile sig_atomic_t signal_signaled = 0;
+
+/* set of signals that are handled or blocked */
+static int sig_list[] = {
+    SIGHUP, SIGINT, SIGQUIT, SIGPIPE, SIGTERM,
+#ifdef SIGPWR
+    SIGPWR,
+#endif
+    0  /* sentinel */
+};
 
 /* What action the user wants to take (add, intersect, etc).  The
  * variable 'user_action' should be a value between OPT_ADD and
@@ -203,6 +282,8 @@ static struct option appOptions[] = {
     {"invert",               NO_ARG,       0, OPT_INVERT},
     {"coverset",             NO_ARG,       0, OPT_COVERSET},
     {"output-path",          REQUIRED_ARG, 0, OPT_OUTPUT_PATH},
+    {"modify-inplace",       NO_ARG,       0, OPT_MODIFY_INPLACE},
+    {"backup-path",          REQUIRED_ARG, 0, OPT_BACKUP_PATH},
     {0,0,0,0}                /* sentinel entry */
 };
 
@@ -231,7 +312,11 @@ static const char *appHelp[] = {
     NULL,
     "Count keys for each unique counter value",
     "Extract the IPs from the bag file into an IPset file",
-    "Redirect output to specified file.",
+    "Write the output to this stream or file. Def. stdout",
+    ("Allow overwriting an existing file and properly handle\n"
+     "\tthe case when --output-path names an input file"),
+    ("Move the existing OUTPUT-PATH to this location prior to\n"
+     "\toverwriting when --modify-inplace is given"),
     (char *)NULL
 };
 
@@ -239,6 +324,7 @@ static const char *appHelp[] = {
 /* LOCAL FUNCTION PROTOTYPES */
 
 static int  appOptionsHandler(clientData cData, int opt_index, char *opt_arg);
+static void setUpModifyInplace(void);
 static int  bagtoolDivide(skstream_t *stream);
 static int  bagtoolSubtract(skstream_t *stream);
 static int  writeOutput(void);
@@ -349,6 +435,7 @@ appTeardown(
     skStreamDestroy(&out_stream);
     skIPSetDestroy(&mask_set);
     skIPSetOptionsTeardown();
+    skOptionsNotesTeardown();
 
     skAppUnregister();
 }
@@ -469,10 +556,29 @@ appSetup(
         break;
     }
 
-    /* Set the default output location */
-    if (out_stream == NULL) {
+    /* default to stdout if no --output-path */
+    if (NULL == output_path) {
+        output_path = "-";
+    }
+
+    /* handle --modify-inplace if given: Disable if output-path is stdout or
+     * does not exist, and otherwise error if output-path is not a file. Error
+     * when --backup-path given but --modify-inplace is not.  */
+    if (modify_inplace) {
+        /* this function exits on error */
+        setUpModifyInplace();
+    } else if (backup_path) {
+        skAppPrintErr("May only use --%s when --%s is given",
+                      appOptions[OPT_BACKUP_PATH].name,
+                      appOptions[OPT_MODIFY_INPLACE].name);
+        skAppUsage();
+    }
+
+    /* handle the typical (not modify-inplace) case */
+    if (!out_stream) {
         if ((rv = skStreamCreate(&out_stream, SK_IO_WRITE, SK_CONTENT_SILK))
-            || (rv = skStreamBind(out_stream, "stdout")))
+            || (rv = skStreamBind(out_stream, output_path))
+            || (rv = skStreamOpen(out_stream)))
         {
             skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
             skStreamDestroy(&out_stream);
@@ -480,22 +586,11 @@ appSetup(
         }
     }
 
-    /* Open the output file */
-    if ((rv = skStreamSetCompressionMethod(out_stream, comp_method))
-        || (rv = skStreamOpen(out_stream)))
-    {
-        skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
-        skStreamDestroy(&out_stream);
-        exit(EXIT_FAILURE);
-    }
-
-    /* add any notes (annotations) to the output */
-    rv = skOptionsNotesAddToStream(out_stream);
-    if (rv) {
+    /* set the compression method on the output */
+    if ((rv = skStreamSetCompressionMethod(out_stream, comp_method))) {
         skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
         exit(EXIT_FAILURE);
     }
-    skOptionsNotesTeardown();
 
     return;                     /* OK */
 }
@@ -588,7 +683,7 @@ appOptionsHandler(
             return 1;
         }
         user_action = (appOptionsEnum)opt_index;
-        rv = skStringParseUint64(&val64, opt_arg, 1, 0);
+        rv = skStringParseUint64(&val64, opt_arg, 1, SKBAG_COUNTER_MAX);
         if (rv) {
             goto PARSE_ERROR;
         }
@@ -665,18 +760,25 @@ appOptionsHandler(
         break;
 
       case OPT_OUTPUT_PATH:
-        if (out_stream) {
+        if (output_path) {
             skAppPrintErr("Invalid %s: Switch used multiple times",
                           appOptions[opt_index].name);
             return 1;
         }
-        if ((rv = skStreamCreate(&out_stream, SK_IO_WRITE, SK_CONTENT_SILK))
-            || (rv = skStreamBind(out_stream, opt_arg)))
-        {
-            skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
-            skStreamDestroy(&out_stream);
+        output_path = opt_arg;
+        break;
+
+      case OPT_MODIFY_INPLACE:
+        modify_inplace = 1;
+        break;
+
+      case OPT_BACKUP_PATH:
+        if (backup_path) {
+            skAppPrintErr("Invalid %s: Switch used multiple times",
+                          appOptions[opt_index].name);
             return 1;
         }
+        backup_path = opt_arg;
         break;
     }
 
@@ -1465,7 +1567,19 @@ bagtoolScalarMultiply(
         if (counter.val.u64 > overflow.val.u64) {
             skAppPrintErr("Overflow when applying scalar multiplier");
         }
+        /*
+         * mthomas.2023.07.31: I think the idea here was to wrap-around when
+         * we overflowed (though the Add operation doesn't wrap-around, so why
+         * does multiply?).  Wrap-around worked in SiLK-2, but in SiLK-3
+         * UINT64_MAX become an illegal Bag counter value, making it possible
+         * that the next line gives a that value which then causes "Illegal
+         * argument to function" error.  If we get a value greater than the
+         * max, use the max, otherwise use wrap-around.
+         */
         counter.val.u64 *= scalar_multiply;
+        if (counter.val.u64 > SKBAG_COUNTER_MAX) {
+            counter.val.u64 = SKBAG_COUNTER_MAX;
+        }
         rv_bag = skBagCounterSet(out_bag, &key, &counter);
         if (rv_bag) {
             ERR_SET_COUNT(key, counter, rv_bag);
@@ -1581,10 +1695,233 @@ appNextInput(
 }
 
 
+/*
+ *    Removes the temp file if remove_temp_file is non-zero.  Installed as an
+ *    at-exit handler and called by the signal handler.
+ */
+static void
+removeTempFileCallback(
+    void)
+{
+    if (remove_temp_file && out_stream && skStreamGetPathname(out_stream)) {
+        unlink(skStreamGetPathname(out_stream));
+    }
+}
+
+
+/*
+ *    Signal handler that calls removeTempFileCallback().
+ */
+static void
+signalHandler(
+    int recv_signal)
+{
+    struct sigaction action;
+
+    if (signal_deferred) {
+        /* we are moving temp-file over output-path */
+        signal_pending = recv_signal;
+
+    } else if (signal_signaled) {
+        /* we received another signal while in the handler */
+        raise(recv_signal);
+
+    } else {
+        /* handle the signal */
+        signal_signaled = 1;
+
+        /* remove the temp file */
+        removeTempFileCallback();
+
+        /* restore the default behavior for the signal and raise it */
+        memset(&action, 0, sizeof(action));
+        action.sa_handler = SIG_DFL;
+        sigaction(recv_signal, &action, NULL);
+
+        raise(recv_signal);
+    }
+}
+
+
+/*
+ *    Sets up the application to handle --modify-inplace and --backup-path.
+ *    Exits the application on error.
+ */
+static void
+setUpModifyInplace(
+    void)
+{
+    char temp_file[PATH_MAX+1];
+    struct sigaction action;
+    unsigned int i;
+    ssize_t rv;
+
+    assert(modify_inplace);
+
+    /* check for non-file output */
+    if (0 == strcmp(output_path, "-")
+        || 0 == strcmp(output_path, "stdout")
+        || 0 == strcmp(output_path, "stderr"))
+    {
+        skAppPrintErr(
+            "Ignoring --%s since the output-path is the standard %s",
+            appOptions[OPT_MODIFY_INPLACE].name,
+            ((0 == strcmp(output_path, "stderr")) ? "error" : "output"));
+        modify_inplace = 0;
+        backup_path = NULL;
+        return;
+    }
+
+    /* ask file system about the output-path */
+    rv = lstat(output_path, &stat_orig);
+    if (-1 == rv) {
+        if (ENOENT != errno) {
+            skAppPrintSyserror("Error getting status of %s '%s'",
+                               appOptions[OPT_OUTPUT_PATH].name, output_path);
+            exit(EXIT_FAILURE);
+        }
+        /* Named file does not exist and there is no output-path to worry
+         * about overwriting */
+        skAppPrintErr("Ignoring --%s since '%s' does not exist",
+                      appOptions[OPT_MODIFY_INPLACE].name,
+                      appOptions[OPT_OUTPUT_PATH].name);
+        modify_inplace = 0;
+        backup_path = NULL;
+        return;
+    }
+
+    if (0 == S_ISREG(stat_orig.st_mode)) {
+        skAppPrintErr("May use --%s only when --%s is a regular file",
+                      appOptions[OPT_MODIFY_INPLACE].name,
+                      appOptions[OPT_OUTPUT_PATH].name);
+        exit(EXIT_FAILURE);
+    }
+
+    /* create a temporary file and open its stream */
+    memset(temp_file, 0, sizeof(temp_file));
+    rv = snprintf(temp_file, sizeof(temp_file) - 1, "%s.XXXXXXXX",
+                  output_path);
+    if ((size_t)rv > sizeof(temp_file) - 1) {
+        skAppPrintErr("Length of temporary file name is too long");
+        exit(EXIT_FAILURE);
+    }
+
+    if ((rv = skStreamCreate(&out_stream, SK_IO_WRITE, SK_CONTENT_SILK))
+        || (rv = skStreamBind(out_stream, temp_file))
+        || (rv = skStreamMakeTemp(out_stream)))
+    {
+        skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
+        skStreamDestroy(&out_stream);
+        exit(EXIT_FAILURE);
+    }
+
+    /* install an atexit handler to remove the temp file */
+    remove_temp_file = 1;
+    if (atexit(removeTempFileCallback) < 0) {
+        skAppPrintSyserror("Unable to set atexit handlder");
+        unlink(skStreamGetPathname(out_stream));
+        skStreamDestroy(&out_stream);
+        exit(EXIT_FAILURE);
+    }
+
+    /* set up the signal handler to remove the temp file */
+    memset(&action, 0, sizeof(action));
+    action.sa_handler = signalHandler;
+    action.sa_flags = SA_RESTART;
+
+    /* add all interesting signals to the mask */
+    sigemptyset(&action.sa_mask);
+    for (i = 0; sig_list[i] != 0; ++i) {
+        sigaddset(&action.sa_mask, sig_list[i]);
+    }
+
+    /* install the signal handler for each interesting signal */
+    for (i = 0; sig_list[i] != 0; ++i) {
+        if (sigaction(sig_list[i], &action, NULL) == -1) {
+            skAppPrintSyserror("Warning: Unable to set handler for %s",
+                               skSignalToName(sig_list[i]));
+        }
+    }
+}
+
+
+/*
+ *    Moves the output files into place.
+ *
+ *    If backup_path is set, first moves the existing output_path to
+ *    backup_path.  Moves the temp file to output_path.  Returns 0 on success
+ *    and -1 on failure.
+ */
+static int
+moveTempFileToOutputPath(
+    void)
+{
+    const char *src;
+    const char *dst;
+    const char *tmp;
+    int err;
+
+    /* Tell atexit() not to remove temp file if file moves fail */
+    remove_temp_file = 0;
+
+    /* Get name of temp file and set its permissions, owner, and group to
+     * match the original file.  Warn on permissions failure; ignore
+     * owner/group failure. */
+    tmp = skStreamGetPathname(out_stream);
+    if (-1 == chmod(tmp, stat_orig.st_mode)) {
+        skAppPrintSyserror("Warning: Unable to set permission flags on '%s'",
+                           tmp);
+    }
+    if (-1 == chown(tmp, stat_orig.st_uid, stat_orig.st_gid)) {
+        /* changing owner failed; try setting group only */
+        (void)chown(tmp, -1, stat_orig.st_gid);
+    }
+
+    /* Move existing output-path to the backup-path */
+    if (backup_path) {
+        src = output_path;
+        dst = backup_path;
+        err = skMoveFile(src, dst);
+        if (err) {
+            goto ERROR;
+        }
+    }
+
+    /* Prepare to move temp-file to output-path */
+    src = tmp;
+    dst = output_path;
+
+    /* Defer signals */
+    ++signal_deferred;
+
+    /* move the file */
+    err = skMoveFile(src, dst);
+
+    /* return to default signal handling */
+    --signal_deferred;
+    if (signal_pending) {
+        raise(signal_pending);
+    }
+
+    if (err) {
+        goto ERROR;
+    }
+
+    return 0;
+
+  ERROR:
+    skAppPrintErr("Error moving '%s' to '%s': %s",
+                  src, dst, strerror(err));
+    skAppPrintErr("Leaving resulting IPset in '%s'", tmp);
+    return -1;
+}
+
+
 int main(int argc, char **argv)
 {
     skstream_t *in_stream;
-    skBagErr_t rv;
+    skBagErr_t err;
+    ssize_t rv;
 
     appSetup(argc, argv);                       /* never returns on error */
 
@@ -1592,9 +1929,9 @@ int main(int argc, char **argv)
     if (appNextInput(argc, argv, &in_stream) != 1) {
         return 1;
     }
-    rv = skBagRead(&out_bag, in_stream);
-    if (SKBAG_OK != rv) {
-        ERR_READ_BAG(in_stream, rv);
+    err = skBagRead(&out_bag, in_stream);
+    if (SKBAG_OK != err) {
+        ERR_READ_BAG(in_stream, err);
         skStreamDestroy(&in_stream);
         return 1;
     }
@@ -1604,10 +1941,10 @@ int main(int argc, char **argv)
     while (1 == appNextInput(argc, argv, &in_stream)) {
         switch (user_action) {
           case OPT_ADD:
-            rv = skBagAddFromStream(out_bag, in_stream);
-            if (SKBAG_OK != rv) {
+            err = skBagAddFromStream(out_bag, in_stream);
+            if (SKBAG_OK != err) {
                 skAppPrintErr("Error when adding bags: %s",
-                              skBagStrerror(rv));
+                              skBagStrerror(err));
                 skStreamDestroy(&in_stream);
                 return 1;
             }
@@ -1663,6 +2000,14 @@ int main(int argc, char **argv)
         skStreamDestroy(&in_stream);
     }
 
+    /* Now that the notes from all input streams have been seen, add the
+     * notes to the output stream */
+    rv = skOptionsNotesAddToStream(out_stream);
+    if (rv) {
+        skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
+    }
+    skOptionsNotesTeardown();
+
     if (OPT_SCALAR_MULTIPLY == user_action) {
         if (bagtoolScalarMultiply()) {
             return 1;
@@ -1672,6 +2017,30 @@ int main(int argc, char **argv)
     /* Write the output */
     if (writeOutput()) {
         return 1;
+    }
+
+    rv = skStreamClose(out_stream);
+    if (rv) {
+        skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
+        skStreamDestroy(&out_stream);
+        skBagDestroy(&out_bag);
+        return EXIT_FAILURE;
+    }
+
+    if (modify_inplace) {
+        rv = moveTempFileToOutputPath();
+        if (rv) {
+            skStreamDestroy(&out_stream);
+            skBagDestroy(&out_bag);
+            return EXIT_FAILURE;
+        }
+    }
+
+    skBagDestroy(&out_bag);
+    rv = skStreamDestroy(&out_stream);
+    if (rv) {
+        skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
+        return EXIT_FAILURE;
     }
 
     /* done */

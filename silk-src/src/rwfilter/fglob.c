@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2001-2020 by Carnegie Mellon University.
+** Copyright (C) 2001-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -31,7 +73,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: fglob.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: fglob.c d5c2aee1abcc 2023-05-01 21:10:21Z mthomas $");
 
 #include <silk/skvector.h>
 #include "rwfilter.h"
@@ -107,7 +149,7 @@ static fglobListStruct_t * const fList = &fglob_list;
 /* OPTIONS SETUP */
 
 enum fglobOptionEnum {
-    FGLOB_OPT_CLASS, FGLOB_OPT_TYPE, FGLOB_OPT_FLOWTYPES, FGLOB_OPT_SENSORS,
+    FGLOB_OPT_CLASS, FGLOB_OPT_TYPES, FGLOB_OPT_FLOWTYPES, FGLOB_OPT_SENSORS,
     FGLOB_OPT_START_DATE, FGLOB_OPT_END_DATE,
     FGLOB_OPT_PRINT_MISSING_FILES,
     FGLOB_OPT_DATA_ROOTDIR
@@ -115,7 +157,7 @@ enum fglobOptionEnum {
 
 static struct option fglobOptions[] = {
     {"class",                REQUIRED_ARG, 0, FGLOB_OPT_CLASS},
-    {"type",                 REQUIRED_ARG, 0, FGLOB_OPT_TYPE},
+    {"types",                REQUIRED_ARG, 0, FGLOB_OPT_TYPES},
     {"flowtypes",            REQUIRED_ARG, 0, FGLOB_OPT_FLOWTYPES},
     {"sensors",              REQUIRED_ARG, 0, FGLOB_OPT_SENSORS},
     {"start-date",           REQUIRED_ARG, 0, FGLOB_OPT_START_DATE},
@@ -127,17 +169,23 @@ static struct option fglobOptions[] = {
 
 
 static const char *fglobHelp[] = {
-    ("Class of data to process"),
-    ("Type(s) of data to process within the specified class.  The\n"
-     "\ttype names and default type(s) vary by class as shown in the table.\n"
-     "\tUse 'all' to process every type for specified class.  The following\n"
-     "\ttable lists \"* class (available types) Def. default types\":"),
-    ("Comma separated list of class/type pairs to process.\n"
+    ("Class of data to process. May also be @FILE to read the class\n"
+     "\tname from the file or file path named FILE."),
+    ("Comma separated list of type(s) of data to process within\n"
+     "\tthe specified class. Use @FILE within the list to read the types\n"
+     "\tfrom the file or file path named FILE. Use 'all' to process\n"
+     "\tevery type for the specified class. The type names and default\n"
+     "\ttype(s) vary by class as shown in the table, which\n"
+     "\tlists \"* class (available types) Def. default types\":"),
+    ("Comma separated list of class/type pairs to process or\n"
+     "\t@FILE to read class/type pairs from the file or file path named FILE.\n"
      "\tMay use 'all' for class and/or type.  This is an alternate way to\n"
      "\tspecify class/type; switch cannot be used with --class and --type"),
-    ("Comma separated list of sensor names, sensor IDs, and ranges\n"
-     "\tof sensor IDs.  Valid sensors vary by class.  Use 'rwsiteinfo' to\n"
-     "\tsee a mapping of sensor names to IDs and classes."),
+    ("Comma separated list of sensor names, sensor IDs, ranges\n"
+     "\tof sensor IDs, and @FILE to read sensor names and IDs from the\n"
+     "\tfile or file path named FILE.  Valid sensors vary by class.\n"
+     "\tUse 'rwsiteinfo --fields=sensor,id-sensor,class:list' to see a\n"
+     "\tmapping of sensor names to IDs and classes."),
     ("First hour of data to process.  Specify date in\n"
      "\tYYYY/MM/DD[:HH] format; time is in "
 #if  SK_ENABLE_LOCALTIME
@@ -272,7 +320,7 @@ fglobUsageType(
     /* TYPE: For each class, read the list of types and
      * default list of types from sksite. */
 
-    fprintf(fh, "%s\n", fglobHelp[FGLOB_OPT_TYPE]);
+    fprintf(fh, "%s\n", fglobHelp[FGLOB_OPT_TYPES]);
 
     /* loop over all the classes */
     sksiteClassIterator(&ci);
@@ -405,7 +453,7 @@ fglobUsage(
             fglobUsageClass(fh);
             break;
 
-          case FGLOB_OPT_TYPE:
+          case FGLOB_OPT_TYPES:
             fglobUsageType(fh);
             break;
 
@@ -697,7 +745,7 @@ fglobHandler(
 
     switch (opt_index) {
       case FGLOB_OPT_CLASS:
-      case FGLOB_OPT_TYPE:
+      case FGLOB_OPT_TYPES:
       case FGLOB_OPT_FLOWTYPES:
       case FGLOB_OPT_SENSORS:
       case FGLOB_OPT_START_DATE:
@@ -774,7 +822,8 @@ fglobAdjustCountersFlowtype(
 
     /* First, see if we can increment the sensor */
     fList->fg_sensor_idx++;
-    if(fList->fg_sensor_idx < fList->fg_sensor_count[fList->fg_flowtype_idx]){
+    if (fList->fg_sensor_idx < fList->fg_sensor_count[fList->fg_flowtype_idx])
+    {
         /* we're good: looking at next sensor--same class, type & time */
         return 1;
     }
@@ -794,8 +843,7 @@ fglobAdjustCountersFlowtype(
 
     /* Finally, increment the time: go to next hour */
     fList->fg_time_idx += 3600000;
-    if (fList->fg_time_idx > fList->fg_time_end)
-    {
+    if (fList->fg_time_idx > fList->fg_time_end) {
         /* We're done. */
         return 0;
     }
@@ -1070,6 +1118,8 @@ static int
 fglobParseSensors(
     sk_bitmap_t       **sensor_bits_ptr)
 {
+    const unsigned int flags = (SKSITE_SENSORS_ALLOW_RANGE
+                                | SKSITE_SENSORS_ALLOW_GROUP);
     sk_vector_t *sensors_vec = NULL;
     sk_bitmap_t *sensor_bits = NULL;
     sksite_error_iterator_t *error_iter = NULL;
@@ -1100,7 +1150,7 @@ fglobParseSensors(
     }
 
     rv = sksiteParseSensorList(sensors_vec,fList->fg_option[FGLOB_OPT_SENSORS],
-                               NULL, NULL, 2, &error_iter);
+                               NULL, NULL, flags, &error_iter);
     if (rv) {
         if (rv < 0) {
             skAppPrintErr("Invalid %s: Internal error parsing argument",
@@ -1305,13 +1355,13 @@ fglobParseClassAndType(
     /* handle case when --flowtypes is given */
     if (fList->fg_option[FGLOB_OPT_FLOWTYPES]) {
         if (fList->fg_option[FGLOB_OPT_CLASS]
-            || fList->fg_option[FGLOB_OPT_TYPE])
+            || fList->fg_option[FGLOB_OPT_TYPES])
         {
             skAppPrintErr(("Cannot use --%s when either --%s or --%s are"
                            " specified"),
                           fglobOptions[FGLOB_OPT_FLOWTYPES].name,
                           fglobOptions[FGLOB_OPT_CLASS].name,
-                          fglobOptions[FGLOB_OPT_TYPE].name);
+                          fglobOptions[FGLOB_OPT_TYPES].name);
             return 1;
         }
         return fglobParseFlowtypes();
@@ -1365,7 +1415,7 @@ fglobParseClassAndType(
     skVectorAppendValue(class_vec, &class_id);
 
     /* if user didn't give --type, use default types for the class */
-    if (NULL == fList->fg_option[FGLOB_OPT_TYPE]) {
+    if (NULL == fList->fg_option[FGLOB_OPT_TYPES]) {
         if (sksiteParseTypeList(flowtypes_vec, "@", class_vec, "all", "@",
                                 &error_iter))
         {
@@ -1380,24 +1430,24 @@ fglobParseClassAndType(
         }
     } else {
         rv = sksiteParseTypeList(flowtypes_vec,
-                                 fList->fg_option[FGLOB_OPT_TYPE],
+                                 fList->fg_option[FGLOB_OPT_TYPES],
                                  class_vec, "all", NULL, &error_iter);
         if (rv) {
             if (rv < 0) {
                 skAppPrintErr("Invalid %s: Internal error parsing argument",
-                              fglobOptions[FGLOB_OPT_TYPE].name);
+                              fglobOptions[FGLOB_OPT_TYPES].name);
             } else if (1 == rv) {
                 sksiteErrorIteratorNext(error_iter);
                 skAppPrintErr("Invalid %s '%s': %s",
-                              fglobOptions[FGLOB_OPT_TYPE].name,
-                              fList->fg_option[FGLOB_OPT_TYPE],
+                              fglobOptions[FGLOB_OPT_TYPES].name,
+                              fList->fg_option[FGLOB_OPT_TYPES],
                               sksiteErrorIteratorGetMessage(error_iter));
                 assert(sksiteErrorIteratorNext(error_iter)
                        == SK_ITERATOR_NO_MORE_ENTRIES);
             } else {
                 skAppPrintErr("Invalid %s '%s': Found multiple errors:",
-                              fglobOptions[FGLOB_OPT_TYPE].name,
-                              fList->fg_option[FGLOB_OPT_TYPE]);
+                              fglobOptions[FGLOB_OPT_TYPES].name,
+                              fList->fg_option[FGLOB_OPT_TYPES]);
                 while (sksiteErrorIteratorNext(error_iter) == SK_ITERATOR_OK) {
                     skAppPrintErr("%s",
                                   sksiteErrorIteratorGetMessage(error_iter));
@@ -1410,8 +1460,8 @@ fglobParseClassAndType(
         }
         if (0 == skVectorGetCount(flowtypes_vec)) {
             skAppPrintErr("Invalid %s '%s': No valid types found",
-                          fglobOptions[FGLOB_OPT_TYPE].name,
-                          fList->fg_option[FGLOB_OPT_TYPE]);
+                          fglobOptions[FGLOB_OPT_TYPES].name,
+                          fList->fg_option[FGLOB_OPT_TYPES]);
             rv = 1;
             goto END;
         }
@@ -1494,7 +1544,7 @@ fglobSetFilters(
     }
 
     if (fList->fg_option[FGLOB_OPT_CLASS]
-        || fList->fg_option[FGLOB_OPT_TYPE]
+        || fList->fg_option[FGLOB_OPT_TYPES]
         || fList->fg_option[FGLOB_OPT_FLOWTYPES])
     {
         /* ensure site configuration file */
@@ -1523,7 +1573,7 @@ fglobSetFilters(
     if (fList->fg_option[FGLOB_OPT_CLASS]) {
         --fList->fg_user_option_count;
     }
-    if (fList->fg_option[FGLOB_OPT_TYPE]) {
+    if (fList->fg_option[FGLOB_OPT_TYPES]) {
         --fList->fg_user_option_count;
     }
     if (fList->fg_option[FGLOB_OPT_FLOWTYPES]) {

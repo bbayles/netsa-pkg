@@ -1,61 +1,55 @@
-/**
-** @internal
-** yafcore.c
-** YAF core I/O routines
-**
-** ------------------------------------------------------------------------
-** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
-** ------------------------------------------------------------------------
-** Authors: Brian Trammell, Chris Inacio, Emily Ecoff
-** ------------------------------------------------------------------------
-** @OPENSOURCE_HEADER_START@
-** Use of the YAF system and related source code is subject to the terms
-** of the following licenses:
-**
-** GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
-** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
-**
-** NO WARRANTY
-**
-** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
-** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
-** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
-** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
-** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
-** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
-** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
-** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
-** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
-** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
-** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
-** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
-** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
-** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
-** DELIVERABLES UNDER THIS LICENSE.
-**
-** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
-** Mellon University, its trustees, officers, employees, and agents from
-** all claims or demands made against them (and any related losses,
-** expenses, or attorney's fees) arising out of, or relating to Licensee's
-** and/or its sub licensees' negligent use or willful misuse of or
-** negligent conduct or willful misconduct regarding the Software,
-** facilities, or other rights or assistance granted by Carnegie Mellon
-** University under this License, including, but not limited to, any
-** claims of product liability, personal injury, death, damage to
-** property, or violation of any laws or regulations.
-**
-** Carnegie Mellon University Software Engineering Institute authored
-** documents are sponsored by the U.S. Department of Defense under
-** Contract FA8721-05-C-0003. Carnegie Mellon University retains
-** copyrights in all material produced under this contract. The U.S.
-** Government retains a non-exclusive, royalty-free license to publish or
-** reproduce these documents, or allow others to do so, for U.S.
-** Government purposes only pursuant to the copyright license under the
-** contract clause at 252.227.7013.
-**
-** @OPENSOURCE_HEADER_END@
-** ------------------------------------------------------------------------
-*/
+/*
+ *  Copyright 2006-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+/*
+ *  yafcore.c
+ *  YAF core I/O routines
+ *
+ *  ------------------------------------------------------------------------
+ *  Authors: Brian Trammell, Chris Inacio, Emily Ecoff
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
+ *
+ *  Copyright 2023 Carnegie Mellon University.
+ *
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
+ *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
+ *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ *  ------------------------------------------------------------------------
+ */
 
 #define _YAF_SOURCE_
 #include "yafctx.h"
@@ -75,18 +69,30 @@
 #define FBSTMLINIT(s, i, t) fbSubTemplateMultiListEntryInit(s, i, t, 1)
 #define FBSTMLNEXT(p, s) fbSubTemplateMultiListGetNextEntry(p, s)
 
-/** These are the template ID's for the templates that YAF uses to
+/* fixbuf 2.x uses char* as the type of the name of info elements in
+ * fbInfoElementSpec_t; wrap this around string literals to quiet compiler
+ * warnings */
+#define C(String) (char *)String
+
+
+/**
+ *  These are the template ID's for the templates that YAF uses to
  *  select the output. Template ID's are maintained for a set of
  *  basic flow types data
- * BASE which gets various additions added as the flow requires,
- * FULL base plus the internal fields are added
- * EXT (extended) which has the additional records in the
+ *
+ *  BASE which gets various additions added as the flow requires,
+ *
+ *  FULL base plus the internal fields are added
+ *
+ *  EXT (extended) which has the additional records in the
  *    yaf_extime_spec (extended time specification)
  *
- *  WARNING: these need to be adjusted according to changes in the
- *  general & special dimensions */
+ *  WARNING: these need to be adjusted according to changes in the general &
+ *  special dimensions.  (Then why aren't those values used here instead of
+ *  needing to keep two sets of values in sync?!)
+ */
 #define YAF_FLOW_BASE_TID   0xB000 /* no general or special definitions */
-#define YAF_FLOW_FULL_TID   0xB800 /* base no internal*/
+#define YAF_FLOW_FULL_TID   0xB800 /* base plus internal YTF_INTERNAL */
 #define YAF_FLOW_EXT_TID    0xB7FF /* everything except internal */
 
 #define YAF_PROCESS_STATS_TID     0xD003
@@ -97,12 +103,12 @@
 
 
 #define YAF_FLOW_BASE_NAME "yaf_flow_base"
-#define YAF_FLOW_FULL_NAME "yaf_flow_full"
+#define YAF_FLOW_FULL_NAME C("yaf_flow_full")
 #define YAF_FLOW_EXT_NAME  "yaf_flow_ext"
 
-#define YAF_PROCESS_STATS_NAME      "yaf_process_stats"
-#define YAF_TOMBSTONE_NAME          "tombstone_record"
-#define YAF_TOMBSTONE_ACCESS_NAME   "tombstone_access"
+#define YAF_PROCESS_STATS_NAME      C("yaf_process_stats")
+#define YAF_TOMBSTONE_NAME          C("tombstone_record")
+#define YAF_TOMBSTONE_ACCESS_NAME   C("tombstone_access")
 
 /* 49154 - 49160 */
 #define YAF_APP_FLOW_TID       0xC001 /* not used */
@@ -132,30 +138,51 @@
 #define YAF_MPTCP_FLOW_NAME         "yaf_mptcp"
 #define YAF_MPTCP_FLOW_REV_NAME     "yaf_mptcp_rev"
 
-/** The dimensions are flags which determine which sets of fields will
+/**
+ *  The dimensions are flags which determine which sets of fields will
  *  be exported out to an IPFIX record.  They are entries in a bitmap
  *  used to control the template. e.g. TCP flow information (seq num,
  *  tcp flags, etc.) only get added to the output record when the
  *  YTF_SILK flag is set; it only gets set when the transport protocol
- *  is set to 0x06 and YAF is ran with --silk. */
+ *  is set to 0x06 and YAF is ran with --silk.
+ *
+ *  As of 2023.11.10, bits 16-31 may be used to select elements in the
+ *  template but the presence/absence of those elements is not reflected in
+ *  the template ID.
+ */
 
 /** General dimensions */
 #define YTF_BIF         0x0010 /* Bi-flow */
+
 /* Special dimensions */
-#define YTF_TOTAL       0x0001 /* Has total packet & octet counters (ie. not
-                                * delta counters) */
+
+/* Flags for total packet & octet counters vs delta counters */
+#define YTF_TOTAL       0x0001
 #define YTF_DELTA       0x0002
+
 #define YTF_MPLS        0x0004
 #define YTF_NDPI        0x0008
 #define YTF_SILK        0x0020
 #define YTF_DAGIF       0x0040
-#define YTF_FLE         0x0080 /* Has (non-reduced) packet & octet counters */
+
+/* Flags for full (non-reduced) packet & octet counters vs reduced */
+#define YTF_FLE         0x0080
 #define YTF_RLE         0x0100
+
+/* Flags for IPv4 addresses vs IPv6 */
 #define YTF_IP4         0x0200
 #define YTF_IP6         0x0400
+
 #define YTF_INTERNAL    0x0800
-#define YTF_ALL         0x0EFF /* this has to be everything _except_ RLE
-                                * enabled */
+
+/* VNI - Note uses bit 16 and its presence/absence is not reflected in the
+ * template ID. */
+#define YTF_VNI        0x10000
+
+/* YTF_ALL is everything _except_ RLE enabled */
+#define YTF_ALL        0x10EFF
+
+/* YTF_REV is used when reading data from the STML */
 #define YTF_REV         0xFF0F
 
 #define YTF_BIF_NAME         "bif"
@@ -188,219 +215,224 @@
 /* IPFIX definition of the full YAF flow record */
 static fbInfoElementSpec_t yaf_flow_spec[] = {
     /* Millisecond start and end (epoch) (native time) */
-    { "flowStartMilliseconds",              8, 0 },
-    { "flowEndMilliseconds",                8, 0 },
+    {C("flowStartMilliseconds"),            8, 0 },
+    {C("flowEndMilliseconds"),              8, 0 },
     /* Counters */
-    { "octetTotalCount",                    8, YTF_FLE | YTF_TOTAL },
-    { "reverseOctetTotalCount",             8, YTF_FLE | YTF_TOTAL | YTF_BIF },
-    { "packetTotalCount",                   8, YTF_FLE | YTF_TOTAL },
-    { "reversePacketTotalCount",            8, YTF_FLE | YTF_TOTAL | YTF_BIF },
+    {C("octetTotalCount"),                  8, YTF_FLE | YTF_TOTAL },
+    {C("reverseOctetTotalCount"),           8, YTF_FLE | YTF_TOTAL | YTF_BIF },
+    {C("packetTotalCount"),                 8, YTF_FLE | YTF_TOTAL },
+    {C("reversePacketTotalCount"),          8, YTF_FLE | YTF_TOTAL | YTF_BIF },
     /* delta Counters */
-    { "octetDeltaCount",                    8, YTF_FLE | YTF_DELTA },
-    { "reverseOctetDeltaCount",             8, YTF_FLE | YTF_DELTA | YTF_BIF },
-    { "packetDeltaCount",                   8, YTF_FLE | YTF_DELTA },
-    { "reversePacketDeltaCount",            8, YTF_FLE | YTF_DELTA | YTF_BIF },
+    {C("octetDeltaCount"),                  8, YTF_FLE | YTF_DELTA },
+    {C("reverseOctetDeltaCount"),           8, YTF_FLE | YTF_DELTA | YTF_BIF },
+    {C("packetDeltaCount"),                 8, YTF_FLE | YTF_DELTA },
+    {C("reversePacketDeltaCount"),          8, YTF_FLE | YTF_DELTA | YTF_BIF },
     /* Reduced-length counters */
-    { "octetTotalCount",                    4, YTF_RLE | YTF_TOTAL },
-    { "reverseOctetTotalCount",             4, YTF_RLE | YTF_TOTAL | YTF_BIF },
-    { "packetTotalCount",                   4, YTF_RLE | YTF_TOTAL },
-    { "reversePacketTotalCount",            4, YTF_RLE | YTF_TOTAL | YTF_BIF },
+    {C("octetTotalCount"),                  4, YTF_RLE | YTF_TOTAL },
+    {C("reverseOctetTotalCount"),           4, YTF_RLE | YTF_TOTAL | YTF_BIF },
+    {C("packetTotalCount"),                 4, YTF_RLE | YTF_TOTAL },
+    {C("reversePacketTotalCount"),          4, YTF_RLE | YTF_TOTAL | YTF_BIF },
     /* Reduced-length delta counters */
-    { "octetDeltaCount",                    4, YTF_RLE | YTF_DELTA },
-    { "reverseOctetDeltaCount",             4, YTF_RLE | YTF_DELTA | YTF_BIF },
-    { "packetDeltaCount",                   4, YTF_RLE | YTF_DELTA },
-    { "reversePacketDeltaCount",            4, YTF_RLE | YTF_DELTA | YTF_BIF },
+    {C("octetDeltaCount"),                  4, YTF_RLE | YTF_DELTA },
+    {C("reverseOctetDeltaCount"),           4, YTF_RLE | YTF_DELTA | YTF_BIF },
+    {C("packetDeltaCount"),                 4, YTF_RLE | YTF_DELTA },
+    {C("reversePacketDeltaCount"),          4, YTF_RLE | YTF_DELTA | YTF_BIF },
     /* 5-tuple and flow status */
-    { "sourceIPv6Address",                  16, YTF_IP6 },
-    { "destinationIPv6Address",             16, YTF_IP6 },
-    { "sourceIPv4Address",                  4, YTF_IP4 },
-    { "destinationIPv4Address",             4, YTF_IP4 },
-    { "sourceTransportPort",                2, 0 },
-    { "destinationTransportPort",           2, 0 },
-    { "flowAttributes",                     2, 0 },
-    { "reverseFlowAttributes",              2, YTF_BIF },
-    { "protocolIdentifier",                 1, 0 },
-    { "flowEndReason",                      1, 0 },
+    {C("sourceIPv6Address"),                16, YTF_IP6 },
+    {C("destinationIPv6Address"),           16, YTF_IP6 },
+    {C("sourceIPv4Address"),                4, YTF_IP4 },
+    {C("destinationIPv4Address"),           4, YTF_IP4 },
+    {C("sourceTransportPort"),              2, 0 },
+    {C("destinationTransportPort"),         2, 0 },
+    {C("flowAttributes"),                   2, 0 },
+    {C("reverseFlowAttributes"),            2, YTF_BIF },
+    {C("protocolIdentifier"),               1, 0 },
+    {C("flowEndReason"),                    1, 0 },
 #if defined(YAF_ENABLE_APPLABEL)
-    { "silkAppLabel",                       2, 0 },
+    {C("silkAppLabel"),                     2, 0 },
 #else
-    { "paddingOctets",                      2, YTF_INTERNAL },
+    {C("paddingOctets"),                    2, YTF_INTERNAL },
 #endif
     /* Round-trip time */
-    { "reverseFlowDeltaMilliseconds",       4, YTF_BIF }, /*  32-bit */
+    {C("reverseFlowDeltaMilliseconds"),     4, YTF_BIF }, /*  32-bit */
     /*TCP Info would need to go here 4 SiLK & 4b padding*/
-    { "tcpSequenceNumber",                  4, YTF_SILK },
-    { "reverseTcpSequenceNumber",           4, YTF_SILK | YTF_BIF },
-    { "initialTCPFlags",                    1, YTF_SILK },
-    { "unionTCPFlags",                      1, YTF_SILK },
-    { "reverseInitialTCPFlags",             1, YTF_SILK | YTF_BIF },
-    { "reverseUnionTCPFlags",               1, YTF_SILK | YTF_BIF },
-    { "vlanId",                             2, 0 },
-    { "reverseVlanId",                      2, YTF_BIF },
-    { "ingressInterface",                   4, YTF_DAGIF },
-    { "egressInterface",                    4, YTF_DAGIF },
-    { "ipClassOfService",                   1, 0 },
-    { "reverseIpClassOfService",            1, YTF_BIF },
-    { "mplsTopLabelStackSection",           3, YTF_MPLS },
-    { "mplsLabelStackSection2",             3, YTF_MPLS },
-    { "mplsLabelStackSection3",             3, YTF_MPLS },
+    {C("tcpSequenceNumber"),                4, YTF_SILK },
+    {C("reverseTcpSequenceNumber"),         4, YTF_SILK | YTF_BIF },
+    {C("initialTCPFlags"),                  1, YTF_SILK },
+    {C("unionTCPFlags"),                    1, YTF_SILK },
+    {C("reverseInitialTCPFlags"),           1, YTF_SILK | YTF_BIF },
+    {C("reverseUnionTCPFlags"),             1, YTF_SILK | YTF_BIF },
+    {C("vlanId"),                           2, 0 },
+    {C("reverseVlanId"),                    2, YTF_BIF },
+    {C("ingressInterface"),                 4, YTF_DAGIF },
+    {C("egressInterface"),                  4, YTF_DAGIF },
+
+    /* VNI */
+    {C("yafLayer2SegmentId"),               4, YTF_VNI },
+    {C("paddingOctets"),                    4, YTF_VNI | YTF_INTERNAL },
+
+    {C("ipClassOfService"),                 1, 0 },
+    {C("reverseIpClassOfService"),          1, YTF_BIF },
+    {C("mplsTopLabelStackSection"),         3, YTF_MPLS },
+    {C("mplsLabelStackSection2"),           3, YTF_MPLS },
+    {C("mplsLabelStackSection3"),           3, YTF_MPLS },
 #if defined(YAF_ENABLE_NDPI)
-    { "paddingOctets",                      1, YTF_INTERNAL },
-    { "nDPIL7Protocol",                     2, 0 },
-    { "nDPIL7SubProtocol",                  2, 0 },
+    {C("paddingOctets"),                    1, YTF_INTERNAL },
+    {C("nDPIL7Protocol"),                   2, 0 },
+    {C("nDPIL7SubProtocol"),                2, 0 },
 #else
-    { "paddingOctets",                      5, YTF_INTERNAL },
+    {C("paddingOctets"),                    5, YTF_INTERNAL },
 #endif /* if defined(YAF_ENABLE_NDPI) */
-    { "subTemplateMultiList",               FB_IE_VARLEN, 0 },
+    {C("subTemplateMultiList"),             FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
 
-#   if defined(YAF_ENABLE_ENTROPY)
+#if defined(YAF_ENABLE_ENTROPY)
 /* entropy fields */
 static fbInfoElementSpec_t yaf_entropy_spec[] = {
-    { "payloadEntropy",                     1, 0 },
-    { "reversePayloadEntropy",              1, YTF_BIF },
+    {C("payloadEntropy"),                   1, 0 },
+    {C("reversePayloadEntropy"),            1, YTF_BIF },
     FB_IESPEC_NULL
 };
 #endif /* if defined(YAF_ENABLE_ENTROPY) */
 
 static fbInfoElementSpec_t yaf_tcp_spec[] = {
     /* TCP-specific information */
-    { "tcpSequenceNumber",                  4, 0 },
-    { "initialTCPFlags",                    1, 0 },
-    { "unionTCPFlags",                      1, 0 },
-    { "reverseInitialTCPFlags",             1, YTF_BIF },
-    { "reverseUnionTCPFlags",               1, YTF_BIF },
-    { "reverseTcpSequenceNumber",           4, YTF_BIF },
+    {C("tcpSequenceNumber"),                4, 0 },
+    {C("initialTCPFlags"),                  1, 0 },
+    {C("unionTCPFlags"),                    1, 0 },
+    {C("reverseInitialTCPFlags"),           1, YTF_BIF },
+    {C("reverseUnionTCPFlags"),             1, YTF_BIF },
+    {C("reverseTcpSequenceNumber"),         4, YTF_BIF },
     FB_IESPEC_NULL
 };
 
 /* MAC-specific information */
 static fbInfoElementSpec_t yaf_mac_spec[] = {
-    { "sourceMacAddress",                   6, 0 },
-    { "destinationMacAddress",              6, 0 },
+    {C("sourceMacAddress"),                 6, 0 },
+    {C("destinationMacAddress"),            6, 0 },
     FB_IESPEC_NULL
 };
 
 static fbInfoElementSpec_t yaf_mptcp_spec[] = {
-    { "mptcpInitialDataSequenceNumber",     8, 0 },
-    { "mptcpReceiverToken",                 4, 0 },
-    { "mptcpMaximumSegmentSize",            2, 0 },
-    { "mptcpAddressID",                     1, 0 },
-    { "mptcpFlags",                         1, 0 },
+    {C("mptcpInitialDataSequenceNumber"),   8, 0 },
+    {C("mptcpReceiverToken"),               4, 0 },
+    {C("mptcpMaximumSegmentSize"),          2, 0 },
+    {C("mptcpAddressID"),                   1, 0 },
+    {C("mptcpFlags"),                       1, 0 },
     FB_IESPEC_NULL
 };
 
 
-#   if YAF_ENABLE_P0F
+#if YAF_ENABLE_P0F
 static fbInfoElementSpec_t yaf_p0f_spec[] = {
-    { "osName",                             FB_IE_VARLEN, 0 },
-    { "osVersion",                          FB_IE_VARLEN, 0 },
-    { "osFingerPrint",                      FB_IE_VARLEN, 0 },
-    { "reverseOsName",                      FB_IE_VARLEN, YTF_BIF },
-    { "reverseOsVersion",                   FB_IE_VARLEN, YTF_BIF },
-    { "reverseOsFingerPrint",               FB_IE_VARLEN, YTF_BIF },
+    {C("osName"),                           FB_IE_VARLEN, 0 },
+    {C("osVersion"),                        FB_IE_VARLEN, 0 },
+    {C("osFingerPrint"),                    FB_IE_VARLEN, 0 },
+    {C("reverseOsName"),                    FB_IE_VARLEN, YTF_BIF },
+    {C("reverseOsVersion"),                 FB_IE_VARLEN, YTF_BIF },
+    {C("reverseOsFingerPrint"),             FB_IE_VARLEN, YTF_BIF },
     FB_IESPEC_NULL
 };
-#   endif /* if YAF_ENABLE_P0F */
+#endif /* if YAF_ENABLE_P0F */
 
-#   if YAF_ENABLE_FPEXPORT
+#if YAF_ENABLE_FPEXPORT
 static fbInfoElementSpec_t yaf_fpexport_spec[] = {
-    { "firstPacketBanner",                  FB_IE_VARLEN, 0 },
-    { "secondPacketBanner",                 FB_IE_VARLEN, 0 },
-    { "reverseFirstPacketBanner",           FB_IE_VARLEN, YTF_BIF },
+    {C("firstPacketBanner"),                FB_IE_VARLEN, 0 },
+    {C("secondPacketBanner"),               FB_IE_VARLEN, 0 },
+    {C("reverseFirstPacketBanner"),         FB_IE_VARLEN, YTF_BIF },
     FB_IESPEC_NULL
 };
-#   endif /* if YAF_ENABLE_FPEXPORT */
+#endif /* if YAF_ENABLE_FPEXPORT */
 
-#   if YAF_ENABLE_PAYLOAD
+#if YAF_ENABLE_PAYLOAD
 /* Variable-length payload fields */
 static fbInfoElementSpec_t yaf_payload_spec[] = {
-    { "payload",                            FB_IE_VARLEN, 0 },
-    { "reversePayload",                     FB_IE_VARLEN, YTF_BIF },
+    {C("payload"),                          FB_IE_VARLEN, 0 },
+    {C("reversePayload"),                   FB_IE_VARLEN, YTF_BIF },
     FB_IESPEC_NULL
 };
-#   endif /* if YAF_ENABLE_PAYLOAD */
+#endif /* if YAF_ENABLE_PAYLOAD */
 
 /* IPFIX definition of the YAF flow record time extension */
 static fbInfoElementSpec_t yaf_extime_spec[] = {
     /* Microsecond start and end (RFC1305-style) (extended time) */
-    { "flowStartMicroseconds",              8, 0 },
-    { "flowEndMicroseconds",                8, 0 },
+    {C("flowStartMicroseconds"),            8, 0 },
+    {C("flowEndMicroseconds"),              8, 0 },
     /* Second start, end, and duration (extended time) */
-    { "flowStartSeconds",                   4, 0 },
-    { "flowEndSeconds",                     4, 0 },
+    {C("flowStartSeconds"),                 4, 0 },
+    {C("flowEndSeconds"),                   4, 0 },
     /* Flow durations (extended time) */
-    { "flowDurationMicroseconds",           4, 0 },
-    { "flowDurationMilliseconds",           4, 0 },
+    {C("flowDurationMicroseconds"),         4, 0 },
+    {C("flowDurationMilliseconds"),         4, 0 },
     /* Microsecond delta start and end (extended time) */
-    { "flowStartDeltaMicroseconds",         4, 0 },
-    { "flowEndDeltaMicroseconds",           4, 0 },
+    {C("flowStartDeltaMicroseconds"),       4, 0 },
+    {C("flowEndDeltaMicroseconds"),         4, 0 },
     FB_IESPEC_NULL
 };
 
 static fbInfoElementSpec_t yaf_process_stats_spec[] = {
-    { "observationDomainId",                4, 0 },
-    { "exportingProcessId",                 4, 0 },
-    { "exporterIPv4Address",                4, 0 },
-    { "observationTimeSeconds",             4, 0 },
-    { "systemInitTimeMilliseconds",         8, 0 },
-    { "exportedFlowRecordTotalCount",       8, 0 },
-    { "packetTotalCount",                   8, 0 },
-    { "droppedPacketTotalCount",            8, 0 },
-    { "ignoredPacketTotalCount",            8, 0 },
-    { "notSentPacketTotalCount",            8, 0 },
-    { "expiredFragmentCount",               4, 0 },
-    { "assembledFragmentCount",             4, 0 },
-    { "flowTableFlushEventCount",           4, 0 },
-    { "flowTablePeakCount",                 4, 0 },
-    { "meanFlowRate",                       4, 0 },
-    { "meanPacketRate",                     4, 0 },
+    {C("observationDomainId"),              4, 0 },
+    {C("exportingProcessId"),               4, 0 },
+    {C("exporterIPv4Address"),              4, 0 },
+    {C("observationTimeSeconds"),           4, 0 },
+    {C("systemInitTimeMilliseconds"),       8, 0 },
+    {C("exportedFlowRecordTotalCount"),     8, 0 },
+    {C("packetTotalCount"),                 8, 0 },
+    {C("droppedPacketTotalCount"),          8, 0 },
+    {C("ignoredPacketTotalCount"),          8, 0 },
+    {C("notSentPacketTotalCount"),          8, 0 },
+    {C("expiredFragmentCount"),             4, 0 },
+    {C("assembledFragmentCount"),           4, 0 },
+    {C("flowTableFlushEventCount"),         4, 0 },
+    {C("flowTablePeakCount"),               4, 0 },
+    {C("meanFlowRate"),                     4, 0 },
+    {C("meanPacketRate"),                   4, 0 },
     FB_IESPEC_NULL
 };
 
 static fbInfoElementSpec_t yaf_tombstone_spec[] = {
-    { "observationDomainId",                4, 0 },
-    { "exportingProcessId",                 4, 0 },
-    { "exporterConfiguredId",               2, 0 },
-    { "paddingOctets",                      6, 0 },
-    { "tombstoneId",                        4, 0 },
-    { "observationTimeSeconds",             4, 0 },
-    { "tombstoneAccessList",                FB_IE_VARLEN, 0 },
+    {C("observationDomainId"),              4, 0 },
+    {C("exportingProcessId"),               4, 0 },
+    {C("exporterConfiguredId"),             2, 0 },
+    {C("paddingOctets"),                    6, 0 },
+    {C("tombstoneId"),                      4, 0 },
+    {C("observationTimeSeconds"),           4, 0 },
+    {C("tombstoneAccessList"),              FB_IE_VARLEN, 0 },
     FB_IESPEC_NULL
 };
 
 static fbInfoElementSpec_t yaf_tombstone_access_spec[] = {
-    { "certToolId",                         4, 0 },
-    { "observationTimeSeconds",             4, 0 },
+    {C("certToolId"),                       4, 0 },
+    {C("observationTimeSeconds"),           4, 0 },
     FB_IESPEC_NULL
 };
 
 static fbInfoElementSpec_t yaf_flow_stats_spec[] = {
-    { "dataByteCount",                      8, 0 },
-    { "averageInterarrivalTime",            8, 0 },
-    { "standardDeviationInterarrivalTime",  8, 0 },
-    { "tcpUrgTotalCount",                   4, 0 },
-    { "smallPacketCount",                   4, 0 },
-    { "nonEmptyPacketCount",                4, 0 },
-    { "largePacketCount",                   4, 0 },
-    { "firstNonEmptyPacketSize",            2, 0 },
-    { "maxPacketSize",                      2, 0 },
-    { "standardDeviationPayloadLength",     2, 0 },
-    { "firstEightNonEmptyPacketDirections", 1, 0 },
-    { "paddingOctets",                      1, 1 },
-    { "reverseDataByteCount",               8, YTF_BIF },
-    { "reverseAverageInterarrivalTime",     8, YTF_BIF },
-    { "reverseStandardDeviationInterarrivalTime", 8, YTF_BIF },
-    { "reverseTcpUrgTotalCount",            4, YTF_BIF },
-    { "reverseSmallPacketCount",            4, YTF_BIF },
-    { "reverseNonEmptyPacketCount",         4, YTF_BIF },
-    { "reverseLargePacketCount",            4, YTF_BIF },
-    { "reverseFirstNonEmptyPacketSize",     2, YTF_BIF },
-    { "reverseMaxPacketSize",               2, YTF_BIF },
-    { "reverseStandardDeviationPayloadLength", 2, YTF_BIF },
-    { "paddingOctets",                      2, 1 },
+    {C("dataByteCount"),                            8, 0 },
+    {C("averageInterarrivalTime"),                  8, 0 },
+    {C("standardDeviationInterarrivalTime"),        8, 0 },
+    {C("tcpUrgTotalCount"),                         4, 0 },
+    {C("smallPacketCount"),                         4, 0 },
+    {C("nonEmptyPacketCount"),                      4, 0 },
+    {C("largePacketCount"),                         4, 0 },
+    {C("firstNonEmptyPacketSize"),                  2, 0 },
+    {C("maxPacketSize"),                            2, 0 },
+    {C("standardDeviationPayloadLength"),           2, 0 },
+    {C("firstEightNonEmptyPacketDirections"),        1, 0 },
+    {C("paddingOctets"),                            1, 1 },
+    {C("reverseDataByteCount"),                     8, YTF_BIF },
+    {C("reverseAverageInterarrivalTime"),           8, YTF_BIF },
+    {C("reverseStandardDeviationInterarrivalTime"), 8, YTF_BIF },
+    {C("reverseTcpUrgTotalCount"),                  4, YTF_BIF },
+    {C("reverseSmallPacketCount"),                  4, YTF_BIF },
+    {C("reverseNonEmptyPacketCount"),               4, YTF_BIF },
+    {C("reverseLargePacketCount"),                  4, YTF_BIF },
+    {C("reverseFirstNonEmptyPacketSize"),           2, YTF_BIF },
+    {C("reverseMaxPacketSize"),                     2, YTF_BIF },
+    {C("reverseStandardDeviationPayloadLength"),    2, YTF_BIF },
+    {C("paddingOctets"),                            2, 1 },
     FB_IESPEC_NULL
 };
 
@@ -501,11 +533,17 @@ typedef struct yfIpfixFlow_st {
     uint8_t                    unionTCPFlags;
     uint8_t                    reverseInitialTCPFlags;
     uint8_t                    reverseUnionTCPFlags;
+
     /* MAC Specific Info */
     uint16_t                   vlanId;
     uint16_t                   reverseVlanId;
     uint32_t                   ingressInterface;
     uint32_t                   egressInterface;
+
+    /* VNI */
+    uint32_t                   yafLayer2SegmentId;
+    uint8_t                    paddingOctets4[4];
+
     /* MPLS! */
     uint8_t                    ipClassOfService;
     uint8_t                    reverseIpClassOfService;
@@ -544,7 +582,7 @@ typedef struct yfMacFlow_st {
     uint8_t   destinationMacAddress[6];
 } yfMacFlow_t;
 
-#   if YAF_ENABLE_P0F
+#if YAF_ENABLE_P0F
 typedef struct yfP0fFlow_st {
     fbVarfield_t   osName;
     fbVarfield_t   osVersion;
@@ -553,22 +591,22 @@ typedef struct yfP0fFlow_st {
     fbVarfield_t   reverseOsVersion;
     fbVarfield_t   reverseOsFingerPrint;
 } yfP0fFlow_t;
-#   endif /* if YAF_ENABLE_P0F */
+#endif /* if YAF_ENABLE_P0F */
 
-#   if YAF_ENABLE_FPEXPORT
+#if YAF_ENABLE_FPEXPORT
 typedef struct yfFPExportFlow_st {
     fbVarfield_t   firstPacketBanner;
     fbVarfield_t   secondPacketBanner;
     fbVarfield_t   reverseFirstPacketBanner;
 } yfFPExportFlow_t;
-#   endif /* if YAF_ENABLE_FPEXPORT */
+#endif /* if YAF_ENABLE_FPEXPORT */
 
-#   if YAF_ENABLE_PAYLOAD
+#if YAF_ENABLE_PAYLOAD
 typedef struct yfPayloadFlow_st {
     fbVarfield_t   payload;
     fbVarfield_t   reversePayload;
 } yfPayloadFlow_t;
-#   endif /* if YAF_ENABLE_PAYLOAD */
+#endif /* if YAF_ENABLE_PAYLOAD */
 
 typedef struct yfIpfixExtFlow_st {
     yfIpfixFlow_t   f;
@@ -672,9 +710,14 @@ yfAlignmentCheck(
         }                                                        \
         prevOffset = offsetof(S_, F_);                           \
         prevSize = DO_SIZE(S_, F_);                              \
-/*        fprintf(stderr, "%17s %40s %#5lx %3d %#5lx\n", #S_, #F_, \
- *              offsetof(S_,F_), DO_SIZE(S_,F_), \
- *              offsetof(S_,F_)+DO_SIZE(S_,F_));*/ \
+        if (0) {                                                 \
+            fprintf(                                             \
+                stderr,                                          \
+                "%19s %40s %#6lx %3" PRId64 " %#6" PRIx64 "\n",  \
+                #S_, #F_,                                        \
+                offsetof(S_, F_), DO_SIZE(S_, F_),               \
+                offsetof(S_, F_) + DO_SIZE(S_, F_));             \
+        }                                                        \
     }
 
     RUN_CHECKS(yfIpfixFlow_t, flowStartMilliseconds, 1);
@@ -714,15 +757,18 @@ yfAlignmentCheck(
 
     RUN_CHECKS(yfIpfixFlow_t, vlanId, 1);
     RUN_CHECKS(yfIpfixFlow_t, reverseVlanId, 1);
-
     RUN_CHECKS(yfIpfixFlow_t, ingressInterface, 1);
     RUN_CHECKS(yfIpfixFlow_t, egressInterface, 1);
 
+    /* VNI */
+    RUN_CHECKS(yfIpfixFlow_t, yafLayer2SegmentId, 1);
+    RUN_CHECKS(yfIpfixFlow_t, paddingOctets4, 0);
+
     RUN_CHECKS(yfIpfixFlow_t, ipClassOfService, 1);
     RUN_CHECKS(yfIpfixFlow_t, reverseIpClassOfService, 1);
-    RUN_CHECKS(yfIpfixFlow_t, mpls_label1, 1);
-    RUN_CHECKS(yfIpfixFlow_t, mpls_label2, 1);
-    RUN_CHECKS(yfIpfixFlow_t, mpls_label3, 1);
+    RUN_CHECKS(yfIpfixFlow_t, mpls_label1, 0);
+    RUN_CHECKS(yfIpfixFlow_t, mpls_label2, 0);
+    RUN_CHECKS(yfIpfixFlow_t, mpls_label3, 0);
 #if YAF_ENABLE_NDPI
     RUN_CHECKS(yfIpfixFlow_t, paddingOctets2, 0);
     RUN_CHECKS(yfIpfixFlow_t, ndpi_master, 1);
@@ -824,7 +870,7 @@ yfWriterExportPayload(
 #if YAF_ENABLE_APPLABEL
 void
 yfWriterExportPayloadApplabels(
-    const GArray   *applabels)
+    const GArray  *applabels)
 {
     guint i;
 
@@ -882,18 +928,18 @@ yfFlowPrepare(
     unsigned int loop;
 #endif
 
-#   if YAF_ENABLE_PAYLOAD
+#if YAF_ENABLE_PAYLOAD
     flow->val.paylen = 0;
     flow->val.payload = NULL;
     flow->rval.paylen = 0;
     flow->rval.payload = NULL;
-#   endif /* if YAF_ENABLE_PAYLOAD */
+#endif /* if YAF_ENABLE_PAYLOAD */
 
-#   ifdef YAF_ENABLE_HOOKS
+#ifdef YAF_ENABLE_HOOKS
     for (loop = 0; loop < YAF_MAX_HOOKS; loop++) {
         flow->hfctx[loop] = 0x0;
     }
-#   endif
+#endif
 
     memset(flow->sourceMacAddr, 0, ETHERNET_MAC_ADDR_LENGTH);
     memset(flow->destinationMacAddr, 0, ETHERNET_MAC_ADDR_LENGTH);
@@ -937,7 +983,7 @@ yfPayloadCopyIn(
     fbVarfield_t  *payvar,
     yfFlowVal_t   *val)
 {
-#   if YAF_ENABLE_PAYLOAD
+#if YAF_ENABLE_PAYLOAD
     if (payvar->len) {
         if (!val->payload) {
             val->payload = g_malloc0(payvar->len);
@@ -951,7 +997,7 @@ yfPayloadCopyIn(
         val->payload = NULL;
         val->paylen = 0;
     }
-#   endif /* if YAF_ENABLE_PAYLOAD */
+#endif /* if YAF_ENABLE_PAYLOAD */
 }
 
 
@@ -988,12 +1034,22 @@ yfInfoModel(
 /**
  * yfAddTemplate
  *
+ *    Creates a new templates.
+ *
+ *    Allocates a new template.  If `reverse` is true, adds all elements from
+ *    `spec` to the template and adds the `YAF_BIF` bit to `tid`; otherwise
+ *    only adds the elements from `spec` whose flag value is 0.  Sets the
+ *    scope of the template to `scope` if non-zero.  Adds the template as an
+ *    export template to `session` with tid `tid` (or `tid | YAF_BIF`),
+ *    setting the name and description is metadata if enabled.  Returns the
+ *    new template.  Sets `err` and returns NULL on error.
  */
 static fbTemplate_t *
 yfAddTemplate(
     fbSession_t          *session,
     fbInfoElementSpec_t  *spec,
     uint16_t              tid,
+    uint16_t              scope,
     const gchar          *name,
     const gchar          *description,
     gboolean              reverse,
@@ -1013,17 +1069,25 @@ yfAddTemplate(
     /*         tid | (reverse ? YTF_BIF : 0)); */
 
     if (!fbTemplateAppendSpecArray(tmpl, spec, flags, err)) {
+        fbTemplateFreeUnused(tmpl);
         return NULL;
+    }
+    if (scope) {
+        fbTemplateSetOptionsScope(tmpl, scope);
     }
 
 #if YAF_ENABLE_METADATA_EXPORT
     if (!fbSessionAddTemplateWithMetadata(session, FALSE, rtid,
                                           tmpl, name, description, err))
     {
+        fbTemplateFreeUnused(tmpl);
         return NULL;
     }
 #else /* if YAF_ENABLE_METADATA_EXPORT */
+    (void)name;
+    (void)description;
     if (!fbSessionAddTemplate(session, FALSE, rtid, tmpl, err)) {
+        fbTemplateFreeUnused(tmpl);
         return NULL;
     }
 #endif /* if YAF_ENABLE_METADATA_EXPORT */
@@ -1080,61 +1144,32 @@ yfInitExporterSession(
         return NULL;
     }
 
-    /* Create the Options Template */
-    yaf_tmpl.ipfixStatsTemplate = fbTemplateAlloc(model);
-    if (!fbTemplateAppendSpecArray(yaf_tmpl.ipfixStatsTemplate,
-                                   yaf_process_stats_spec, 0, err))
-    {
+    /* Create the Process Stats Options Template. Scope fields are
+     * exporterIPv4Address, observationDomainId, and exportingProcessID */
+    yaf_tmpl.ipfixStatsTemplate = yfAddTemplate(session,
+                                                yaf_process_stats_spec,
+                                                YAF_PROCESS_STATS_TID, 3,
+                                                YAF_PROCESS_STATS_NAME,
+                                                NULL, FALSE, err);
+    if (!yaf_tmpl.ipfixStatsTemplate) {
         return NULL;
     }
-
-    /* Scope fields are exporterIPv4Address, observationDomainId,
-     * and exportingProcessID */
-    fbTemplateSetOptionsScope(yaf_tmpl.ipfixStatsTemplate, 3);
-#if YAF_ENABLE_METADATA_EXPORT
-    if (!fbSessionAddTemplateWithMetadata(session, FALSE, YAF_PROCESS_STATS_TID,
-                                          yaf_tmpl.ipfixStatsTemplate,
-                                          YAF_PROCESS_STATS_NAME, NULL, err))
-    {
-        return NULL;
-    }
-#else /* if YAF_ENABLE_METADATA_EXPORT */
-    if (!fbSessionAddTemplate(session, FALSE, YAF_PROCESS_STATS_TID,
-                              yaf_tmpl.ipfixStatsTemplate, err))
-    {
-        return NULL;
-    }
-#endif /* if YAF_ENABLE_METADATA_EXPORT */
     if (!fbSessionAddTemplate(session, TRUE, YAF_PROCESS_STATS_TID,
                               yaf_tmpl.ipfixStatsTemplate, err))
     {
         return NULL;
     }
 
-    /* Create the Tombstone record Template */
-    yaf_tmpl.tombstoneRecordTemplate = fbTemplateAlloc(model);
-    if (!fbTemplateAppendSpecArray(yaf_tmpl.tombstoneRecordTemplate,
-                                   yaf_tombstone_spec, 0, err))
-    {
+    /* Create the Tombstone record Template. Scope fields are
+     * exportingProcessID, observationDomainId, and exporterConfiguredId */
+    yaf_tmpl.tombstoneRecordTemplate = yfAddTemplate(session,
+                                                     yaf_tombstone_spec,
+                                                     YAF_TOMBSTONE_TID, 3,
+                                                     YAF_TOMBSTONE_NAME,
+                                                     NULL, FALSE, err);
+    if (!yaf_tmpl.tombstoneRecordTemplate) {
         return NULL;
     }
-    /* Scope fields are exportingProcessID, observationDomainId,
-     * and exporterConfiguredId */
-    fbTemplateSetOptionsScope(yaf_tmpl.tombstoneRecordTemplate, 3);
-#if YAF_ENABLE_METADATA_EXPORT
-    if (!fbSessionAddTemplateWithMetadata(session, FALSE, YAF_TOMBSTONE_TID,
-                                          yaf_tmpl.tombstoneRecordTemplate,
-                                          YAF_TOMBSTONE_NAME, NULL, err))
-    {
-        return NULL;
-    }
-#else /* if YAF_ENABLE_METADATA_EXPORT */
-    if (!fbSessionAddTemplate(session, FALSE, YAF_TOMBSTONE_TID,
-                              yaf_tmpl.tombstoneRecordTemplate, err))
-    {
-        return NULL;
-    }
-#endif /* if YAF_ENABLE_METADATA_EXPORT */
     if (!fbSessionAddTemplate(session, TRUE, YAF_TOMBSTONE_TID,
                               yaf_tmpl.tombstoneRecordTemplate, err))
     {
@@ -1142,27 +1177,15 @@ yfInitExporterSession(
     }
 
     /* Create the Tombstone Access SubTemplate */
-    yaf_tmpl.tombstoneAccessTemplate = fbTemplateAlloc(model);
-    if (!fbTemplateAppendSpecArray(yaf_tmpl.tombstoneAccessTemplate,
-                                   yaf_tombstone_access_spec, 0, err))
-    {
+    yaf_tmpl.tombstoneAccessTemplate = yfAddTemplate(session,
+                                                     yaf_tombstone_access_spec,
+                                                     YAF_TOMBSTONE_ACCESS_TID,
+                                                     0,
+                                                     YAF_TOMBSTONE_ACCESS_NAME,
+                                                     NULL, FALSE, err);
+    if (!yaf_tmpl.tombstoneAccessTemplate) {
         return NULL;
     }
-#if YAF_ENABLE_METADATA_EXPORT
-    if (!fbSessionAddTemplateWithMetadata(session, FALSE,
-                                          YAF_TOMBSTONE_ACCESS_TID,
-                                          yaf_tmpl.tombstoneAccessTemplate,
-                                          YAF_TOMBSTONE_ACCESS_NAME, NULL, err))
-    {
-        return NULL;
-    }
-#else /* if YAF_ENABLE_METADATA_EXPORT */
-    if (!fbSessionAddTemplate(session, FALSE, YAF_TOMBSTONE_ACCESS_TID,
-                              yaf_tmpl.tombstoneAccessTemplate, err))
-    {
-        return NULL;
-    }
-#endif /* if YAF_ENABLE_METADATA_EXPORT */
     if (!fbSessionAddTemplate(session, TRUE, YAF_TOMBSTONE_ACCESS_TID,
                               yaf_tmpl.tombstoneAccessTemplate, err))
     {
@@ -1171,33 +1194,33 @@ yfInitExporterSession(
 
     /* Flow Stats Template */
     yaf_tmpl.fstatsTemplate = yfAddTemplate(session, yaf_flow_stats_spec,
-                                            YAF_STATS_FLOW_TID,
-                                            YAF_STATS_FLOW_NAME, NULL,
-                                            FALSE, err);
+                                            YAF_STATS_FLOW_TID, 0,
+                                            YAF_STATS_FLOW_NAME,
+                                            NULL, FALSE, err);
     if (!yaf_tmpl.fstatsTemplate) {
         return NULL;
     }
 
     yaf_tmpl.revfstatsTemplate = yfAddTemplate(session, yaf_flow_stats_spec,
-                                               YAF_STATS_FLOW_TID,
-                                               YAF_STATS_FLOW_REV_NAME, NULL,
-                                               TRUE, err);
+                                               YAF_STATS_FLOW_TID, 0,
+                                               YAF_STATS_FLOW_REV_NAME,
+                                               NULL, TRUE, err);
     if (!yaf_tmpl.revfstatsTemplate) {
         return NULL;
     }
 
 #if YAF_ENABLE_ENTROPY
     yaf_tmpl.entropyTemplate = yfAddTemplate(session, yaf_entropy_spec,
-                                             YAF_ENTROPY_FLOW_TID,
-                                             YAF_ENTROPY_FLOW_NAME, NULL,
-                                             FALSE, err);
+                                             YAF_ENTROPY_FLOW_TID, 0,
+                                             YAF_ENTROPY_FLOW_NAME,
+                                             NULL, FALSE, err);
 
     if (!yaf_tmpl.entropyTemplate) {
         return NULL;
     }
 
     yaf_tmpl.revEntropyTemplate = yfAddTemplate(session, yaf_entropy_spec,
-                                                YAF_ENTROPY_FLOW_TID,
+                                                YAF_ENTROPY_FLOW_TID, 0,
                                                 YAF_ENTROPY_FLOW_REV_NAME,
                                                 NULL, TRUE, err);
     if (!yaf_tmpl.revEntropyTemplate) {
@@ -1207,7 +1230,8 @@ yfInitExporterSession(
 #endif /* if YAF_ENABLE_ENTROPY */
 
     yaf_tmpl.tcpTemplate = yfAddTemplate(session, yaf_tcp_spec,
-                                         YAF_TCP_FLOW_TID, YAF_TCP_FLOW_NAME,
+                                         YAF_TCP_FLOW_TID, 0,
+                                         YAF_TCP_FLOW_NAME,
                                          NULL, FALSE, err);
 
     if (!yaf_tmpl.tcpTemplate) {
@@ -1215,16 +1239,17 @@ yfInitExporterSession(
     }
 
     yaf_tmpl.revTcpTemplate = yfAddTemplate(session, yaf_tcp_spec,
-                                            YAF_TCP_FLOW_TID,
-                                            YAF_TCP_FLOW_REV_NAME, NULL,
-                                            TRUE, err);
+                                            YAF_TCP_FLOW_TID, 0,
+                                            YAF_TCP_FLOW_REV_NAME,
+                                            NULL, TRUE, err);
 
     if (!yaf_tmpl.revTcpTemplate) {
         return NULL;
     }
 
     yaf_tmpl.macTemplate = yfAddTemplate(session, yaf_mac_spec,
-                                         YAF_MAC_FLOW_TID, YAF_MAC_FLOW_NAME,
+                                         YAF_MAC_FLOW_TID, 0,
+                                         YAF_MAC_FLOW_NAME,
                                          NULL, FALSE, err);
 
     if (!yaf_tmpl.macTemplate) {
@@ -1232,16 +1257,17 @@ yfInitExporterSession(
     }
 
     yaf_tmpl.mptcpTemplate = yfAddTemplate(session, yaf_mptcp_spec,
-                                           YAF_MPTCP_FLOW_TID,
-                                           YAF_MPTCP_FLOW_NAME, NULL,
-                                           FALSE, err);
+                                           YAF_MPTCP_FLOW_TID, 0,
+                                           YAF_MPTCP_FLOW_NAME,
+                                           NULL, FALSE, err);
     if (!yaf_tmpl.mptcpTemplate) {
         return NULL;
     }
 
 #if YAF_ENABLE_P0F
     yaf_tmpl.p0fTemplate = yfAddTemplate(session, yaf_p0f_spec,
-                                         YAF_P0F_FLOW_TID, YAF_P0F_FLOW_NAME,
+                                         YAF_P0F_FLOW_TID, 0,
+                                         YAF_P0F_FLOW_NAME,
                                          NULL, FALSE, err);
 
     if (!yaf_tmpl.p0fTemplate) {
@@ -1249,7 +1275,7 @@ yfInitExporterSession(
     }
 
     yaf_tmpl.revP0fTemplate = yfAddTemplate(session, yaf_p0f_spec,
-                                            YAF_P0F_FLOW_TID,
+                                            YAF_P0F_FLOW_TID, 0,
                                             YAF_P0F_FLOW_REV_NAME,
                                             NULL, TRUE, err);
 
@@ -1260,16 +1286,16 @@ yfInitExporterSession(
 
 #if YAF_ENABLE_FPEXPORT
     yaf_tmpl.fpexportTemplate = yfAddTemplate(session, yaf_fpexport_spec,
-                                              YAF_FPEXPORT_FLOW_TID,
-                                              YAF_FPEXPORT_FLOW_NAME, NULL,
-                                              FALSE, err);
+                                              YAF_FPEXPORT_FLOW_TID, 0,
+                                              YAF_FPEXPORT_FLOW_NAME,
+                                              NULL, FALSE, err);
 
     if (!yaf_tmpl.fpexportTemplate) {
         return NULL;
     }
 
     yaf_tmpl.revFpexportTemplate = yfAddTemplate(session, yaf_fpexport_spec,
-                                                 YAF_FPEXPORT_FLOW_TID,
+                                                 YAF_FPEXPORT_FLOW_TID, 0,
                                                  YAF_FPEXPORT_FLOW_REV_NAME,
                                                  NULL, TRUE, err);
     if (!yaf_tmpl.revFpexportTemplate) {
@@ -1279,16 +1305,16 @@ yfInitExporterSession(
 
 #if YAF_ENABLE_PAYLOAD
     yaf_tmpl.payloadTemplate = yfAddTemplate(session, yaf_payload_spec,
-                                             YAF_PAYLOAD_FLOW_TID,
-                                             YAF_PAYLOAD_FLOW_NAME, NULL,
-                                             FALSE, err);
+                                             YAF_PAYLOAD_FLOW_TID, 0,
+                                             YAF_PAYLOAD_FLOW_NAME,
+                                             NULL, FALSE, err);
 
     if (!yaf_tmpl.payloadTemplate) {
         return NULL;
     }
 
     yaf_tmpl.revPayloadTemplate = yfAddTemplate(session, yaf_payload_spec,
-                                                YAF_PAYLOAD_FLOW_TID,
+                                                YAF_PAYLOAD_FLOW_TID, 0,
                                                 YAF_PAYLOAD_FLOW_REV_NAME,
                                                 NULL, TRUE, err);
 
@@ -1323,6 +1349,7 @@ yfAddTemplateSpread(
     fbInfoElementSpec_t  *spec,
     char                **groups,
     uint16_t              tid,
+    uint16_t              scope,
     const gchar          *name,
     const gchar          *description,
     gboolean              reverse,
@@ -1341,7 +1368,11 @@ yfAddTemplateSpread(
     g_debug("yaf spread: %x (%s), %d (%x)", tid, name, reverse,
             tid | (reverse ? YTF_BIF : 0));
     if (!fbTemplateAppendSpecArray(tmpl, spec, flags, err)) {
+        fbTemplateFreeUnused(tmpl);
         return NULL;
+    }
+    if (scope) {
+        fbTemplateSetOptionsScope(tmpl, scope);
     }
 
 #if YAF_ENABLE_METADATA_EXPORT
@@ -1349,12 +1380,16 @@ yfAddTemplateSpread(
             session, groups, FALSE, rtid, tmpl,
             (char *)name, (char *)description, err))
     {
+        fbTemplateFreeUnused(tmpl);
         return NULL;
     }
 #else /* if YAF_ENABLE_METADATA_EXPORT */
+    (void)name;
+    (void)description;
     if (!fbSessionAddTemplatesMulticast(session, groups, FALSE,
                                         rtid, tmpl, err))
     {
+        fbTemplateFreeUnused(tmpl);
         return NULL;
     }
 #endif /* if YAF_ENABLE_METADATA_EXPORT */
@@ -1412,103 +1447,55 @@ yfInitExporterSpreadSession(
     if (!fbTemplateAppendSpecArray(tmpl, yaf_flow_spec, YTF_ALL, err)) {
         return NULL;
     }
-    /* Add the full record template to the session */
+    /* Add the full record template to the internal session only */
     if (!fbSessionAddTemplate(session, TRUE, YAF_FLOW_FULL_TID, tmpl, err)) {
         return NULL;
     }
-#if YAF_ENABLE_METADATA_EXPORT
-    if (!fbSessionAddTemplatesMulticastWithMetadata(
-            session, spread->groups, FALSE, YAF_FLOW_FULL_TID, tmpl,
-            YAF_FLOW_FULL_NAME, NULL, err))
-    {
-        return NULL;
-    }
-#else /* if YAF_ENABLE_METADATA_EXPORT */
-    if (!fbSessionAddTemplatesMulticast(
-            session, spread->groups, FALSE, YAF_FLOW_FULL_TID, tmpl, err))
-    {
-        return NULL;
-    }
-#endif /* if YAF_ENABLE_METADATA_EXPORT */
 
-    /* Create the Options Template */
-    yaf_tmpl.ipfixStatsTemplate = fbTemplateAlloc(model);
-    if (!fbTemplateAppendSpecArray(yaf_tmpl.ipfixStatsTemplate,
-                                   yaf_process_stats_spec, 0, err))
-    {
+    /* Create the Process Stats Options Template. Scope fields are
+     * exporterIPv4Address, observationDomainId, and exportingProcessID */
+    yaf_tmpl.ipfixStatsTemplate = yfAddTemplateSpread(session,
+                                                      yaf_process_stats_spec,
+                                                      spread->groups,
+                                                      YAF_PROCESS_STATS_TID, 3,
+                                                      YAF_PROCESS_STATS_NAME,
+                                                      NULL, FALSE, err);
+    if (!yaf_tmpl.ipfixStatsTemplate) {
         return NULL;
     }
-
-    /* Scope fields are exporterIPv4Address, observationDomainId,
-     * and exportingProcessID */
-    fbTemplateSetOptionsScope(yaf_tmpl.ipfixStatsTemplate, 3);
     if (!fbSessionAddTemplate(session, TRUE, YAF_PROCESS_STATS_TID,
                               yaf_tmpl.ipfixStatsTemplate, err))
     {
         return NULL;
     }
 
-#if YAF_ENABLE_METADATA_EXPORT
-    if (!fbSessionAddTemplatesMulticastWithMetadata(session, spread->groups,
-                                                    FALSE,
-                                                    YAF_PROCESS_STATS_TID,
-                                                    yaf_tmpl.ipfixStatsTemplate,
-                                                    YAF_PROCESS_STATS_NAME,
-                                                    NULL, err))
-    {
+    /* Create the Tombstone record Template. Scope fields are
+     * exportingProcessID, observationDomainId, and exporterConfiguredId */
+    yaf_tmpl.tombstoneRecordTemplate = yfAddTemplateSpread(session,
+                                                           yaf_tombstone_spec,
+                                                           spread->groups,
+                                                           YAF_TOMBSTONE_TID, 3,
+                                                           YAF_TOMBSTONE_NAME,
+                                                           NULL, FALSE, err);
+    if (!yaf_tmpl.tombstoneRecordTemplate) {
         return NULL;
     }
-#else /* if YAF_ENABLE_METADATA_EXPORT */
-    if (!fbSessionAddTemplatesMulticast(session, spread->groups, FALSE,
-                                        YAF_PROCESS_STATS_TID,
-                                        yaf_tmpl.ipfixStatsTemplate, err))
-    {
-        return NULL;
-    }
-#endif /* if YAF_ENABLE_METADATA_EXPORT */
-
-    /* Create the Tombstone Record Template */
-    yaf_tmpl.tombstoneRecordTemplate = fbTemplateAlloc(model);
-    if (!fbTemplateAppendSpecArray(yaf_tmpl.tombstoneRecordTemplate,
-                                   yaf_tombstone_spec, 0, err))
-    {
-        return NULL;
-    }
-
-    /* Scope fields are exportingProcessID, observationDomainId,
-     * and exporterConfiguredId */
-    fbTemplateSetOptionsScope(yaf_tmpl.tombstoneRecordTemplate, 3);
     if (!fbSessionAddTemplate(session, TRUE, YAF_TOMBSTONE_TID,
                               yaf_tmpl.tombstoneRecordTemplate, err))
     {
         return NULL;
     }
 
-#if YAF_ENABLE_METADATA_EXPORT
-    if (!fbSessionAddTemplatesMulticastWithMetadata(session, spread->groups,
-                                                    FALSE,
-                                                    YAF_TOMBSTONE_TID,
-                                                    yaf_tmpl.
-                                                    tombstoneRecordTemplate,
-                                                    YAF_TOMBSTONE_NAME, NULL,
-                                                    err))
-    {
-        return NULL;
-    }
-#else /* if YAF_ENABLE_METADATA_EXPORT */
-    if (!fbSessionAddTemplatesMulticast(session, spread->groups, FALSE,
-                                        YAF_TOMBSTONE_TID,
-                                        yaf_tmpl.tombstoneRecordTemplate, err))
-    {
-        return NULL;
-    }
-#endif /* if YAF_ENABLE_METADATA_EXPORT */
-
     /* Create the Tombstone Access SubTemplate */
-    yaf_tmpl.tombstoneAccessTemplate = fbTemplateAlloc(model);
-    if (!fbTemplateAppendSpecArray(yaf_tmpl.tombstoneAccessTemplate,
-                                   yaf_tombstone_access_spec, 0, err))
-    {
+    yaf_tmpl.tombstoneAccessTemplate =
+        yfAddTemplateSpread(session,
+                            yaf_tombstone_access_spec,
+                            spread->groups,
+                            YAF_TOMBSTONE_ACCESS_TID,
+                            0,
+                            YAF_TOMBSTONE_ACCESS_NAME,
+                            NULL, FALSE, err);
+    if (!yaf_tmpl.tombstoneAccessTemplate) {
         return NULL;
     }
     if (!fbSessionAddTemplate(session, TRUE, YAF_TOMBSTONE_ACCESS_TID,
@@ -1516,32 +1503,13 @@ yfInitExporterSpreadSession(
     {
         return NULL;
     }
-#if YAF_ENABLE_METADATA_EXPORT
-    if (!fbSessionAddTemplatesMulticastWithMetadata(session, spread->groups,
-                                                    FALSE,
-                                                    YAF_TOMBSTONE_ACCESS_TID,
-                                                    yaf_tmpl.
-                                                    tombstoneAccessTemplate,
-                                                    YAF_TOMBSTONE_ACCESS_NAME,
-                                                    NULL, err))
-    {
-        return NULL;
-    }
-#else /* if YAF_ENABLE_METADATA_EXPORT */
-    if (!fbSessionAddTemplatesMulticast(session, spread->groups, FALSE,
-                                        YAF_TOMBSTONE_ACCESS_TID,
-                                        yaf_tmpl.tombstoneAccessTemplate, err))
-    {
-        return NULL;
-    }
-#endif /* if YAF_ENABLE_METADATA_EXPORT */
 
     /* Flow Stats Template */
     yaf_tmpl.fstatsTemplate = yfAddTemplateSpread(session, yaf_flow_stats_spec,
                                                   spread->groups,
-                                                  YAF_STATS_FLOW_TID,
-                                                  YAF_STATS_FLOW_NAME, NULL,
-                                                  FALSE, err);
+                                                  YAF_STATS_FLOW_TID, 0,
+                                                  YAF_STATS_FLOW_NAME,
+                                                  NULL, FALSE, err);
     if (!yaf_tmpl.fstatsTemplate) {
         return NULL;
     }
@@ -1549,10 +1517,9 @@ yfInitExporterSpreadSession(
     yaf_tmpl.revfstatsTemplate = yfAddTemplateSpread(session,
                                                      yaf_flow_stats_spec,
                                                      spread->groups,
-                                                     YAF_STATS_FLOW_TID,
+                                                     YAF_STATS_FLOW_TID, 0,
                                                      YAF_STATS_FLOW_REV_NAME,
-                                                     NULL,
-                                                     TRUE, err);
+                                                     NULL, TRUE, err);
     if (!yaf_tmpl.revfstatsTemplate) {
         return NULL;
     }
@@ -1560,9 +1527,9 @@ yfInitExporterSpreadSession(
 #if YAF_ENABLE_ENTROPY
     yaf_tmpl.entropyTemplate = yfAddTemplateSpread(session, yaf_entropy_spec,
                                                    spread->groups,
-                                                   YAF_ENTROPY_FLOW_TID,
-                                                   YAF_ENTROPY_FLOW_NAME, NULL,
-                                                   FALSE, err);
+                                                   YAF_ENTROPY_FLOW_TID, 0,
+                                                   YAF_ENTROPY_FLOW_NAME,
+                                                   NULL, FALSE, err);
 
     if (!yaf_tmpl.entropyTemplate) {
         return NULL;
@@ -1570,7 +1537,7 @@ yfInitExporterSpreadSession(
 
     yaf_tmpl.revEntropyTemplate = yfAddTemplateSpread(session, yaf_entropy_spec,
                                                       spread->groups,
-                                                      YAF_ENTROPY_FLOW_TID,
+                                                      YAF_ENTROPY_FLOW_TID, 0,
                                                       YAF_ENTROPY_FLOW_REV_NAME,
                                                       NULL, TRUE, err);
     if (!yaf_tmpl.revEntropyTemplate) {
@@ -1581,7 +1548,7 @@ yfInitExporterSpreadSession(
 
     yaf_tmpl.tcpTemplate = yfAddTemplateSpread(session, yaf_tcp_spec,
                                                spread->groups,
-                                               YAF_TCP_FLOW_TID,
+                                               YAF_TCP_FLOW_TID, 0,
                                                YAF_TCP_FLOW_NAME,
                                                NULL, FALSE, err);
 
@@ -1591,9 +1558,9 @@ yfInitExporterSpreadSession(
 
     yaf_tmpl.revTcpTemplate = yfAddTemplateSpread(session, yaf_tcp_spec,
                                                   spread->groups,
-                                                  YAF_TCP_FLOW_TID,
-                                                  YAF_TCP_FLOW_REV_NAME, NULL,
-                                                  TRUE, err);
+                                                  YAF_TCP_FLOW_TID, 0,
+                                                  YAF_TCP_FLOW_REV_NAME,
+                                                  NULL, TRUE, err);
 
     if (!yaf_tmpl.revTcpTemplate) {
         return NULL;
@@ -1601,7 +1568,7 @@ yfInitExporterSpreadSession(
 
     yaf_tmpl.macTemplate = yfAddTemplateSpread(session, yaf_mac_spec,
                                                spread->groups,
-                                               YAF_MAC_FLOW_TID,
+                                               YAF_MAC_FLOW_TID, 0,
                                                YAF_MAC_FLOW_NAME,
                                                NULL, FALSE, err);
 
@@ -1611,9 +1578,9 @@ yfInitExporterSpreadSession(
 
     yaf_tmpl.mptcpTemplate = yfAddTemplateSpread(session, yaf_mptcp_spec,
                                                  spread->groups,
-                                                 YAF_MPTCP_FLOW_TID,
-                                                 YAF_MPTCP_FLOW_NAME, NULL,
-                                                 FALSE, err);
+                                                 YAF_MPTCP_FLOW_TID, 0,
+                                                 YAF_MPTCP_FLOW_NAME,
+                                                 NULL, FALSE, err);
     if (!yaf_tmpl.mptcpTemplate) {
         return NULL;
     }
@@ -1621,7 +1588,7 @@ yfInitExporterSpreadSession(
 #if YAF_ENABLE_P0F
     yaf_tmpl.p0fTemplate = yfAddTemplateSpread(session, yaf_p0f_spec,
                                                spread->groups,
-                                               YAF_P0F_FLOW_TID,
+                                               YAF_P0F_FLOW_TID, 0,
                                                YAF_P0F_FLOW_NAME,
                                                NULL, FALSE, err);
 
@@ -1631,7 +1598,7 @@ yfInitExporterSpreadSession(
 
     yaf_tmpl.revP0fTemplate = yfAddTemplateSpread(session, yaf_p0f_spec,
                                                   spread->groups,
-                                                  YAF_P0F_FLOW_TID,
+                                                  YAF_P0F_FLOW_TID, 0,
                                                   YAF_P0F_FLOW_REV_NAME,
                                                   NULL, TRUE, err);
 
@@ -1643,10 +1610,9 @@ yfInitExporterSpreadSession(
 #if YAF_ENABLE_FPEXPORT
     yaf_tmpl.fpexportTemplate = yfAddTemplateSpread(session, yaf_fpexport_spec,
                                                     spread->groups,
-                                                    YAF_FPEXPORT_FLOW_TID,
+                                                    YAF_FPEXPORT_FLOW_TID, 0,
                                                     YAF_FPEXPORT_FLOW_NAME,
-                                                    NULL,
-                                                    FALSE, err);
+                                                    NULL, FALSE, err);
 
     if (!yaf_tmpl.fpexportTemplate) {
         return NULL;
@@ -1655,7 +1621,7 @@ yfInitExporterSpreadSession(
     yaf_tmpl.revFpexportTemplate = yfAddTemplateSpread(session,
                                                        yaf_fpexport_spec,
                                                        spread->groups,
-                                                       YAF_FPEXPORT_FLOW_TID,
+                                                       YAF_FPEXPORT_FLOW_TID, 0,
                                                        YAF_FPEXPORT_FLOW_REV_NAME,
                                                        NULL, TRUE, err);
     if (!yaf_tmpl.revFpexportTemplate) {
@@ -1666,9 +1632,9 @@ yfInitExporterSpreadSession(
 #if YAF_ENABLE_PAYLOAD
     yaf_tmpl.payloadTemplate = yfAddTemplateSpread(session, yaf_payload_spec,
                                                    spread->groups,
-                                                   YAF_PAYLOAD_FLOW_TID,
-                                                   YAF_PAYLOAD_FLOW_NAME, NULL,
-                                                   FALSE, err);
+                                                   YAF_PAYLOAD_FLOW_TID, 0,
+                                                   YAF_PAYLOAD_FLOW_NAME,
+                                                   NULL, FALSE, err);
 
     if (!yaf_tmpl.payloadTemplate) {
         return NULL;
@@ -1676,7 +1642,7 @@ yfInitExporterSpreadSession(
 
     yaf_tmpl.revPayloadTemplate = yfAddTemplateSpread(session, yaf_payload_spec,
                                                       spread->groups,
-                                                      YAF_PAYLOAD_FLOW_TID,
+                                                      YAF_PAYLOAD_FLOW_TID, 0,
                                                       YAF_PAYLOAD_FLOW_REV_NAME,
                                                       NULL, TRUE, err);
 
@@ -1801,6 +1767,7 @@ yfWriterForSpread(
 /**
  * yfSetSpreadExportTemplate
  *
+ *    The Spread version of yfSetExportTemplate().
  *
  *
  */
@@ -1808,13 +1775,14 @@ static gboolean
 yfSetSpreadExportTemplate(
     fBuf_t            *fbuf,
     fbSpreadParams_t  *spread,
-    uint16_t           tid,
+    uint32_t           flags,
     char             **groups,
     int                num_groups,
     GError           **err)
 {
     fbSession_t  *session = NULL;
     fbTemplate_t *tmpl = NULL;
+    uint16_t      tid = UINT16_MAX & flags;
 
     /* Try to set export template */
 
@@ -1833,7 +1801,7 @@ yfSetSpreadExportTemplate(
     tmpl = fbTemplateAlloc(yfInfoModel());
 
     if (!fbTemplateAppendSpecArray(tmpl, yaf_flow_spec,
-                                   (tid & (~YAF_FLOW_BASE_TID)), err))
+                                   (flags & (~YAF_FLOW_BASE_TID)), err))
     {
         return FALSE;
     }
@@ -1849,8 +1817,6 @@ yfSetSpreadExportTemplate(
     /* Template should be loaded. Try setting the template again. */
     return fBufSetExportTemplate(fbuf, tid, err);
 }
-
-
 #endif /* HAVE SPREAD */
 
 
@@ -1858,21 +1824,28 @@ yfSetSpreadExportTemplate(
 /**
  * yfSetExportTemplate
  *
+ *    Sets the export template to that whose ID is in the lower 16-bits of
+ *    `flags`.  If the template does not exist, a new template for flow record
+ *    export is created using the yaf_flow_spec[].
+ *
+ *    @param the TID to export or flags is used to select IEs from
+ *    yaf_flow_spec[], may include elements whose presence is not reflected in
+ *    the template ID.
  *
  *
  */
-
-#define TEMPLATE_NAME_INIT_LEN 32
-
 static gboolean
 yfSetExportTemplate(
     fBuf_t    *fbuf,
-    uint16_t   tid,
+    uint32_t   flags,
     GError   **err)
 {
     fbSession_t  *session = NULL;
     fbTemplate_t *tmpl = NULL;
     GString      *template_name = NULL;
+    uint16_t      tid = UINT16_MAX & flags;
+
+#define TEMPLATE_NAME_INIT_LEN 32
 
     /* Try to set export template */
     if (fBufSetExportTemplate(fbuf, tid, err)) {
@@ -1934,7 +1907,7 @@ yfSetExportTemplate(
     }
 
     if (!fbTemplateAppendSpecArray(tmpl, yaf_flow_spec,
-                                   (tid & (~YAF_FLOW_BASE_TID)), err))
+                                   (flags & (~YAF_FLOW_BASE_TID)), err))
     {
         return FALSE;
     }
@@ -1944,8 +1917,6 @@ yfSetExportTemplate(
     if (!fbSessionAddTemplateWithMetadata(session, FALSE, tid, tmpl,
                                           template_name->str, NULL, err))
     {
-        g_error("error setting template metadata: tid: %x, name: %s\n",
-                tid, template_name->str);
         g_string_free(template_name, TRUE);
         return FALSE;
     }
@@ -2334,7 +2305,7 @@ yfWriteFlow(
     GError   **err)
 {
     yfIpfixFlow_t  rec;
-    uint16_t       wtid;
+    uint32_t       wtid;
     uint16_t       etid = 0;      /* extra templates */
     fbSubTemplateMultiListEntry_t *stml = NULL;
     yfTcpFlow_t   *tcprec = NULL;
@@ -2343,7 +2314,6 @@ yfWriteFlow(
     int            tmplcount = 0;
     gboolean       ok;
     gboolean       stats = FALSE;
-    int32_t        temp = 0;
     int            loop, count;
 #if YAF_ENABLE_ENTROPY
     yfEntropyFlow_t  *entropyrec;
@@ -2429,6 +2399,9 @@ yfWriteFlow(
 
     rec.ingressInterface = ctx->cfg->ingressInt;
     rec.egressInterface = ctx->cfg->egressInt;
+
+    /* VNI */
+    rec.yafLayer2SegmentId = flow->key.layer2Id;
 
     /* Type Of Service */
     rec.ipClassOfService = flow->key.tos;
@@ -2532,6 +2505,10 @@ yfWriteFlow(
 
     if (rec.ingressInterface || rec.egressInterface) {
         wtid |= YTF_DAGIF;
+    }
+
+    if (ctx->cfg->layer2IdExportMode) {
+        wtid |= YTF_VNI;
     }
 
 #if YAF_ENABLE_DAG_SEPARATE_INTERFACES || YAF_ENABLE_SEPARATE_INTERFACES
@@ -2799,88 +2776,87 @@ yfWriteFlow(
 #endif /* if YAF_ENABLE_FPEXPORT */
 
     if (stats) {
+        yfFlowStats_t *fwd_stats = flow->val.stats;
+        yfFlowStats_t *rev_stats = flow->rval.stats;
         uint32_t pktavg = 0;
+
         stml = FBSTMLNEXT(&(rec.subTemplateMultiList), stml);
         if (etid) {
-            statsflow =
-                (yfFlowStatsRecord_t *)FBSTMLINIT(stml,
-                                                  (YAF_STATS_FLOW_TID | etid),
-                                                  yaf_tmpl.revfstatsTemplate);
-            statsflow->reverseTcpUrgTotalCount = flow->rval.stats->tcpurgct;
-            statsflow->reverseSmallPacketCount = flow->rval.stats->smallpktct;
+            statsflow = (yfFlowStatsRecord_t *)
+                FBSTMLINIT(stml, (YAF_STATS_FLOW_TID | etid),
+                           yaf_tmpl.revfstatsTemplate);
+            statsflow->reverseTcpUrgTotalCount = rev_stats->tcpurgct;
+            statsflow->reverseSmallPacketCount = rev_stats->smallpktct;
             statsflow->reverseFirstNonEmptyPacketSize =
-                (uint16_t)flow->rval.stats->firstpktsize;
-            statsflow->reverseNonEmptyPacketCount =
-                flow->rval.stats->nonemptypktct;
-            statsflow->reverseLargePacketCount =
-                flow->rval.stats->largepktct;
-            statsflow->reverseDataByteCount = flow->rval.stats->payoct;
-            count = (statsflow->reverseNonEmptyPacketCount > 10) ? 10 :
-                statsflow->reverseNonEmptyPacketCount;
-            if (flow->rval.stats->nonemptypktct) {
-                pktavg = flow->rval.stats->payoct /
-                    flow->rval.stats->nonemptypktct;
-            }
-            for (loop = 0; loop < count; loop++) {
-                temp += (pow(abs(flow->rval.stats->pktsize[loop] - pktavg), 2));
-            }
-            if (count) {
+                (uint16_t)rev_stats->firstpktsize;
+            statsflow->reverseNonEmptyPacketCount = rev_stats->nonemptypktct;
+            statsflow->reverseDataByteCount = rev_stats->payoct;
+            statsflow->reverseMaxPacketSize = (uint16_t)rev_stats->maxpktsize;
+            statsflow->reverseLargePacketCount = rev_stats->largepktct;
+            if (rev_stats->nonemptypktct) {
+                int32_t temp = 0;
+                int32_t diff;
+                count = MIN(rev_stats->nonemptypktct, 10);
+                pktavg = rev_stats->payoct / rev_stats->nonemptypktct;
+                for (loop = 0; loop < count; loop++) {
+                    diff = (int32_t)rev_stats->pktsize[loop] - (int32_t)pktavg;
+                    temp += diff * diff;
+                }
                 statsflow->reverseStandardDeviationPayloadLength =
                     sqrt(temp / count);
             }
             if (flow->rval.pkt > 1) {
                 uint64_t time_temp = 0;
+                int64_t diff;
                 statsflow->reverseAverageInterarrivalTime =
-                    flow->rval.stats->aitime / (flow->rval.pkt - 1);
-                count = (flow->rval.pkt > 11) ? 10 : (flow->rval.pkt - 1);
+                    rev_stats->aitime / (flow->rval.pkt - 1);
+                count = MIN(flow->rval.pkt, 11) - 1;
                 for (loop = 0; loop < count; loop++) {
-                    time_temp += (pow(labs(flow->rval.stats->iaarray[loop] -
-                                           statsflow->
-                                           reverseAverageInterarrivalTime), 2));
+                    diff = ((int64_t)rev_stats->iaarray[loop] -
+                            (int64_t)statsflow->reverseAverageInterarrivalTime);
+                    time_temp += diff * diff;
                 }
                 statsflow->reverseStandardDeviationInterarrivalTime =
                     sqrt(time_temp / count);
             }
-            statsflow->reverseMaxPacketSize = (uint16_t)flow->rval.stats->maxpktsize;
         } else {
-            statsflow = (yfFlowStatsRecord_t *)FBSTMLINIT(stml,
-                                                          YAF_STATS_FLOW_TID,
-                                                          yaf_tmpl.
-                                                          fstatsTemplate);
+            statsflow = (yfFlowStatsRecord_t *)
+                FBSTMLINIT(stml, YAF_STATS_FLOW_TID, yaf_tmpl.fstatsTemplate);
         }
         pktavg = 0;
-        statsflow->tcpUrgTotalCount = flow->val.stats->tcpurgct;
-        statsflow->smallPacketCount = flow->val.stats->smallpktct;
-        statsflow->firstNonEmptyPacketSize = (uint16_t)flow->val.stats->firstpktsize;
-        statsflow->nonEmptyPacketCount = flow->val.stats->nonemptypktct;
-        statsflow->dataByteCount = flow->val.stats->payoct;
-        statsflow->maxPacketSize = (uint16_t)flow->val.stats->maxpktsize;
         statsflow->firstEightNonEmptyPacketDirections = flow->pktdir;
-        statsflow->largePacketCount = flow->val.stats->largepktct;
-        temp = 0;
-        count = (statsflow->nonEmptyPacketCount < 10) ?
-            statsflow->nonEmptyPacketCount : 10;
-        if (flow->val.stats->nonemptypktct) {
-            pktavg = flow->val.stats->payoct / flow->val.stats->nonemptypktct;
-        }
-        for (loop = 0; loop < count; loop++) {
-            temp += (pow(abs(flow->val.stats->pktsize[loop] - pktavg), 2));
-        }
-        if (count) {
-            statsflow->standardDeviationPayloadLength =
-                sqrt(temp / count);
+        statsflow->tcpUrgTotalCount = fwd_stats->tcpurgct;
+        statsflow->smallPacketCount = fwd_stats->smallpktct;
+        statsflow->firstNonEmptyPacketSize = (uint16_t)fwd_stats->firstpktsize;
+        statsflow->nonEmptyPacketCount = fwd_stats->nonemptypktct;
+        statsflow->dataByteCount = fwd_stats->payoct;
+        statsflow->maxPacketSize = (uint16_t)fwd_stats->maxpktsize;
+        statsflow->largePacketCount = fwd_stats->largepktct;
+        if (fwd_stats->nonemptypktct) {
+            int32_t temp = 0;
+            int32_t diff;
+            count = MIN(fwd_stats->nonemptypktct, 10);
+            pktavg = fwd_stats->payoct / fwd_stats->nonemptypktct;
+            temp = 0;
+            for (loop = 0; loop < count; loop++) {
+                diff = (int32_t)fwd_stats->pktsize[loop] - (int32_t)pktavg;
+                temp += diff * diff;
+            }
+            statsflow->standardDeviationPayloadLength = sqrt(temp / count);
         }
         if (flow->val.pkt > 1) {
             uint64_t time_temp = 0;
-            statsflow->averageInterarrivalTime = flow->val.stats->aitime /
-                (flow->val.pkt - 1);
-            count = (flow->val.pkt > 11) ? 10 : (flow->val.pkt - 1);
+            int64_t diff;
+            statsflow->averageInterarrivalTime =
+                fwd_stats->aitime / (flow->val.pkt - 1);
+            count = MIN(flow->val.pkt, 11) - 1;
             for (loop = 0; loop < count; loop++) {
-                time_temp += (pow(labs(flow->val.stats->iaarray[loop] -
-                                       statsflow->averageInterarrivalTime), 2));
+                diff = ((int64_t)fwd_stats->iaarray[loop] -
+                        (int64_t)statsflow->averageInterarrivalTime);
+                time_temp += diff * diff;
             }
-            statsflow->standardDeviationInterarrivalTime = sqrt(time_temp /
-                                                                count);
+            statsflow->standardDeviationInterarrivalTime =
+                sqrt(time_temp / count);
         }
         tmplcount--;
     }
@@ -2890,7 +2866,7 @@ yfWriteFlow(
     if (!yfHookFlowWrite(&(rec.subTemplateMultiList), stml, flow, err)) {
         return FALSE;
     }
-# endif /* if YAF_ENABLE_HOOKS */
+#endif /* if YAF_ENABLE_HOOKS */
 
     /* IF UDP - Check to see if we need to re-export templates */
     /* We do not advise in using UDP (nicer than saying you're stupid) */
@@ -3276,6 +3252,7 @@ yfReadFlow(
     flow->rval.isn = rec.reverseTcpSequenceNumber;
     flow->rval.iflags = rec.reverseInitialTCPFlags;
     flow->rval.uflags = rec.reverseUnionTCPFlags;
+    flow->key.layer2Id = rec.yafLayer2SegmentId;
 
     /* Get subTemplateMultiList Entry */
     while ((stml = FBSTMLNEXT(&(rec.subTemplateMultiList), stml))) {
@@ -3321,7 +3298,7 @@ yfReadFlow(
                 yfPayloadCopyIn(&payrec->reversePayload, &flow->rval);
             }
             break;
-#   endif /* if YAF_ENABLE_PAYLOAD */
+#endif /* if YAF_ENABLE_PAYLOAD */
           default:
             /* don't know about this template */
             break;
@@ -3337,8 +3314,8 @@ yfReadFlow(
 /**
  * yfNTPDecode
  *
- * decodes a 64-bit NTP time variable and returns it in terms of
- * milliseconds
+ * Decodes a 64-bit NTP time variable (in native byte order) and returns it in
+ * terms of UNIX epoch milliseconds
  *
  *
  */
@@ -3346,15 +3323,45 @@ static uint64_t
 yfNTPDecode(
     uint64_t   ntp)
 {
-    double   dntp;
-    uint64_t millis;
+    /* The number of seconds between the NTP epoch (Jan 1, 1900) and the UNIX
+     * epoch (Jan 1, 1970).  Seventy 365-day years plus 17 leap days, at 86400
+     * sec/day: ((70 * 365 + 17) * 86400) */
+    const uint64_t NTP_EPOCH_TO_UNIX_EPOCH = 0x83AA7E80ULL;
+    /* NTP rollover = 1 << 32 */
+    const uint64_t NTP_ROLLOVER = 0x100000000ULL;
+    /* Bit to check to determine whether to round up, 1 << 31 */
+    const uint64_t ONE_SHIFT_31 = 0x80000000ULL;
+    /* Bit to check to determine NTP Era, 1 << 63 */
+    const uint64_t ONE_SHIFT_63 = 0x8000000000000000ULL;
+    /* milliseconds */
+    uint64_t ms;
 
-    if (!ntp) {return 0;}
+    /* Mask the lower 32 bits of `ntp` to get the fractional second part.
+     * Divide by 2^32 to get a floating point number that is a fraction of a
+     * second, and multiply by 1000 to get milliseconds, but do those in
+     * reverse order and use shift for the division.  Before the shift, round
+     * up if needed by checking the highest bit that is about to get chopped
+     * off. */
+    ms = (ntp & 0xffffffffULL) * 1000;
+    ms = (ms + ((ms & ONE_SHIFT_31) << 1)) >> 32;
 
-    dntp = (ntp & 0xFFFFFFFF00000000LL) >> 32;
-    dntp += ((ntp & 0x00000000FFFFFFFFLL) * 1.0) / (2LL << 32);
-    millis = dntp * 1000;
-    return millis;
+    /* Right shift `ntp` by 32 to get the whole seconds since 1900.  Subtract
+     * the difference between the epochs to get a UNIX time, then multiply by
+     * 1000 to get milliseconds.
+     *
+     * Use the highest bit of ntp to determine (assume) the NTP Era and add
+     * NTP_ROLLOVER if Era 1; this is valid from 1968 to 2104. */
+    if (ntp & ONE_SHIFT_63) {
+        /* Assume NTP Era 0 */
+        /* valid for 1968-01-20 03:14:08Z to 2036-02-07 06:28:15Z */
+        ms += ((ntp >> 32) - NTP_EPOCH_TO_UNIX_EPOCH) * 1000;
+    } else {
+        /* Assume NTP Era 1 */
+        /* valid for 2036-02-07 06:28:16Z to 2104-02-26 09:42:23Z */
+        ms += ((ntp >> 32) + NTP_ROLLOVER - NTP_EPOCH_TO_UNIX_EPOCH) * 1000;
+    }
+
+    return ms;
 }
 
 
@@ -3559,7 +3566,7 @@ yfReadFlowExtended(
                 yfPayloadCopyIn(&payrec->reversePayload, &flow->rval);
             }
             break;
-#   endif /* if YAF_ENABLE_PAYLOAD */
+#endif /* if YAF_ENABLE_PAYLOAD */
           default:
             fbSubTemplateMultiListEntryNextDataPtr(stml, NULL);
             break;
@@ -3608,6 +3615,10 @@ yfPrintString(
 {
     char sabuf[AIR_IP6ADDR_BUF_MINSZ],
          dabuf[AIR_IP6ADDR_BUF_MINSZ];
+
+    if (NULL == rstr) {
+        return;
+    }
 
     /* print start as date and time */
     air_mstime_g_string_append(rstr, flow->stime, AIR_TIME_ISO8601);
@@ -3717,12 +3728,12 @@ yfPrintString(
     }
 
     /* if app label is enabled, print the label */
-#   ifdef YAF_ENABLE_APPLABEL
+#ifdef YAF_ENABLE_APPLABEL
     if (0 != flow->appLabel) {
         g_string_append_printf(rstr, " applabel: %u", flow->appLabel);
     }
-#   endif
-#   ifdef YAF_ENABLE_NDPI
+#endif
+#ifdef YAF_ENABLE_NDPI
     if (0 != flow->ndpi_master) {
         if (flow->ndpi_sub) {
             g_string_append_printf(rstr, " ndpi: %u[%u]", flow->ndpi_master,
@@ -3731,21 +3742,21 @@ yfPrintString(
             g_string_append_printf(rstr, " ndpi: %u", flow->ndpi_master);
         }
     }
-#   endif /* ifdef YAF_ENABLE_NDPI */
+#endif /* ifdef YAF_ENABLE_NDPI */
 
     /* if entropy is enabled, print the entropy values */
-#   ifdef YAF_ENABLE_ENTROPY
+#ifdef YAF_ENABLE_ENTROPY
     if (0 != flow->val.entropy || 0 != flow->rval.entropy) {
         g_string_append_printf(rstr, " entropy: %u rev entropy: %u",
                                flow->val.entropy, flow->rval.entropy);
     }
-#   endif /* ifdef YAF_ENABLE_ENTROPY */
+#endif /* ifdef YAF_ENABLE_ENTROPY */
 
     /* finish line */
     g_string_append(rstr, "\n");
 
     /* print payload if necessary */
-#   if YAF_ENABLE_PAYLOAD
+#if YAF_ENABLE_PAYLOAD
     if (flow->val.payload) {
         air_hexdump_g_string_append(rstr, "  -> ",
                                     flow->val.payload, flow->val.paylen);
@@ -3760,7 +3771,7 @@ yfPrintString(
         flow->rval.payload = NULL;
         flow->rval.paylen = 0;
     }
-#   endif /* if YAF_ENABLE_PAYLOAD */
+#endif /* if YAF_ENABLE_PAYLOAD */
 }
 
 
@@ -3781,6 +3792,10 @@ yfPrintDelimitedString(
     GString       *fstr = NULL;
     int            loop = 0;
     unsigned short rvlan = 0;
+
+    if (NULL == rstr) {
+        return;
+    }
 
     /* print time and duration */
     air_mstime_g_string_append(rstr, flow->stime, AIR_TIME_ISO8601);
@@ -3833,7 +3848,7 @@ yfPrintDelimitedString(
     }
 
     /* print tcp flags */
-    fstr = g_string_new("");
+    fstr = g_string_new(NULL);
     yfPrintFlags(fstr, flow->val.iflags);
     g_string_append_printf(rstr, "%8s%s", fstr->str, YF_PRINT_DELIM);
     g_string_truncate(fstr, 0);
@@ -3873,16 +3888,16 @@ yfPrintDelimitedString(
                            YF_PRINT_DELIM);
 
     /* if app label is enabled, print the label */
-#   ifdef YAF_ENABLE_APPLABEL
+#ifdef YAF_ENABLE_APPLABEL
     g_string_append_printf(rstr, "%5u%s", flow->appLabel, YF_PRINT_DELIM);
-#   endif
+#endif
 
     /* if entropy is enabled, print the entropy values */
-#   ifdef YAF_ENABLE_ENTROPY
+#ifdef YAF_ENABLE_ENTROPY
     g_string_append_printf(rstr, "%3u%s%3u%s",
                            flow->val.entropy, YF_PRINT_DELIM,
                            flow->rval.entropy, YF_PRINT_DELIM);
-#   endif
+#endif
 
     /* end reason flags */
     if ((flow->reason & YAF_END_MASK) == YAF_END_IDLE) {
@@ -3905,7 +3920,7 @@ yfPrintDelimitedString(
     g_string_append(rstr, "\n");
 
     /* not printing payload - but need to free */
-#   if YAF_ENABLE_PAYLOAD
+#if YAF_ENABLE_PAYLOAD
     if (flow->val.payload) {
         g_free(flow->val.payload);
         flow->val.payload = NULL;
@@ -3916,7 +3931,7 @@ yfPrintDelimitedString(
         flow->rval.payload = NULL;
         flow->rval.paylen = 0;
     }
-#   endif /* if YAF_ENABLE_PAYLOAD */
+#endif /* if YAF_ENABLE_PAYLOAD */
 }
 
 
@@ -3935,7 +3950,7 @@ yfPrint(
     GString *rstr = NULL;
     int      rc = 0;
 
-    rstr = g_string_new("");
+    rstr = g_string_new(NULL);
 
     yfPrintString(rstr, flow);
 
@@ -3968,7 +3983,7 @@ yfPrintDelimited(
     GString *rstr = NULL;
     int      rc = 0;
 
-    rstr = g_string_new("");
+    rstr = g_string_new(NULL);
 
     yfPrintDelimitedString(rstr, flow, yaft_mac);
 
@@ -3998,7 +4013,7 @@ yfPrintColumnHeaders(
 {
     GString *rstr = NULL;
 
-    rstr = g_string_new("");
+    rstr = g_string_new(NULL);
 
     g_string_append_printf(rstr, "start-time%14s", YF_PRINT_DELIM);
     g_string_append_printf(rstr, "end-time%16s", YF_PRINT_DELIM);

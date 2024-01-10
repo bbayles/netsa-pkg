@@ -1,28 +1,73 @@
-## Process this file with automake to produce Makefile.in
-## ------------------------------------------------------------------------
-## Makefile.am (source)
-## autotools build system for YAF
-## ------------------------------------------------------------------------
-## Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
-## ------------------------------------------------------------------------
-## Authors: Emily Sarneso
-## ------------------------------------------------------------------------
-## GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
-## Government Purpose License Rights (GPLR) pursuant to DFARS 252.227-7013
-## ------------------------------------------------------------------------
+##  Copyright 2006-2023 Carnegie Mellon University
+##  See license information in LICENSE.txt.
+
+##  Process this file with automake to produce Makefile.in
+##  ------------------------------------------------------------------------
+##  Makefile.am (source)
+##  autotools build system for YAF
+##  ------------------------------------------------------------------------
+##  Authors: Emily Sarneso
+##  ------------------------------------------------------------------------
+##  @DISTRIBUTION_STATEMENT_BEGIN@
+##  YAF 2.15.0
+##
+##  Copyright 2023 Carnegie Mellon University.
+##
+##  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+##  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+##  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+##  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+##  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+##  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+##  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+##  INFRINGEMENT.
+##
+##  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+##  contact permission@sei.cmu.edu for full terms.
+##
+##  [DISTRIBUTION STATEMENT A] This material has been approved for public
+##  release and unlimited distribution.  Please see Copyright notice for
+##  non-US Government use and distribution.
+##
+##  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+##  Contract No.: FA8702-15-D-0002
+##  Contractor Name: Carnegie Mellon University
+##  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+##
+##  The Government's rights to use, modify, reproduce, release, perform,
+##  display, or disclose this software are restricted by paragraph (b)(2) of
+##  the Rights in Noncommercial Computer Software and Noncommercial Computer
+##  Software Documentation clause contained in the above identified
+##  contract. No restrictions apply after the expiration date shown
+##  above. Any reproduction of the software or portions thereof marked with
+##  this legend must also reproduce the markings.
+##
+##  This Software includes and/or makes use of Third-Party Software each
+##  subject to its own license.
+##
+##  DM23-2313
+##  @DISTRIBUTION_STATEMENT_END@
+##  ------------------------------------------------------------------------
+
+AM_CFLAGS = $(WARN_CFLAGS) $(DEBUG_CFLAGS)
+AM_CPPFLAGS = $(YAF_CPPFLAGS) $(GLIB_CFLAGS) \
+	$(OPENSSL_CPPFLAGS) $(libfixbuf_CFLAGS)
+AM_LDFLAGS = $(libfixbuf_LIBS) $(GLIB_LIBS)
+LDADD = $(top_builddir)/airframe/src/libairframe.la $(GLIB_LDADD)
 
 PODFILES = getFlowKeyHash.pod yafMeta2Pcap.pod yafzcbalance.pod
-man1_MANS = getFlowKeyHash.1 yafMeta2Pcap.1 yafzcbalance.1 
+man1_MANS = getFlowKeyHash.1 yafMeta2Pcap.1
 HTMLFILES = getFlowKeyHash.html yafMeta2Pcap.html yafzcbalance.html
 
 bin_PROGRAMS = getFlowKeyHash yafMeta2Pcap
 
 if HASPFRINGZC
 bin_PROGRAMS += yafzcbalance
+man1_MANS += yafzcbalance.1
 endif
 
 .pod.1:
-	$(POD2MAN) $(YAF_POD2MAN_ARGS) --section=1 $< $@
+	$(AM_V_GEN) $(POD2MAN) $(YAF_POD2MAN_ARGS) --section=1 $< $@
 
 .pod.html:
 	$(POD2HTML) --noindex --infile="$<" --outfile="$@"
@@ -32,6 +77,10 @@ copy-man-pages: $(HTMLFILES)
 	mkdir -p $(top_builddir)/doc/html
 	cp $(HTMLFILES) $(top_builddir)/doc/html
 
+dist-hook: $(HTMLFILES)
+	mkdir -p $(top_distdir)/doc/html
+	cp $(HTMLFILES) $(top_distdir)/doc/html
+
 docs: $(man1_MANS) copy-man-pages
 
 clean-docs:
@@ -39,20 +88,15 @@ clean-docs:
 
 CLEANFILES = $(man1_MANS) $(HTMLFILES)
 
-EXTRA_DIST = $(PODFILES) \
-	yafzcbalance.c
+EXTRA_DIST = $(PODFILES)
 
 clean-local:
 	rm -f pod2htm*.tmp
 
 getFlowKeyHash_SOURCES = getFlowKeyHash.c
-getFlowKeyHash_LDFLAGS = -L../airframe/src -lairframe @GLIB_LIBS@ @libfixbuf_LIBS@
-getFlowKeyHash_CFLAGS = @GLIB_CFLAGS@ @libfixbuf_CFLAGS@
 
 yafMeta2Pcap_SOURCES = yafMeta2Pcap.c
-yafMeta2Pcap_LDFLAGS = @GLIB_LIBS@ @libfixbuf_LIBS@
-yafMeta2Pcap_CFLAGS = @GLIB_CFLAGS@ @libfixbuf_CFLAGS@
 
 yafzcbalance_SOURCES = yafzcbalance.c
-yafzcbalance_LDFLAGS = -L../airframe/src -lairframe @GLIB_LIBS@ -lpthread
-yafzcbalance_CFLAGS = @GLIB_CFLAGS@
+yafzcbalance_LDFLAGS = $(GLIB_LIBS) -lpthread
+yafzcbalance_CPPFLAGS = $(YAF_CPPFLAGS) $(GLIB_CFLAGS)

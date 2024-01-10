@@ -1,14 +1,52 @@
+dnl Copyright 2013-2023 Carnegie Mellon University
+dnl See license information in LICENSE.txt.
+
 dnl Process this file with autoconf to produce a configure script
 dnl ------------------------------------------------------------------------
 dnl yafconfig.m4
 dnl write summary of configure to a file (stolen from SiLK)
 dnl ------------------------------------------------------------------------
-dnl Copyright (C) 2013-2023 Carnegie Mellon University. All Rights Reserved.
-dnl ------------------------------------------------------------------------
 dnl Authors: Emily Sarneso
 dnl ------------------------------------------------------------------------
-dnl GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
-dnl Government Purpose License Rights (GPLR) pursuant to DFARS 252.227-7013
+dnl @DISTRIBUTION_STATEMENT_BEGIN@
+dnl YAF 2.15.0
+dnl
+dnl Copyright 2023 Carnegie Mellon University.
+dnl
+dnl NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+dnl INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+dnl UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+dnl AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+dnl PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+dnl THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+dnl ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+dnl INFRINGEMENT.
+dnl
+dnl Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+dnl contact permission@sei.cmu.edu for full terms.
+dnl
+dnl [DISTRIBUTION STATEMENT A] This material has been approved for public
+dnl release and unlimited distribution.  Please see Copyright notice for
+dnl non-US Government use and distribution.
+dnl
+dnl GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+dnl Contract No.: FA8702-15-D-0002
+dnl Contractor Name: Carnegie Mellon University
+dnl Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+dnl
+dnl The Government's rights to use, modify, reproduce, release, perform,
+dnl display, or disclose this software are restricted by paragraph (b)(2) of
+dnl the Rights in Noncommercial Computer Software and Noncommercial Computer
+dnl Software Documentation clause contained in the above identified
+dnl contract. No restrictions apply after the expiration date shown
+dnl above. Any reproduction of the software or portions thereof marked with
+dnl this legend must also reproduce the markings.
+dnl
+dnl This Software includes and/or makes use of Third-Party Software each
+dnl subject to its own license.
+dnl
+dnl DM23-2313
+dnl @DISTRIBUTION_STATEMENT_END@
 dnl ------------------------------------------------------------------------
 
 AC_DEFUN([YAF_AC_WRITE_SUMMARY],[
@@ -103,7 +141,7 @@ AC_DEFUN([YAF_AC_WRITE_SUMMARY],[
     fi
 
 
-    if test "x$compact_v4" = xtrue
+    if test "x$compact_ip4" = x1
     then
        YF_BUILD_CONF="$YF_BUILD_CONF
     * Compact IPv4 support:         YES"
@@ -199,6 +237,17 @@ AC_DEFUN([YAF_AC_WRITE_SUMMARY],[
     * Fingerprint Export Support:   NO"
     fi
 
+    if test "x${YF_HAVE_OPENSSL}" = xyes
+    then
+      yf_msg_ldflags="${OPENSSL_LDFLAGS}"
+      yf_msg_ldflags=`echo "${yf_msg_ldflags}" | sed 's/^ *//' | sed 's/  */ /g'`
+      YF_BUILD_CONF="$YF_BUILD_CONF
+    * OpenSSL Support:              YES (${yf_msg_ldflags})"
+    else
+      YF_BUILD_CONF="$YF_BUILD_CONF
+    * OpenSSL Support:              NO"
+    fi
+
     if test "x$p0f_printer" = xtrue
     then
       YF_PKGCONFIG_LPATH(libp0f)
@@ -240,10 +289,10 @@ AC_DEFUN([YAF_AC_WRITE_SUMMARY],[
     if test "x$type_export" = xtrue
     then
       YF_BUILD_CONF="$YF_BUILD_CONF
-    * Type export Support:          YES"
+    * IE metadata export available: YES"
     else
       YF_BUILD_CONF="$YF_BUILD_CONF
-    * Type export Support:          NO"
+    * IE metadata export available: NO"
     fi
 
     if test "x$gcc_atomic" = xtrue
@@ -255,15 +304,6 @@ AC_DEFUN([YAF_AC_WRITE_SUMMARY],[
     * GCC Atomic Builtin functions: NO"
     fi
 
-    if test "x$type_export" = xtrue
-    then
-      YF_BUILD_CONF="$YF_BUILD_CONF
-    * IE metadata export available: YES"
-    else
-      YF_BUILD_CONF="$YF_BUILD_CONF
-    * IE metadata export available: NO"
-    fi
-
     if test "x$disable_mt" = xtrue
     then
       YF_BUILD_CONF="$YF_BUILD_CONF
@@ -271,7 +311,7 @@ AC_DEFUN([YAF_AC_WRITE_SUMMARY],[
     fi
 
     # Remove leading whitespace
-    yf_msg_cflags="$CPPFLAGS $CFLAGS"
+    yf_msg_cflags="${YAF_CPPFLAGS} ${CPPFLAGS} ${WARN_CFLAGS} ${DEBUG_CFLAGS} ${CFLAGS}"
     yf_msg_cflags=`echo "$yf_msg_cflags" | sed 's/^ *//' | sed 's/  */ /g'`
 
     yf_msg_ldflags="$YF_LDFLAGS $LDFLAGS"
@@ -300,7 +340,4 @@ AC_DEFUN([YAF_AC_WRITE_SUMMARY],[
     YAF_SUMMARY_FILE=`pwd`"/${YAF_SUMMARY_FILE}"
     export YAF_SUMMARY_FILE
 
-  #Put config info into the version output of yaf
-  YF_BUILD_CONF=${YF_BUILD_CONF}"\n"
-  #AC_DEFINE_UNQUOTED([YAF_BCONF_STRING_STR], ["${YF_BUILD_CONF}"], [configure script options])
 ])

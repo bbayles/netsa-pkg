@@ -1,10 +1,10 @@
 %define name    silk
 %define version @VERSION@
-%define release 1
+%define release 1%{?dist}
 
 Name: %{name}
 Version: %{version}
-Release: %{release}%{?dist}
+Release: %{release}
 Summary: SiLK: A network flow collection and analysis package
 License: GPLv2
 Vendor: CERT Network Situational Awareness <netsa-help@cert.org>
@@ -34,7 +34,18 @@ BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 #Patch3:
 #Patch4:
 
+# Compiled-in root of SiLK repository; must have a fallback default
 %define data_rootdir    @SILK_DATA_ROOTDIR@
+
+# Compiled-in packing logic; if empty, uses run-time plugin
+%define packing_logic   %{nil}@PACKING_LOGIC_PATH@
+
+# Path to a Python interpreter. An error is generated if this ends
+# with "python" and not a more specific version (python3, python2,
+# python3.9, etc).
+%define python          @PYTHON@
+
+# Whether to build with Python support, and paths if so
 %define with_PYTHON     @RPM_SPEC_WITH_PYTHON@
 %define py_sitepkg      %{nil}@RPM_SPEC_PYTHON_SITEPKG@
 %define py_sitepkg_silk %{nil}@RPM_SPEC_PYTHON_SITEPKG_SILK@
@@ -44,13 +55,16 @@ BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 %define sk_analysis_file   analysis-list.txt
 %define sk_analysis_path   $RPM_BUILD_DIR/%{name}-%{version}/%{sk_analysis_file}
 
-# This file is empty or contains the list of packing-logic plug-ins
-# for the silk-rwflopack RPM.  It is created during 'install'.
+%if "x" == "x%{?packing_logic}"
+# This file contains the names of the packing-logic plug-in files for
+# the silk-rwflopack RPM.  It is created during 'install'.
 %define sk_rwflowpack_file rwflowpack-list.txt
 %define sk_rwflowpack_path $RPM_BUILD_DIR/%{name}-%{version}/%{sk_rwflowpack_file}
+%endif
+
 
 #######################################################################
-# RCSIDENT("$SiLK: silk.spec.in 50fdc91dcd28 2014-03-24 13:41:44Z mthomas $")
+# RCSIDENT("$SiLK: silk.spec.in 309b639743da 2023-11-15 14:50:15Z mthomas $")
 #######################################################################
 
 %description
@@ -87,7 +101,13 @@ echo Building %{name}-%{version}-%{release}
 #%patch4 -p1
 
 %build
-%configure --enable-data-rootdir=%{data_rootdir} @RPM_SPEC_CONFIGURE@ --disable-static
+case "%{python}" in #(
+  *python)
+    echo "ERROR: Ambiguous python: please use python3 (or python2) explicity in %%define python" 1>&1
+    exit 1
+    ;;
+esac
+%configure --enable-data-rootdir=%{data_rootdir} %{?packing_logic:--enable-packing-logic=%{packing_logic}} @RPM_SPEC_CONFIGURE@ --disable-static PYTHON="%{python}"
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 make %{?_smp_mflags}
@@ -105,6 +125,7 @@ done
 rmdir $RPM_BUILD_ROOT/%{_datadir}/silk/etc/init.d
 rmdir $RPM_BUILD_ROOT/%{_datadir}/silk/etc
 rm -f $RPM_BUILD_ROOT/%{_libdir}/silk/*.la
+rm -f $RPM_BUILD_ROOT/%{_libdir}/*.la
 mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/silk
 
 # build the file list to use for the silk-analysis RPM
@@ -142,12 +163,14 @@ echo %{py_sitepkg_silk}'/*' >> %{sk_analysis_path}
 %endif
 
 
-# build the list of plug-ins to use as part of the silk-rwflowpack
-# RPM.  This is empty if static packing logic is used.
+# if static packing-logic is not used, create the file holding the
+# list of plug-in files to include with the silk-rwflowpack RPM
+%if 0%{?sk_rwflowpack_path:1}
 rm -f %{sk_rwflowpack_path}
 touch %{sk_rwflowpack_path}
 find $RPM_BUILD_ROOT/%{_libdir}/silk -name 'packlogic*.so' -type f -print | \
     sed "s!$RPM_BUILD_ROOT/*!/!" >> %{sk_rwflowpack_path}
+%endif
 
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
@@ -204,7 +227,7 @@ useful utilities.
 %package analysis
 Group: Applications/System
 Summary: SiLK Toolset: The Analysis Suite
-Requires: silk-common
+Requires: %{name}-common = %{version}-%{release}
 
 %description analysis
 SiLK, the System for Internet-Level Knowledge, is a collection of
@@ -235,7 +258,7 @@ silk-rwflowpack package) and summarize that data in various ways.
 %package rwflowpack
 Group: Applications/System
 Summary: SiLK Toolset: The Packer
-Requires: silk-common
+Requires: %{name}-common = %{version}-%{release}
 
 %description rwflowpack
 SiLK, the System for Internet-Level Knowledge, is a collection of
@@ -256,7 +279,7 @@ package to query this data.  rwflowpack may capture the data itself,
 or it may process files that have been created by flowcap (see the
 silk-flowcap package).
 
-%files rwflowpack -f %{sk_rwflowpack_file}
+%files rwflowpack %{?sk_rwflowpack_file: -f %{sk_rwflowpack_file}}
 %defattr(-,root,root)
 %{_sbindir}/rwflowpack
 %{_sbindir}/rwguess
@@ -291,7 +314,7 @@ fi
 %package flowcap
 Group: Applications/System
 Summary: SiLK Toolset: Remote Flow Collection
-Requires: silk-common
+Requires: %{name}-common = %{version}-%{release}
 
 %description flowcap
 SiLK, the System for Internet-Level Knowledge, is a collection of
@@ -341,7 +364,7 @@ fi
 %package rwflowappend
 Group: Applications/System
 Summary: SiLK Toolset: Remote Data Storage Appending Daemon
-Requires: silk-common
+Requires: %{name}-common = %{version}-%{release}
 
 %description rwflowappend
 SiLK, the System for Internet-Level Knowledge, is a collection of
@@ -393,7 +416,7 @@ fi
 %package rwreceiver
 Group: Applications/System
 Summary: SiLK Toolset: File Transfer Receiver
-Requires: silk-common
+Requires: %{name}-common = %{version}-%{release}
 
 %description rwreceiver
 SiLK, the System for Internet-Level Knowledge, is a collection of
@@ -442,7 +465,7 @@ fi
 %package rwsender
 Group: Applications/System
 Summary: SiLK Toolset: File Transfer Sender
-Requires: silk-common
+Requires: %{name}-common = %{version}-%{release}
 
 %description rwsender
 SiLK, the System for Internet-Level Knowledge, is a collection of
@@ -491,7 +514,7 @@ fi
 %package rwpollexec
 Group: Applications/System
 Summary: SiLK Toolset: Batch Command Executor
-Requires: silk-common
+Requires: %{name}-common = %{version}-%{release}
 
 %description rwpollexec
 SiLK, the System for Internet-Level Knowledge, is a collection of
@@ -560,7 +583,6 @@ tools.
 %defattr(-,root,root)
 %{_includedir}
 %{_libdir}/*.so
-%{_libdir}/*.la
 %{_bindir}/silk_config
 %{_mandir}/man1/silk_config.1*
 %{_mandir}/man3/silk-plugin.3*

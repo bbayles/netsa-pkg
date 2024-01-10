@@ -191,34 +191,41 @@ the B<--tls-cert> and B<--tls-key> switches.
 Set the trusted certificate authorities to those in I<TRUST_FILE>,
 where I<TRUST_FILE> is the complete path to a file containing a
 PEM-encoded list of certificates.  This list of authorities is used to
-verify the certificate sent by B<rwreceiver>.  This switch must be
-used in conjunction with either the B<--tls-pkcs12> switch or both the
-B<--tls-cert> and the B<--tls-key> switches.
+verify the certificate sent by B<rwreceiver>.  (Store intermediate
+certificates in either I<CERTIFICATE_FILE> or I<PKCS12_FILE>.)  This
+switch must be used in conjunction with either the B<--tls-pkcs12>
+switch or both the B<--tls-cert> and the B<--tls-key> switches.
 
 =item B<--tls-cert>=I<CERTIFICATE_FILE>
 
-Set the certificate list (path) for B<rwsender>'s private key to the
+Set the certificate chain (path) for B<rwsender>'s private key to the
 list of certificates in I<CERTIFICATE_FILE>, where I<CERTIFICATE_FILE>
 is the complete path to a file containing the PEM-encoded
-certificates.  This switch may only be used in conjunction with the
+certificates.  The certificate corresponding to I<KEY_FILE> must be
+listed first; each subsequent intermediate certificate certifies the
+one before it.  This switch may only be used in conjunction with the
 B<--tls-ca> and B<--tls-key> switches.
 
 =item B<--tls-key>=I<KEY_FILE>
 
 Read B<rwsender>'s private encryption key for TLS from I<KEY_FILE>,
-where I<KEY_FILE> is the complete path to a PEM-encoded file.  This
-switch may only be used in conjunction with the B<--tls-ca> and
-B<--tls-cert> switches.
+where I<KEY_FILE> is the complete path to a PEM-encoded file.  The key
+must not be password protected as there is no support in B<rwsender>
+for obtaining the password, but note that B<--tls-pkcs12> allows a
+password.  This switch may only be used in conjunction with the
+B<--tls-ca> and B<--tls-cert> switches.
 
 =item B<--tls-pkcs12>=I<PKCS12_FILE>
 
 Set B<rwsender>'s encryption certificate and private key for TLS to
 the contents of I<PKCS12_FILE>, where I<PKCS12_FILE> is the complete
-path to a file containing the PKCS#12 contents in DER-format.  This
-switch may only be used in conjunction with the B<--tls-ca> switch.
-B<rwsender> uses the value in the RWSENDER_TLS_PASSWORD environment
-variable to decrypt the PKCS#12 file.  If this variable is not set,
-B<rwsender> assumes the password is the empty string.
+path to a file containing the PKCS#12 contents in DER-format.  If
+intermediate certificates are needed, they should be included in the
+file.  This switch may only be used in conjunction with the
+B<--tls-ca> switch.  B<rwsender> uses the value in the
+RWSENDER_TLS_PASSWORD environment variable to decrypt the PKCS#12
+file.  If this variable is not set, B<rwsender> assumes the password
+is the empty string.
 
 =item B<--tls-priority>=I<TLS_PRIORITY>
 
@@ -530,7 +537,7 @@ existing file in the processing directory.
 
 =cut
 
-$SiLK: rwsender.pod a79eb3a80282 2018-12-13 20:50:23Z mthomas $
+$SiLK: rwsender.pod 8e11149b0d14 2022-06-29 19:20:32Z mthomas $
 
 Local Variables:
 mode:text

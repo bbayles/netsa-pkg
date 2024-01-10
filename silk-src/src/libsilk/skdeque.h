@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2004-2020 by Carnegie Mellon University.
+** Copyright (C) 2004-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -20,7 +62,7 @@ extern "C" {
 
 #include <silk/silk.h>
 
-RCSIDENTVAR(rcsID_SKDEQUE_H, "$SiLK: skdeque.h ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENTVAR(rcsID_SKDEQUE_H, "$SiLK: skdeque.h 5cd70d1ab29e 2023-07-14 14:06:27Z mthomas $");
 
 /**
  *  @file
@@ -32,7 +74,7 @@ RCSIDENTVAR(rcsID_SKDEQUE_H, "$SiLK: skdeque.h ef14e54179be 2020-04-14 21:57:45Z
  *
  *  A deque maintains a list of void pointers.  It does not know the
  *  contents of these pointers, and as such the deque knows nothing
- *  about the memory management behind them.  A deque never attemps to
+ *  about the memory management behind them.  A deque never attempts to
  *  copy or free anything behind the pointer.  It is the caller's
  *  responsibility to ensure that an object in a deque is not
  *  free()'ed until the object has been popped from the deque.
@@ -53,7 +95,7 @@ typedef struct sk_deque_st *skDeque_t;
 
 
 /**
- *    Return values from skSkdeque functions.
+ *    The type of return values from the skDeque functions.
  */
 typedef enum {
     /** success */
@@ -78,7 +120,8 @@ typedef enum {
  */
 
 /**
- *    Create a deque.  Return NULL on memory alloation error.
+ *    Creates a deque.  Returns NULL on memory allocation error.  To free the
+ *    deque, use skDequeDestroy().
  */
 skDeque_t
 skDequeCreate(
@@ -86,17 +129,18 @@ skDequeCreate(
 
 
 /**
- *    Creates a copy of a deque.  Operations on both deques will
- *    affect each other.  Return NULL on error.
+ *    Creates a copy (another reference) to a deque.  Operations on both
+ *    deques will affect each other.  Returns NULL on error.  To free the
+ *    copy, use skDequeDestroy().
  */
 skDeque_t
 skDequeCopy(
     skDeque_t           deque);
 
 /**
- *    Creates a new pseudo-deque which acts like a deque with all the
- *    elements of q1 in front of q2.  q1 and q2 continue behaving
- *    normally.  Return NULL on error.
+ *    Creates a new pseudo-deque which acts like a deque with all the elements
+ *    of q1 in front of q2.  q1 and q2 continue behaving normally.  Returns
+ *    NULL on error.  To free the deque, use skDequeDestroy().
  */
 skDeque_t
 skDequeCreateMerged(
@@ -107,19 +151,23 @@ skDequeCreateMerged(
 /*** Deque destruction ***/
 
 /**
- *    Destroy and free a deque.  (Not reponsible for freeing the
- *    elements within the deque).  Returns SKDQ_ERROR if 'deque' is
- *    NULL.
+ *    Destroys a reference to a deque created by skDequeCreate(),
+ *    skDequeCopy(), or skDequeCreateMerged().  If this is the last reference,
+ *    also frees the deque.  Returns SKDQ_ERROR if 'deque' is NULL.
+ *
+ *    This function does not free the data stored in the deque.  The caller is
+ *    responsible for freeing that data.
  */
 skDQErr_t
 skDequeDestroy(
     skDeque_t           deque);
 
 
-/*** Deque data manipulation functions ***/
+/*** Deque information functions ***/
 
 /**
- *    Return the status of a deque.
+ *    Returns the status of a deque: SKDQ_EMPTY if empty, SKDQ_SUCCESS if
+ *    non-empty, or SKDQ_ERROR if 'deque' is NULL.
  */
 skDQErr_t
 skDequeStatus(
@@ -134,10 +182,38 @@ skDequeSize(
     skDeque_t           deque);
 
 /**
- *    Pop an element from the front of 'deque'.  The call will block
- *    until an item is available in 'deque'.  It is the responsibility
- *    of the program using the deque to free any elements popped from
- *    it.
+ *    Peeks at the first element: Returns the first element of 'deque' without
+ *    removing it, or SKDQ_EMPTY if the deque is empty.  This function does
+ *    not remove items from the deque.  The caller must not free() an item
+ *    until it has been popped.
+ */
+skDQErr_t
+skDequeFront(
+    skDeque_t           deque,
+    void              **item);
+
+/**
+ *    Peeks at the last element: Like skDequeFront(), but returns the last
+ *    element of 'deque'.
+ */
+skDQErr_t
+skDequeBack(
+    skDeque_t           deque,
+    void              **item);
+
+
+/*** Deque data manipulation functions ***/
+
+/**
+ *    Pops an element from the front of 'deque' and returns SKDQ_SUCCESS.  If
+ *    'deque' is empty, blocks until an item is available or skDequeUnblock()
+ *    is called; in the latter case, the function returns SKDQ_UNBLOCKED.
+ *
+ *    Returns SKDQ_DESTROYED if skDequeDestroy() has been called on 'deque'
+ *    while waiting for an element.
+ *
+ *    It is the responsibility of the program using the deque to free any
+ *    elements popped from it.
  */
 skDQErr_t
 skDequePopFront(
@@ -145,8 +221,8 @@ skDequePopFront(
     void              **item);
 
 /**
- *    Like skDequePopFront(), but does not block and returns
- *    SKDQ_EMPTY if 'deque' is currently empty.
+ *    Like skDequePopFront(), but does not block and returns SKDQ_EMPTY if
+ *    'deque' is currently empty.
  */
 skDQErr_t
 skDequePopFrontNB(
@@ -154,9 +230,10 @@ skDequePopFrontNB(
     void              **item);
 
 /**
- *    Like skDequePopFront() except, when 'deque' is empty, waits
- *    'seconds' seconds for an item to appear in 'deque'.  If 'deque'
- *    is still empty after 'seconds' seconds, returns SKDQ_EMPTY.
+ *    Like skDequePopFront() except, when 'deque' is empty, waits 'seconds'
+ *    seconds for an item to appear in 'deque'.  If 'deque' is still empty
+ *    after 'seconds' seconds, returns SKDQ_EMPTY.  If 'seconds' is 0, this is
+ *    equivalent to skDequePopFront().
  */
 skDQErr_t
 skDequePopFrontTimed(
@@ -173,8 +250,7 @@ skDequePopBack(
     void              **item);
 
 /**
- *    Like skDequePopFrontNB(), but returns the last element of
- *    'deque'.
+ *    Like skDequePopFrontNB(), but returns the last element of 'deque'.
  */
 skDQErr_t
 skDequePopBackNB(
@@ -182,8 +258,7 @@ skDequePopBackNB(
     void              **item);
 
 /**
- *    Like skDequePopFrontTimed(), but returns the last element of
- *    'deque'.
+ *    Like skDequePopFrontTimed(), but returns the last element of 'deque'.
  */
 skDQErr_t
 skDequePopBackTimed(
@@ -192,46 +267,29 @@ skDequePopBackTimed(
     uint32_t            seconds);
 
 /**
- *    Unblock threads blocked on dequeue pops (each of which will
- *    return SKDQ_UNBLOCKED).  They will remain unblocked, ignoring
- *    blocking pushes, until re-blocked.
+ *    Unblocks threads blocked on dequeue pops (each of which will return
+ *    SKDQ_UNBLOCKED).  They will remain unblocked, ignoring blocking pops,
+ *    until re-blocked.
  */
 skDQErr_t
 skDequeUnblock(
     skDeque_t           deque);
 
 /**
- *    Reblock a deque unblocked by skDequeUnblock.  Deques are created
- *    in a blockable state.
+ *    Enables blocking behavior on a deque unblocked by skDequeUnblock().
+ *    Deques are created in a blockable state.
  */
 skDQErr_t
 skDequeBlock(
     skDeque_t           deque);
 
 /**
- *    Return the first element of 'deque' without removing it, or
- *    SKDQ_EMPTY if the deque is empty.  This function does not remove
- *    items from the deque.  Do not free() an item until it has been
- *    popped.
- */
-skDQErr_t
-skDequeFront(
-    skDeque_t           deque,
-    void              **item);
-
-/**
- *    Like skDequeFront(), but returns the last element of 'deque'.
- */
-skDQErr_t
-skDequeBack(
-    skDeque_t           deque,
-    void              **item);
-
-/**
- *    Push 'item' onto the front of 'deque'.  Deques maintain the item
- *    pointer only.  In order for the item to be of any use when it is
- *    later popped, it must survive its stay in the queue (not be
- *    freed).
+ *    Pushes 'item' onto the front of 'deque' and returns SKDQ_SUCCESS.
+ *    Returns SKDQ_ERROR on memory allocation error.
+ *
+ *    Deques maintain the item pointer only.  In order for the item to be of
+ *    any use when it is later popped, it must survive its stay in the queue
+ *    (not be freed).
  */
 skDQErr_t
 skDequePushFront(

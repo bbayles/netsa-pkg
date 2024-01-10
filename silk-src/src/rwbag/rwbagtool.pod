@@ -13,7 +13,7 @@ B<rwbagtool> - Perform high-level operations on binary Bag files
         [--mincounter=VALUE] [--maxcounter=VALUE]
         [--minkey=VALUE] [--maxkey=VALUE]
         [--invert] [--coverset] [--ipset-record-version=VERSION]
-        [--output-path=PATH]
+        [--output-path=PATH [--modify-inplace [--backup-path=BACKUP]]]
         [--note-strip] [--note-add=TEXT] [--note-file-add=FILE]
         [--compression-method=COMP_METHOD]
         [BAGFILE[ BAGFILE...]]
@@ -24,24 +24,40 @@ B<rwbagtool> - Perform high-level operations on binary Bag files
 
 =head1 DESCRIPTION
 
-B<rwbagtool> performs various operations on binary Bag files and
-creates a new Bag file.  A Bag is a set where each key is associated
-with a counter.  B<rwbag(1)> and B<rwbagbuild(1)> are the primary
-tools used to create a Bag file.  B<rwbagcat(1)> prints a binary Bag
-file as text.
+B<rwbagtool> performs various operations on binary Bag files
+(key-counter associations) and creates a new Bag file or an IPset
+file.  B<rwbagtool> can add Bags together, subtract a subset of data
+from a Bag, divide a Bag by another, compare the counters of two Bag
+files, perform key intersection of a Bag with an IPset, extract the
+keys of a Bag as an IPset, or filter Bag entries based on their key or
+counter values.
 
-B<rwbagtool> can add Bags together, subtract a subset of data from a
-Bag, divide a Bag by another, compare the counters of two Bag files,
-perform key intersection of a Bag with an IPset, extract the keys of a
-Bag as an IPset, or filter Bag entries based on their key or counter
-values.
+B<rwbagtool> reads Bags from the files and named pipes specified on
+the command line.  If no file names are given on the command line,
+B<rwbagtool> attempts to read a Bag from the standard input.  The
+names C<stdin> or C<-> may be used to force B<rwbagtool> to read from
+the standard input.  The resulting Bag or IPset is written to the
+location specified by the B<--output-path> switch or to the standard
+output if that switch is not provided.  If a I<BAGFILE> does not
+contain a Bag or an attempt is made to read binary input or write
+binary output to the terminal,, B<rwbagtool> prints an error to the
+standard error and exits abnormally.
 
-In the command synopsis above, I<BAGFILE> is a the name of a file or a
-named pipe, or the names C<stdin> or C<-> to have B<rwbagtool> read
-from the standard input.  If no Bag file names are given on the
-command line, B<rwbagtool> attempts to read a Bag from the standard
-input.  If I<BAGFILE> does not contain a Bag, B<rwbagtool> prints an
-error to stderr and exits abnormally.
+In SiLK 3.21.0, B<rwbagtool> added the B<--modify-inplace> switch
+which correctly handles the case when an input file is also used as
+the output file.  That switch causes B<rwbagtool> to write the output
+to a temporary file first and then replace the original output file.
+The B<--backup-path> switch may be used in conjunction with
+B<--modify-inplace> to set the pathname where the original output file
+is copied.
+
+A Bag is a set where each key is associated with a counter.
+B<rwbag(1)> and B<rwbagbuild(1)> are the primary tools used to create
+a Bag file.  B<rwbagcat(1)> prints a binary Bag file as text.
+
+SiLK 3.15.0 introduced Aggregate Bags that are capable of storing
+multiple keys and counters.  See B<rwaggbag(1)>, B<rwaggbagbuild(1)>,
+B<rwaggbagcat(1)>, and B<rwaggbagtool(1)> for more information.
 
 =head1 OPTIONS
 
@@ -63,8 +79,11 @@ summed.
 Sum the counters for each key for all Bag files given on the command
 line.  At least one Bag file must be specified, and any number of
 additional Bag files may be given.  If a key is not present in an
-input file, a counter of zero is used.  When no operation switch is
-specified on the command line, the add operation is the default.
+input file, a counter of zero is used.  The result contains the union
+of the keys from the input Bag files.  When no operation switch is
+specified on the command line, the add operation is the default.  If
+addition causes a counter to exceed the maximum value, B<rwbagtool>
+exits with an error.
 
 =item B<--subtract>
 
@@ -73,7 +92,8 @@ one Bag file must be specified, and any number of additional Bag files
 may be given.  If a key does not appear in the first Bag file,
 B<rwbagtool> assumes it has a value of 0.  If subtracting a key's
 counters results in a non-positive number, the key does appear in the
-resulting Bag file.
+resulting Bag file.  The result contains a subset of the keys in the
+first Bag file.
 
 =item B<--minimize>
 
@@ -103,8 +123,9 @@ division is less than 0.5, the key does not appear in the output.
 =item B<--scalar-multiply>=I<VALUE>
 
 Multiply each counter in the Bag file by the scalar I<VALUE>, where
-I<VALUE> is an integer in the range 1 to 18446744073709551615.  This
-switch requires a single Bag as input.
+I<VALUE> is an integer in the range 1 to 18446744073709551614.  This
+switch requires a single Bag as input.  On overflow, the lower 64-bits
+of the result are used as the counter's value.
 
 =item B<--compare>=I<OPERATION>
 
@@ -171,7 +192,7 @@ B<not> match an entry in I<SETFILE>.
 
 Cause the output to contain only those entries whose counter value is
 I<VALUE> or higher.  The allowable range is 1 to the maximum counter
-value; the default is 1.
+value (18446744073709551614); the default is 1.
 
 =item B<--maxcounter>=I<VALUE>
 
@@ -210,7 +231,8 @@ possible key is attributed to the counter for the maximum key; to
 prevent this, specify C<--maxcounter=4294967295> which removes all
 key-counter pairs whose counters do not fit into a key.  (The
 B<--bin-ips> switch on B<rwbagcat(1)> allows one to invert a Bag file
-as it is being printed.)
+as it is being printed.)  If inverting the Bag causes a counter to
+exceed the maximum value, B<rwbagtool> exits with an error.
 
 =item B<--coverset>
 
@@ -259,16 +281,43 @@ are usually more compact that version 4.
 
 =item B<--output-path>=I<PATH>
 
-Write the resulting Bag to I<PATH>, where I<PATH> is a filename, a
-named pipe, the keyword C<stderr> to write the output to the standard
-error, or the keyword C<stdout> or C<-> to write the output to the
-standard output.  If I<PATH> names an existing file, B<rwbagtool>
-exits with an error unless the SILK_CLOBBER environment variable is
-set, in which case I<PATH> is overwritten.  If this switch is not
-given, the output is written to the standard output.  Attempting to
-write the binary output to a terminal causes B<rwbagtool> to exit with
-an error.
+Write the resulting Bag or IPset to I<PATH>, where I<PATH> is a
+filename, a named pipe, the keyword C<stderr> to write the output to
+the standard error, or the keyword C<stdout> or C<-> to write the
+output to the standard output.  If I<PATH> names an existing file,
+B<rwbagtool> exits with an error unless the B<--modify-inplace> switch
+is given or the SILK_CLOBBER environment variable is set, in which
+case I<PATH> is overwritten.  If B<--output-path> is not given, the
+output is written to the standard output.  Attempting to write the
+binary output to a terminal causes B<rwbagtool> to exit with an error.
 
+=item B<--modify-inplace>
+
+Allow B<rwbagtool> to overwrite an existing file and properly account
+for the output file (I<PATH>) also being an input file.  When this
+switch is given, B<rwbagtool> writes the output to a temporary
+location first, then overwrites I<PATH>.  B<rwbagtool> attempts to
+copy the permission, owner, and group from the original file to the
+new file.  The switch is ignored when I<PATH> does not exist or the
+output is the standard output or standard error.  B<rwbagtool> exits
+with an error when this switch is given and I<PATH> is not a regular
+file.  If B<rwbagtool> encounters an error or is interrupted prior to
+closing the temporary file, the temporary file is removed.  See also
+B<--backup-path>.  I<Since SiLK 3.21.0.>
+
+=item B<--backup-path>=I<BACKUP>
+
+Move the file named by B<--output-path> (I<PATH>) to the path
+I<BACKUP> immediately prior to moving the temporary file created by
+B<--modify-inplace> over I<PATH>.  If I<BACKUP> names a directory, the
+file is moved into that directory.  This switch will overwrite an
+existing file.  If I<PATH> and I<BACKUP> point to the same location,
+the output is written to I<PATH> and no backup is created.  If
+B<BACKUP> cannot be created, the output is left in the temporary file
+and B<rwbagtool> exits with a message and an error.  B<rwbagtool>
+exits with an error if this switch is given without
+B<--modify-inplace>.  I<Since SiLK 3.21.0.>
+ 
 =item B<--note-strip>
 
 Do not copy the notes (annotations) from the input files to the output
@@ -765,14 +814,26 @@ SiLK 3.13.0.>
 
 =back
 
+=head1 NOTES
+
+The B<--modify-inplace> switch was added in SiLK 3.21.  When
+B<--backup-path> is also given, there is a small time window when the
+original file does not exist: the time between moving the original
+file to the backup location and moving the temporary file into place.
+
+B<rwbagtool> should handle counter overflow more consistently and
+gracefully.
+
 =head1 SEE ALSO
 
 B<rwbag(1)>, B<rwbagbuild(1)>, B<rwbagcat(1)>, B<rwfileinfo(1)>,
-B<rwset(1)>, B<rwsetbuild(1)>, B<rwsetcat(1)>, B<silk(7)>, B<zlib(3)>
+B<rwset(1)>, B<rwsetbuild(1)>, B<rwsetcat(1)>, B<rwaggbag(1)>,
+B<rwaggbagbuild(1)>, B<rwaggbagcat(1)>, B<rwaggbagtool(1)>,
+B<silk(7)>, B<zlib(3)>
 
 =cut
 
-$SiLK: rwbagtool.pod 4162e8e3f110 2018-02-26 19:01:54Z mthomas $
+$SiLK: rwbagtool.pod c35222643509 2023-08-03 21:43:50Z mthomas $
 
 Local Variables:
 mode:text

@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2017-2020 by Carnegie Mellon University.
+** Copyright (C) 2017-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -19,7 +61,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: rwaggbagbuild.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: rwaggbagbuild.c 6a1929dbf54d 2023-09-13 14:12:09Z mthomas $");
 
 #include <silk/rwascii.h>
 #include <silk/skaggbag.h>
@@ -101,7 +143,8 @@ typedef enum input_type_en {
 
 /* fields in addition to those provided by rwascii */
 static sk_stringmap_entry_t aggbagbuild_fields[] = {
-    {"ignore", AGGBAGBUILD_FIELD_IGNORED,   NULL, NULL},
+    {"ignore", AGGBAGBUILD_FIELD_IGNORED,
+     "field to be skipped when parsing (repeatable)", NULL},
     SK_STRINGMAP_SENTINEL
 };
 
@@ -182,6 +225,7 @@ static sk_aggbag_options_t ab_options;
 /* OPTIONS SETUP */
 
 typedef enum {
+    OPT_HELP_FIELDS,
 #if AB_SETBAG
     OPT_INPUT_TYPE,
 #endif  /* #if AB_SETBAG */
@@ -197,6 +241,7 @@ typedef enum {
 
 
 static struct option appOptions[] = {
+    {"help-fields",         NO_ARG,       0, OPT_HELP_FIELDS},
 #if AB_SETBAG
     {"input-type",          REQUIRED_ARG, 0, OPT_INPUT_TYPE},
 #endif  /* #if AB_SETBAG */
@@ -212,6 +257,7 @@ static struct option appOptions[] = {
 };
 
 static const char *appHelp[] = {
+    "Describe each supported field and exit. Def. no",
 #if AB_SETBAG
     ("Specify the type of input to read"),
 #endif  /* #if AB_SETBAG */
@@ -238,6 +284,7 @@ static const char *appHelp[] = {
 
 static int  appOptionsHandler(clientData cData, int opt_index, char *opt_arg);
 static int  createStringmap(void);
+static void helpFields(FILE *fh);
 #if AB_SETBAG
 static int  parseInputType(const char *type_string);
 #endif  /* #if AB_SETBAG */
@@ -557,6 +604,10 @@ appOptionsHandler(
     SK_UNUSED_PARAM(cData);
 
     switch ((appOptionsEnum)opt_index) {
+      case OPT_HELP_FIELDS:
+        helpFields(USAGE_FH);
+        exit(EXIT_SUCCESS);
+
 #if AB_SETBAG
       case OPT_INPUT_TYPE:
         if (parseInputType(opt_arg)) {
@@ -586,7 +637,7 @@ appOptionsHandler(
             skAppPrintOutOfMemory("vector entry");
             return 1;
         }
-        return 0;
+        break;
 
       case OPT_COLUMN_SEPARATOR:
         switch (opt_arg[0]) {
@@ -660,6 +711,29 @@ appOptionsHandler(
 
 
 /*
+ *  helpFields(fh);
+ *
+ *    Print a description of each field to the 'fh' file pointer
+ */
+static void
+helpFields(
+    FILE               *fh)
+{
+#define HELP_FIELDS_MSG                                                 \
+    ("The following names may be used in the --%s and --%s switches\n"  \
+     "for FIELD names. Names are case-insensitive"                      \
+     " and may be abbreviated to the\n"                                 \
+     "shortest unique prefix.\n")
+
+    fprintf(fh, HELP_FIELDS_MSG,
+            appOptions[OPT_FIELDS].name,
+            appOptions[OPT_CONSTANT_FIELD].name);
+
+    skStringMapPrintDetailedUsage(field_map, fh);
+}
+
+
+/*
  *  ok = createStringmap();
  *
  *    Create the global 'field_map'.  Return 0 on success, or -1 on
@@ -690,6 +764,7 @@ createStringmap(
                != NULL)
         {
             sm_entry.id = type;
+            sm_entry.description = skAggBagFieldTypeGetDescription(type);
             sm_err = skStringMapAddEntries(field_map, 1, &sm_entry);
             if (sm_err) {
                 skAppPrintErr("Unable to add %s field named '%s': %s",
@@ -697,9 +772,6 @@ createStringmap(
                                ? "key" : "counter"),
                               sm_entry.name, skStringMapStrerror(sm_err));
                 return -1;
-            }
-            if (SKAGGBAG_FIELD_ANY_COUNTRY == type) {
-                break;
             }
         }
     }
@@ -1202,14 +1274,10 @@ static int
 setAggBagFields(
     void)
 {
-    sk_aggbag_type_iter_t iter;
-    sk_aggbag_type_t field_type;
     sk_vector_t *key_vec;
     sk_vector_t *counter_vec;
     sk_aggbag_type_t *id_array;
     unsigned int id_count;
-    sk_bitmap_t *key_bitmap;
-    sk_bitmap_t *counter_bitmap;
     size_t missing_fields;
     sk_aggbag_type_t t;
     parsed_value_t *pv;
@@ -1272,9 +1340,6 @@ setAggBagFields(
         skAbortBadCase(input_type);
     }
 
-    key_bitmap = NULL;
-    counter_bitmap = NULL;
-
     /* ensure the flowtype type field is the final field */
     have_type = 0;
 
@@ -1293,31 +1358,7 @@ setAggBagFields(
         }
     }
 
-    /* we have a list of fields, but do not yet know which are
-     * considered keys and which are counters.  the following code
-     * determines that.  FIXME: This code should probably be in
-     * skaggbag.c. */
-
-    /* create bitmaps to hold key ids and counter ids */
-    if (skBitmapCreate(&key_bitmap, AGGBAGBUILD_ARRAY_SIZE)) {
-        skAppPrintOutOfMemory("bitmap");
-        exit(EXIT_FAILURE);
-    }
-    if (skBitmapCreate(&counter_bitmap, AGGBAGBUILD_ARRAY_SIZE)) {
-        skAppPrintOutOfMemory("bitmap");
-        skBitmapDestroy(&key_bitmap);
-        exit(EXIT_FAILURE);
-    }
-    skAggBagFieldTypeIteratorBind(&iter, SK_AGGBAG_KEY);
-    while (skAggBagFieldTypeIteratorNext(&iter, &field_type)) {
-        assert(AGGBAGBUILD_ARRAY_SIZE > (int)field_type);
-        skBitmapSetBit(key_bitmap, field_type);
-    }
-    skAggBagFieldTypeIteratorBind(&iter, SK_AGGBAG_COUNTER);
-    while (skAggBagFieldTypeIteratorNext(&iter, &field_type)) {
-        assert(AGGBAGBUILD_ARRAY_SIZE > (int)field_type);
-        skBitmapSetBit(counter_bitmap, field_type);
-    }
+    /* we have a list of fields; divide them into keys and counters */
 
     /* create vectors to hold the IDs that are being used */
     key_vec = skVectorNew(sizeof(sk_aggbag_type_t));
@@ -1326,8 +1367,6 @@ setAggBagFields(
         skAppPrintOutOfMemory("vector");
         skVectorDestroy(key_vec);
         skVectorDestroy(counter_vec);
-        skBitmapDestroy(&key_bitmap);
-        skBitmapDestroy(&counter_bitmap);
         exit(EXIT_FAILURE);
     }
 
@@ -1339,24 +1378,33 @@ setAggBagFields(
             continue;
         }
         for (i = 0; 0 == skVectorGetValue(&id, v, i); ++i) {
-            if (SKAGGBAG_FIELD_FTYPE_TYPE == id) {
-                have_type = 1;
-            } else if (skBitmapGetBit(key_bitmap, id) == 1) {
+            switch (skAggBagFieldTypeGetDisposition((sk_aggbag_type_t)id)) {
+              case SK_AGGBAG_KEY:
                 t = (sk_aggbag_type_t)id;
-                skVectorAppendValue(key_vec, &t);
-            } else if (skBitmapGetBit(counter_bitmap, id) == 1) {
+                if (SKAGGBAG_FIELD_FTYPE_TYPE == t) {
+                    have_type = 1;
+                } else {
+                    skVectorAppendValue(key_vec, &t);
+                }
+                break;
+              case SK_AGGBAG_COUNTER:
                 t = (sk_aggbag_type_t)id;
                 skVectorAppendValue(counter_vec, &t);
-            } else if (id != AGGBAGBUILD_FIELD_IGNORED || v != field_vec) {
+                break;
+              case 0:
+                if (id == AGGBAGBUILD_FIELD_IGNORED && v == field_vec) {
+                    break;
+                }
                 skAppPrintErr("Unknown field id %u", id);
+                skAbort();
+              default:
+                skAppPrintErr(
+                    "Unsupported type %u for field id %u",
+                    skAggBagFieldTypeGetDisposition((sk_aggbag_type_t)id), id);
                 skAbort();
             }
         }
     }
-
-    /* no longer need the bitmaps */
-    skBitmapDestroy(&key_bitmap);
-    skBitmapDestroy(&counter_bitmap);
 
     if (have_type) {
         t = SKAGGBAG_FIELD_FTYPE_TYPE;

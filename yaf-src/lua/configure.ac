@@ -5,7 +5,7 @@ dnl autotools build system for Lua
 dnl ------------------------------------------------------------------------
 
 AC_PREREQ(2.60)
-AC_INIT([Lua],[5.3.1],[],[lua],[http://www.lua.org])
+AC_INIT([Lua],[5.3.5],[],[lua],[http://www.lua.org])
 AC_CONFIG_AUX_DIR([autoconf])
 AC_CONFIG_SRCDIR([src/lua.h])
 AM_INIT_AUTOMAKE([1.11 foreign no-exeext no-installinfo])

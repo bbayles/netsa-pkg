@@ -1,13 +1,55 @@
-dnl Copyright (C) 2003-2020 by Carnegie Mellon University.
+dnl Copyright (C) 2003-2023 by Carnegie Mellon University.
 dnl
 dnl @OPENSOURCE_LICENSE_START@
-dnl See license information in LICENSE.txt
+dnl
+dnl SiLK 3.22.0
+dnl
+dnl Copyright 2023 Carnegie Mellon University.
+dnl
+dnl NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+dnl INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+dnl UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+dnl AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+dnl PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+dnl THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+dnl ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+dnl INFRINGEMENT.
+dnl
+dnl Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+dnl contact permission@sei.cmu.edu for full terms.
+dnl
+dnl [DISTRIBUTION STATEMENT A] This material has been approved for public
+dnl release and unlimited distribution.  Please see Copyright notice for
+dnl non-US Government use and distribution.
+dnl
+dnl GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+dnl
+dnl Contract No.: FA8702-15-D-0002
+dnl Contractor Name: Carnegie Mellon University
+dnl Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+dnl
+dnl The Government's rights to use, modify, reproduce, release, perform,
+dnl display, or disclose this software are restricted by paragraph (b)(2) of
+dnl the Rights in Noncommercial Computer Software and Noncommercial Computer
+dnl Software Documentation clause contained in the above identified
+dnl contract. No restrictions apply after the expiration date shown
+dnl above. Any reproduction of the software or portions thereof marked with
+dnl this legend must also reproduce the markings.
+dnl
+dnl Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+dnl Trademark Office by Carnegie Mellon University.
+dnl
+dnl This Software includes and/or makes use of Third-Party Software each
+dnl subject to its own license.
+dnl
+dnl DM23-0973
+dnl
 dnl @OPENSOURCE_LICENSE_END@
 
-dnl RCSIDENT("$SiLK: configure.ac 09f20fda742a 2020-04-16 20:58:11Z mthomas $")
+dnl RCSIDENT("$SiLK: configure.ac 79265507cc84 2023-11-15 22:40:22Z mthomas $")
 
 AC_PREREQ(2.64)
-AC_INIT([SiLK],[3.19.1],[netsa-help@cert.org],[silk],[http://tools.netsa.cert.org/silk/])
+AC_INIT([SiLK],[3.22.1],[netsa-help@cert.org],[silk],[http://tools.netsa.cert.org/silk/])
 AC_CONFIG_SRCDIR([src/libsilk/silk.h])
 AC_CONFIG_AUX_DIR([autoconf])
 AC_CONFIG_MACRO_DIR([m4])
@@ -22,7 +64,7 @@ AM_INIT_AUTOMAKE([1.12 foreign no-exeext no-installinfo std-options nostdinc par
 # silk_config1.h to silk_config.h, prefixing the macros with "SK_".
 # silk_config2.h is included by silk_config.h, silk_config2.h.in is
 # created by hand.
-AC_CONFIG_HEADER([src/include/silk/silk_config1.h:src/libsilk/silk_config1.h.in  src/include/silk/silk_config2.h:src/libsilk/silk_config2.h.in])
+AC_CONFIG_HEADERS([src/include/silk/silk_config1.h:src/libsilk/silk_config1.h.in  src/include/silk/silk_config2.h:src/libsilk/silk_config2.h.in])
 AH_TOP([/*
  *    The silk_config.h file is the first of two header files
  *    generated when you run configure.  The second is
@@ -45,8 +87,8 @@ AH_TOP([/*
 ])
 AX_PREFIX_CONFIG_H([src/include/silk/silk_config.h], [SK], [src/include/silk/silk_config1.h])
 
-AC_REVISION($SiLK: configure.ac 09f20fda742a 2020-04-16 20:58:11Z mthomas $)
-AC_COPYRIGHT([Copyright (C) 2001-2020 by Carnegie Mellon University
+AC_REVISION($SiLK: configure.ac 79265507cc84 2023-11-15 22:40:22Z mthomas $)
+AC_COPYRIGHT([Copyright (C) 2001-2023 by Carnegie Mellon University
 GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
 Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013])
 
@@ -198,13 +240,8 @@ AM_CONDITIONAL([HAVE_CYGWIN], [expr "$host" : '.*cygwin' >/dev/null 2>&1])
 # HEADER CHECKS
 
 # header existence
-AC_HEADER_DIRENT
-AC_HEADER_STDC
-AC_HEADER_SYS_WAIT
-AC_HEADER_TIME
-dnl AC_HEADER_STAT
 dnl AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([arpa/inet.h assert.h ctype.h errno.h fcntl.h float.h glob.h inttypes.h limits.h locale.h malloc.h math.h memory.h netdb.h netinet/in.h netinet/tcp.h pthread.h regex.h signal.h stdarg.h stddef.h stdint.h stdio.h stdlib.h string.h strings.h sys/mman.h sys/msg.h sys/resource.h sys/select.h sys/socket.h sys/statvfs.h sys/time.h sys/types.h sys/uio.h sys/un.h sys/wait.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h assert.h ctype.h dirent.h errno.h fcntl.h float.h glob.h inttypes.h limits.h locale.h malloc.h math.h memory.h netdb.h netinet/in.h netinet/tcp.h pthread.h regex.h signal.h stdarg.h stddef.h stdint.h stdio.h stdlib.h string.h strings.h sys/mman.h sys/msg.h sys/resource.h sys/select.h sys/socket.h sys/statvfs.h sys/time.h sys/types.h sys/uio.h sys/un.h sys/wait.h time.h unistd.h])
 
 # Handle the missing environ global on macOS
 AC_CHECK_DECLS([environ], ,
@@ -264,7 +301,7 @@ m4_ifdef([PKG_CHECK_MODULES],[],[m4_pattern_forbid([PKG_CHECK_MODULES])])
 # pkg_config library checks
 AX_PKG_CHECK_LIBMAXMINDDB([1.2.0])
 AX_PKG_CHECK_GNUTLS([2.12.0])
-AX_PKG_CHECK_LIBFIXBUF([1.7.0],[3.0.0])
+AX_PKG_CHECK_LIBFIXBUF([1.7.0],[3.99.0])
 AX_PKG_CHECK_LIBIPA([0.5.0])
 #AX_ARG_WITH_PCRE
 

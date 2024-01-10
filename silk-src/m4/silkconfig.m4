@@ -1,10 +1,52 @@
-dnl Copyright (C) 2004-2020 by Carnegie Mellon University.
+dnl Copyright (C) 2004-2023 by Carnegie Mellon University.
 dnl
 dnl @OPENSOURCE_LICENSE_START@
-dnl See license information in ../LICENSE.txt
+dnl
+dnl SiLK 3.22.0
+dnl
+dnl Copyright 2023 Carnegie Mellon University.
+dnl
+dnl NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+dnl INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+dnl UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+dnl AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+dnl PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+dnl THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+dnl ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+dnl INFRINGEMENT.
+dnl
+dnl Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+dnl contact permission@sei.cmu.edu for full terms.
+dnl
+dnl [DISTRIBUTION STATEMENT A] This material has been approved for public
+dnl release and unlimited distribution.  Please see Copyright notice for
+dnl non-US Government use and distribution.
+dnl
+dnl GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+dnl
+dnl Contract No.: FA8702-15-D-0002
+dnl Contractor Name: Carnegie Mellon University
+dnl Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+dnl
+dnl The Government's rights to use, modify, reproduce, release, perform,
+dnl display, or disclose this software are restricted by paragraph (b)(2) of
+dnl the Rights in Noncommercial Computer Software and Noncommercial Computer
+dnl Software Documentation clause contained in the above identified
+dnl contract. No restrictions apply after the expiration date shown
+dnl above. Any reproduction of the software or portions thereof marked with
+dnl this legend must also reproduce the markings.
+dnl
+dnl Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+dnl Trademark Office by Carnegie Mellon University.
+dnl
+dnl This Software includes and/or makes use of Third-Party Software each
+dnl subject to its own license.
+dnl
+dnl DM23-0973
+dnl
 dnl @OPENSOURCE_LICENSE_END@
 
-dnl RCSIDENT("$SiLK: silkconfig.m4 ef14e54179be 2020-04-14 21:57:45Z mthomas $")
+dnl RCSIDENT("$SiLK: silkconfig.m4 b44e8c62ec61 2023-08-30 18:14:07Z mthomas $")
 
 # ---------------------------------------------------------------------------
 # SILK_AC_COMPILER
@@ -13,7 +55,7 @@ dnl RCSIDENT("$SiLK: silkconfig.m4 ef14e54179be 2020-04-14 21:57:45Z mthomas $")
 #
 AC_DEFUN([SILK_AC_COMPILER],[
     AM_PROG_CC_C_O
-    AC_PROG_CPP
+    AC_REQUIRE([AC_PROG_CPP])
 
     AC_SUBST(SK_SRC_INCLUDES)
     AC_SUBST(SK_CPPFLAGS)
@@ -34,7 +76,7 @@ AC_DEFUN([SILK_AC_COMPILER],[
         cygwin* | mingw* | cegcc*)
             if test "X${enable_static}" = Xno
             then
-                AC_ERROR([You must specify --disable-shared or --enable-static to the configure script when building ${PACKAGE} on ${build_os}])
+                AC_MSG_ERROR([You must specify --disable-shared or --enable-static to the configure script when building ${PACKAGE} on ${build_os}])
             fi
             ;;
     esac
@@ -176,7 +218,7 @@ AC_DEFUN([SILK_AC_COMPILER],[
     if test $sk_add_warnings = 1
     then
         # User didn't specify the switch; so add the warning flags
-        SILK_AC_COMP_ADDITIONAL_FLAGS([WARN_CFLAGS],[-Wall -W -Wmissing-prototypes -Wformat=2 -Wdeclaration-after-statement -Wpointer-arith])
+        SILK_AC_COMP_ADDITIONAL_FLAGS([WARN_CFLAGS],[-Wall -Wextra -Wmissing-prototypes -Wformat=2 -Wdeclaration-after-statement -Wpointer-arith])
     fi
 
     # ENABLE/DISABLE ADDITIONAL WARNINGS: Similar to previous case
@@ -344,7 +386,7 @@ little endian
 #
 AC_DEFUN([SILK_AC_COMP_ADDITIONAL_FLAGS],[
     AC_LANG_CONFTEST([AC_LANG_SOURCE([[
-        int main(int argc, char **argv) { int x = 0; if (argv[argc-1]) { ++x; } return 0; } ]])])
+        int main(int argc, char **argv) { int x = 0; if (argv[argc-1]) { ++x; } return x; } ]])])
 
     for sk_cc_flag in $2
     do
@@ -569,7 +611,7 @@ AC_DEFUN([SILK_AC_INIT],[
     AC_SUBST(SPLINT_FLAGS)
     AC_SUBST(SILK_VERSION_INTEGER)
 
-    PACKING_LOGIC_PATH_DEFAULT="${srcdir}/site/twoway/packlogic-twoway.c"
+    PACKING_LOGIC_PATH_DEFAULT="site/twoway/packlogic-twoway.c"
     SILK_DATA_ROOTDIR_DEFAULT=/data
 
     # Set a version number as an integer.  Note: embedded [] are to
@@ -961,15 +1003,17 @@ AC_DEFUN([SILK_AC_ARG_ENABLE_PACKING_LOGIC],[
     then
         if test "x$enable_shared" = xno || test "x$STATIC_APPLICATIONS" != "x"
         then
-            sk_pack_path="$PACKING_LOGIC_PATH_DEFAULT"
+            sk_pack_path="${PACKING_LOGIC_PATH_DEFAULT}"
             AC_MSG_NOTICE([(${PACKAGE}) Using static packing logic because of static linking])
         fi
     fi
 
     if test "x$sk_pack_path" != "x"
     then
-        # If the path is relative, try to find it by prepending either
-        # the current directory or the source directory to it
+        # If the path is complete, ensure the file exists.  If the
+        # path is relative, check whether it exist relaltive to the
+        # current directory.  If not and we are building outside the
+        # source tree, check relative to ${srcdir}.
         if expr "x$sk_pack_path" : "x/" >/dev/null
         then
             # complete path
@@ -1070,7 +1114,7 @@ AC_DEFUN([SILK_AC_ARG_WITH_PYTHON],[
 
     # Variables to be compatible with AM_PATH_PYTHON()
     AC_SUBST([pythondir], [\${PYTHON_SITE_PKG}])
-    AC_SUBST([pkgpythondir], [\${pythondir}/$PACKAGE])
+    AC_SUBST([pkgpythondir], [\${pythondir}/${PACKAGE}])
 
     # Name of the script we use to get information from Python,
     # relative to srcdir.  Export it for "make dist" purposes.
@@ -1080,10 +1124,10 @@ AC_DEFUN([SILK_AC_ARG_WITH_PYTHON],[
     AC_SUBST([PYTHON_VERSION])
 
     # Path to our python information script
-    python_info="${srcdir}/$PYTHON_INFO_PROG"
+    python_info="${srcdir}/${PYTHON_INFO_PROG}"
 
     # Possible names for the python interpreter
-    python_names="python python2 python3 python2.7 python2.6 python3.7 python3.6 python3.5 python3.4 python3.3 python3.2 python3.1 python3.0 python2.5 python2.4 no"
+    python_names="python python3 python2 no"
 
     AC_ARG_VAR([PYTHON], [The Python interpreter to use for PySiLK support when no interpreter is specified to --with-python; must be Python 2.4 or later.])
 
@@ -1092,16 +1136,16 @@ AC_DEFUN([SILK_AC_ARG_WITH_PYTHON],[
         [AS_HELP_STRING([[--with-python[=PYTHON]]],
             [add PySiLK "SiLK in Python" support.  If an argument is provided, it is the path to the Python interpreter to use [no]])[]dnl
         ],[
-        if test "x$withval" = "xno"
+        if test "x${withval}" = "xno"
         then
             ENABLE_PYTHON=0
             python_declined=yes
-        elif test "x$withval" = "xyes"
+        elif test "x${withval}" = "xyes"
         then
             ENABLE_PYTHON=1
         else
             # Treat the argument as the python interpreter
-            PYTHON="$withval"
+            PYTHON="${withval}"
             ENABLE_PYTHON=1
         fi],
         [ENABLE_PYTHON=0])
@@ -1110,12 +1154,12 @@ AC_DEFUN([SILK_AC_ARG_WITH_PYTHON],[
         [AS_HELP_STRING([[--with-python-prefix[=DIR]]],
             [install Python modules under this prefix instead of in the Python site directory (e.g., PySiLK location will be DIR/lib/python*/silk/).  An empty argument means to use the value of PREFIX])[]dnl
         ],[
-        if test "x$withval" = "xyes"
+        if test "x${withval}" = "xyes"
         then
             sk_PYTHONPREFIX='${prefix}'
-        elif test "x$withval" != "xno"
+        elif test "x${withval}" != "xno"
         then
-            sk_PYTHONPREFIX="$withval"
+            sk_PYTHONPREFIX="${withval}"
         fi
         ])
 
@@ -1123,16 +1167,16 @@ AC_DEFUN([SILK_AC_ARG_WITH_PYTHON],[
         [AS_HELP_STRING([--with-python-site-dir=DIR],
             [install the files for the PySiLK module in DIR/silk/* instead of in the Python site directory])[]dnl
         ],[
-        if test "x$withval" = "xyes"
+        if test "x${withval}" = "xyes"
         then
             AC_MSG_ERROR([--with-python-site-dir requires an argument])
-        elif test "x$withval" != "xno"
+        elif test "x${withval}" != "xno"
         then
-            if test "x$sk_PYTHONPREFIX" != "x"
+            if test "x${sk_PYTHONPREFIX}" != "x"
             then
                 AC_MSG_ERROR([--with-python-site-dir cannot be used with --with-python-prefix])
             fi
-            sk_PYTHONSITEDIR="$withval"
+            sk_PYTHONSITEDIR="${withval}"
         fi
         ])
 
@@ -1140,13 +1184,13 @@ AC_DEFUN([SILK_AC_ARG_WITH_PYTHON],[
     then
         AC_MSG_NOTICE([(${PACKAGE}) Building without PySiLK support at user request])
         ENABLE_PYTHON=0
-    elif test "x$ENABLE_PYTHON" != "x1"
+    elif test "x${ENABLE_PYTHON}" != "x1"
     then
         AC_MSG_NOTICE([(${PACKAGE}) Building without PySiLK support: --with-python not specified])
         ENABLE_PYTHON=0
     else
         # Cannot build PySiLK when not building shared libraries
-        if test "x$enable_shared" = xno || test "x$STATIC_APPLICATIONS" != "x"
+        if test "x${enable_shared}" = xno || test "x${STATIC_APPLICATIONS}" != "x"
         then
             AC_MSG_NOTICE([(${PACKAGE}) Will not build PySiLK since static linking was requested])
             ENABLE_PYTHON=0
@@ -1155,212 +1199,217 @@ AC_DEFUN([SILK_AC_ARG_WITH_PYTHON],[
         fi
     fi
 
-    if test "x$PYTHON" != "x"
+    if test "x${PYTHON}" != "x"
     then
         # User specified the location of python; get full path to it
-        AC_PATH_PROG([PYTHON], [$PYTHON], [$PYTHON])
+        AC_PATH_PROG([PYTHON], [${PYTHON}], [${PYTHON}])
 
-        if test -f "$PYTHON" && test -x "$PYTHON"
+        if test -f "${PYTHON}" && test -x "${PYTHON}"
         then
             :
         else
-            AC_MSG_ERROR([(${PACKAGE}) Specified Python program '$PYTHON' is not an executable file])
+            AC_MSG_ERROR([(${PACKAGE}) Specified Python program '${PYTHON}' is not an executable file])
         fi
 
-        # We require at least Python 2.4.
-        AC_MSG_CHECKING([whether version of $PYTHON is 2.4 or later])
+        # Get version of python, which also ensures >= Python 2.4.
+        AC_MSG_CHECKING([version of ${PYTHON}])
 
-        echo "$as_me:$LINENO: python_info_result=\`\"$PYTHON\" \"$python_info\" --print-version\`" >&AS_MESSAGE_LOG_FD
-        python_info_result=`"$PYTHON" "$python_info" --print-version 2>&AS_MESSAGE_LOG_FD`
+        echo "${as_me}:${LINENO}: python_info_result=\`\"${PYTHON}\" \"${python_info}\" --print-version\`" >&AS_MESSAGE_LOG_FD
+        python_info_result=`"${PYTHON}" "${python_info}" --print-version 2>&AS_MESSAGE_LOG_FD`
         python_status=$?
-        echo "$as_me:$LINENO: \$python_info_result = $python_info_result" >&AS_MESSAGE_LOG_FD
-        echo "$as_me:$LINENO: \$? = $python_status" >&AS_MESSAGE_LOG_FD
+        echo "${as_me}:${LINENO}: \${python_info_result} = ${python_info_result}" >&AS_MESSAGE_LOG_FD
+        echo "${as_me}:${LINENO}: \$? = ${python_status}" >&AS_MESSAGE_LOG_FD
 
-        if test $python_status -eq 0
+        if test ${python_status} -eq 0
         then
-            PYTHON_VERSION="$python_info_result"
-            AC_MSG_RESULT([yes])
+            PYTHON_VERSION="${python_info_result}"
+            AC_MSG_RESULT([${PYTHON_VERSION}])
         else
-            AC_MSG_RESULT([no])
-            if test "x$ENABLE_PYTHON" = "x1"
+            if test "x${python_info_result}" != x
             then
-                AC_MSG_ERROR([(${PACKAGE}) PySiLK cannot use the Python program '$PYTHON'])
+                AC_MSG_RESULT([${python_info_result}])
+            else
+                AC_MSG_RESULT([unknown])
             fi
+            if test "x${ENABLE_PYTHON}" = "x1"
+            then
+                AC_MSG_ERROR([(${PACKAGE}) PySiLK cannot use the Python program '${PYTHON}'])
+            fi
+        fi
+
+        # Get the basename of python and warn if it ends with 'python'
+        py_basename=`echo "x${PYTHON}" | sed 's%.*/%%'`
+        if test "x${py_basename}" = xpython
+        then
+            AC_MSG_WARN([using 'python3' or 'python2' explicitly is recommended over 'python'])
         fi
 
     else
         # Find a python interpreter since none was specified.  We
         # always want to do this since we need to support stand-alone
-        # python scripts in addition to PySiLK.  If we find python2.4
-        # first go ahead and use it.  However, see if other versions
-        # of python are available, and if so, suggest that the user
-        # use them instead.
+        # python scripts in addition to PySiLK.  Take the first one we
+        # find.
 
-        sk_python26=
-        sk_python26_version=
-        AC_MSG_CHECKING([for a suitable Python program])
-        for maybe_python in $python_names
+        # It is tempting to use AC_PATH_PROGS_FEATURE_CHECK() to loop
+        # over ${python_names} here, but that chooses the first of any
+        # of the candidates it finds on PATH
+
+        AC_MSG_CHECKING([for a suitable python])
+        for maybe_python in ${python_names}
         do
-            if test $maybe_python = no
+            if test ${maybe_python} = no
             then
                 break
             fi
+            python_status=1
 
-            echo "$as_me:$LINENO: python_info_result=\`\"$maybe_python\" \"$python_info\" --print-version\`" >&AS_MESSAGE_LOG_FD
-            python_info_result=`"$maybe_python" "$python_info" --print-version 2>&AS_MESSAGE_LOG_FD`
-            python_status=$?
-            echo "$as_me:$LINENO: \$python_info_result = $python_info_result" >&AS_MESSAGE_LOG_FD
-            echo "$as_me:$LINENO: \$? = $python_status" >&AS_MESSAGE_LOG_FD
+            AC_PATH_PROGS_FEATURE_CHECK([PYTHON], [${maybe_python}], [
 
-            if test $python_status -eq 0
-            then
-                if test "x$PYTHON" = "x"
+                echo "${as_me}:${LINENO}: python_info_result=\`\"${ac_path_PYTHON}\" \"${python_info}\" --print-version\`" >&AS_MESSAGE_LOG_FD
+                python_info_result=`"${ac_path_PYTHON}" "${python_info}" --print-version 2>&AS_MESSAGE_LOG_FD`
+                python_status=$?
+                echo "${as_me}:${LINENO}: \${python_info_result} = ${python_info_result}" >&AS_MESSAGE_LOG_FD
+                echo "${as_me}:${LINENO}: \$? = ${python_status}" >&AS_MESSAGE_LOG_FD
+
+                if test ${python_status} -eq 0
                 then
-                    # first python we found
-                    PYTHON="$maybe_python"
-                    PYTHON_VERSION="$python_info_result"
-                    if expr "x$python_info_result" : 'x2\.[[45]]' >/dev/null
-                    then
-                        :
-                    else
-                        break
-                    fi
-                elif expr "x$python_info_result" : 'x2\.[[45]]' >/dev/null
-                then
-                    # not first python, but still 2.4 or 2.5
-                    :
-                else
-                    # this is a better python
-                    sk_python26="$maybe_python"
-                    sk_python26_version="$python_info_result"
-                    break
+                    ac_cv_path_PYTHON="${ac_path_PYTHON}"
+                    ac_path_PYTHON_found=:
                 fi
+            ])
+
+            if test ${python_status} -eq 0
+            then
+                # TODO: If "python" is a symlink, resolve the link
+                # symlink to at least "python2" or "python3"
+                PYTHON="${ac_cv_path_PYTHON}"
+                PYTHON_VERSION="${python_info_result}"
+                break
             fi
         done
 
-        if test "x$ENABLE_PYTHON" != "x1" && test "x$sk_python26" != "x"
+        if test x"${PYTHON}" != "x"
         then
-            # when PySiLK not requested, use python2.6 or later
-            PYTHON="$sk_python26"
-            PYTHON_VERSION="$sk_python26_version"
-        fi
-
-        if test x"$PYTHON" != "x"
-        then
-            AC_MSG_RESULT([$PYTHON])
-            AC_PATH_PROG([PYTHON], [$PYTHON], [])
-        elif test "x$ENABLE_PYTHON" = "x1"
+            AC_MSG_RESULT([${PYTHON} (version ${PYTHON_VERSION})])
+        elif test "x${ENABLE_PYTHON}" = "x1"
         then
             AC_MSG_RESULT([none found. PySiLK support disabled.])
             ENABLE_PYTHON=0
         else
-            AC_MSG_RESULT([no])
+            AC_MSG_RESULT([none found])
         fi
     fi
 
-    # Now, store result of running $python_info in a file that we load
+    # Now, store result of running ${python_info} in a file that we load
     python_info_result="./python-config.sh"
 
     # Get the required info from python
-    if test "x$ENABLE_PYTHON" != "x1"
+    if test "x${ENABLE_PYTHON}" != "x1"
     then
         # even when building without PySiLK support, get version of
         # python to determine the source files for python scripts not
         # related to PySiLK (e.g., rwidsquery).
         ENABLE_PYTHON=0
     else
-        if test "x$PYTHON" = "xno" || test ! -x "$PYTHON"
+        if test "x${PYTHON}" = "xno" || test ! -x "${PYTHON}"
         then
-            AC_MSG_ERROR([Specified Python program '$PYTHON' does not exist])
+            AC_MSG_ERROR([Specified Python program '${PYTHON}' does not exist])
         fi
 
-        if test "x$PYTHON_VERSION" = "x"
+        if test "x${PYTHON_VERSION}" = "x"
         then
-            AC_MSG_FAILURE([PySiLK cannot use the Python program '$PYTHON'])
+            AC_MSG_FAILURE([PySiLK cannot use the Python program '${PYTHON}'])
         fi
 
-        # remove old script result and unset version
-        rm -f $python_info_result
+        # remove old script result and unset version (caching old)
+        rm -f ${python_info_result}
+        py_old_version="${PYTHON_VERSION}"
         PYTHON_VERSION=
 
+        AC_MSG_CHECKING([python embedding settings])
+
         # run the python-info script
-        echo "$as_me:$LINENO: PYTHONPREFIX=\"$sk_PYTHONPREFIX\" PYTHONSITEDIR=\"$sk_PYTHONSITEDIR\" \"$PYTHON\" \"$python_info\" --filename \"$python_info_result\"" >&AS_MESSAGE_LOG_FD
-        PYTHONPREFIX="$sk_PYTHONPREFIX" PYTHONSITEDIR="$sk_PYTHONSITEDIR" "$PYTHON" "$python_info" --filename "$python_info_result"
+        echo "${as_me}:${LINENO}: PYTHONPREFIX=\"${sk_PYTHONPREFIX}\" PYTHONSITEDIR=\"${sk_PYTHONSITEDIR}\" \"${PYTHON}\" \"${python_info}\" --filename \"${python_info_result}\"" >&AS_MESSAGE_LOG_FD
+        PYTHONPREFIX="${sk_PYTHONPREFIX}" PYTHONSITEDIR="${sk_PYTHONSITEDIR}" "${PYTHON}" "${python_info}" --filename "${python_info_result}"
         python_status=$?
-        echo "$as_me:$LINENO: \$? = $python_status" >&AS_MESSAGE_LOG_FD
+        echo "${as_me}:${LINENO}: \$? = ${python_status}" >&AS_MESSAGE_LOG_FD
 
         # pull in results from the script
-        if test $python_status -eq 0 && test -f "$python_info_result"
+        if test ${python_status} -eq 0 && test -f "${python_info_result}"
         then
-            . "$python_info_result"
+            . "${python_info_result}"
         else
-            AC_MSG_FAILURE([failed to execute '$PYTHON $python_info'])
+            AC_MSG_FAILURE([failed to execute '${PYTHON} ${python_info}'])
         fi
 
         # verify that we have a version
-        if test -z "$PYTHON_VERSION"
+        if test -z "${PYTHON_VERSION}"
         then
-            AC_MSG_ERROR([error running '$PYTHON $python_info'])
+            AC_MSG_ERROR([error running '${PYTHON} ${python_info}'])
+        fi
+        AC_MSG_RESULT([yes])
+
+        # compare Python versions (not expected to happen)
+        if test "x${PYTHON_VERSION}" != "x${py_old_version}"
+        then
+            AC_MSG_NOTICE([(${PACKAGE}) Using ${PYTHON_VERSION} for PySiLK support])
         fi
 
-        # print results
-        AC_MSG_CHECKING([for Python version])
-        AC_MSG_RESULT($PYTHON_VERSION)
+        #|--# print results
+        #|--AC_MSG_CHECKING([for Python site package directory])
+        #|--AC_MSG_RESULT(${PYTHON_SITE_PKG})
+        #|--
+        #|--AC_MSG_CHECKING([for Python CPPFLAGS])
+        #|--if test "x${PYTHON_CPPFLAGS}" = "x"
+        #|--then
+        #|--    AC_MSG_RESULT([none])
+        #|--else
+        #|--    AC_MSG_RESULT(${PYTHON_CPPFLAGS})
+        #|--fi
 
-        AC_MSG_CHECKING([for Python site file directory])
-        AC_MSG_RESULT($PYTHON_SITE_PKG)
-
-        AC_MSG_CHECKING([for Python CPPFLAGS])
-        if test "x$PYTHON_CPPFLAGS" = "x"
-        then
-            AC_MSG_RESULT([none])
-        else
-            AC_MSG_RESULT($PYTHON_CPPFLAGS)
-        fi
-
-        AC_MSG_CHECKING([for Python LDFLAGS])
+        #|--AC_MSG_CHECKING([for Python LDFLAGS])
         # Replace Python's version of pthread flags with our own
-        if test "x$PYTHON_LDFLAGS_PTHREAD" != "x"
+        if test "x${PYTHON_LDFLAGS_PTHREAD}" != "x"
         then
-            if test "x$PYTHON_LDFLAGS" != "x"
+            if test "x${PYTHON_LDFLAGS}" != "x"
             then
-                PYTHON_LDFLAGS="$PYTHON_LDFLAGS $PTHREAD_LDFLAGS"
+                PYTHON_LDFLAGS="${PYTHON_LDFLAGS} ${PTHREAD_LDFLAGS}"
             else
-                PYTHON_LDFLAGS="$PTHREAD_LDFLAGS"
+                PYTHON_LDFLAGS="${PTHREAD_LDFLAGS}"
             fi
         fi
-        if test "x$PYTHON_LDFLAGS" = "x"
-        then
-            AC_MSG_RESULT([none])
-        else
-            AC_MSG_RESULT($PYTHON_LDFLAGS)
-        fi
+        #|--if test "x${PYTHON_LDFLAGS}" = "x"
+        #|--then
+        #|--    AC_MSG_RESULT([none])
+        #|--else
+        #|--    AC_MSG_RESULT(${PYTHON_LDFLAGS})
+        #|--fi
 
-        AC_MSG_CHECKING([for Python embedded LDFLAGS])
-        if test "x$PYTHON_LDFLAGS_EMBEDDED_PTHREAD" != "x"
+        #|--AC_MSG_CHECKING([for Python embedded LDFLAGS])
+        if test "x${PYTHON_LDFLAGS_EMBEDDED_PTHREAD}" != "x"
         then
-            if test "x$PYTHON_LDFLAGS_EMBEDDED" != "x"
+            if test "x${PYTHON_LDFLAGS_EMBEDDED}" != "x"
             then
-                PYTHON_LDFLAGS_EMBEDDED="$PYTHON_LDFLAGS_EMBEDDED $PTHREAD_LDFLAGS"
+                PYTHON_LDFLAGS_EMBEDDED="${PYTHON_LDFLAGS_EMBEDDED} ${PTHREAD_LDFLAGS}"
             else
-                PYTHON_LDFLAGS_EMBEDDED="$PTHREAD_LDFLAGS"
+                PYTHON_LDFLAGS_EMBEDDED="${PTHREAD_LDFLAGS}"
             fi
         fi
-        if test "x$PYTHON_LDFLAGS_EMBEDDED" = "x"
-        then
-            AC_MSG_RESULT([none])
-        else
-            AC_MSG_RESULT($PYTHON_LDFLAGS_EMBEDDED)
-        fi
-
-        AC_MSG_CHECKING([for Python shared library filename extension])
-        AC_MSG_RESULT($PYTHON_SO_EXTENSION)
+        #|--if test "x${PYTHON_LDFLAGS_EMBEDDED}" = "x"
+        #|--then
+        #|--    AC_MSG_RESULT([none])
+        #|--else
+        #|--    AC_MSG_RESULT(${PYTHON_LDFLAGS_EMBEDDED})
+        #|--fi
+        #|--
+        #|--AC_MSG_CHECKING([for Python shared library filename extension])
+        #|--AC_MSG_RESULT(${PYTHON_SO_EXTENSION})
 
         # verify that the library and header files are usable.  first,
         # cache current values
-        sk_save_LDFLAGS="$LDFLAGS"
-        sk_save_LIBS="$LIBS"
-        sk_save_CPPFLAGS="$CPPFLAGS"
+        sk_save_LDFLAGS="${LDFLAGS}"
+        sk_save_LIBS="${LIBS}"
+        sk_save_CPPFLAGS="${CPPFLAGS}"
 
         # add python values
 
@@ -1368,12 +1417,13 @@ AC_DEFUN([SILK_AC_ARG_WITH_PYTHON],[
         # (Ubuntu 11.10) require the -lpython<vers> to go after
         # conftest.c i the gcc invocation.  On the other hand, libtool
         # seems to deal with it just fine in the pysilk makefile.
-        LIBS="$sk_save_LIBS $PYTHON_LDFLAGS_EMBEDDED"
-        CPPFLAGS="$sk_save_CPPFLAGS $PYTHON_CPPFLAGS"
+        LIBS="${sk_save_LIBS} ${PYTHON_LDFLAGS_EMBEDDED}"
+        CPPFLAGS="${sk_save_CPPFLAGS} ${PYTHON_CPPFLAGS}"
 
-        AC_MSG_CHECKING([usability of $PYTHON_LIBNAME library and headers])
+        AC_MSG_CHECKING([usability of ${PYTHON_LIBNAME} library and headers])
         AC_LINK_IFELSE(
             [AC_LANG_PROGRAM([
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
                 ],[
 Py_InitializeEx(1);
@@ -1384,51 +1434,51 @@ Py_InitializeEx(1);
         ])
 
         # restore cached values
-        LDFLAGS="$sk_save_LDFLAGS"
-        LIBS="$sk_save_LIBS"
-        CPPFLAGS="$sk_save_CPPFLAGS"
+        LDFLAGS="${sk_save_LDFLAGS}"
+        LIBS="${sk_save_LIBS}"
+        CPPFLAGS="${sk_save_CPPFLAGS}"
 
         AC_MSG_CHECKING([for system-specific Python problems])
-        if test -n "$PYTHON_ERROR"
+        if test -n "${PYTHON_ERROR}"
         then
             AC_MSG_ERROR([python error: ${PYTHON_ERROR}])
         fi
         AC_MSG_RESULT([none])
 
-        rm -f $python_info_result
+        rm -f ${python_info_result}
         ENABLE_PYTHON=1
     fi
 
     # Set variables used in the RPM spec file
-    if test "x$ENABLE_PYTHON" = "x1"
+    if test "x${ENABLE_PYTHON}" = "x1"
     then
         AC_MSG_NOTICE([(${PACKAGE}) Including PySiLK support])
     fi
 
-    if test "x$PYTHON_VERSION" = "x"
+    if test "x${PYTHON_VERSION}" = "x"
     then
         AC_MSG_NOTICE([(${PACKAGE}) Will not build some scripts which require Python 2.4 or later])
-    elif expr "x$PYTHON_VERSION" : 'x2\.[[45]]' >/dev/null
+    elif expr "x${PYTHON_VERSION}" : 'x2\.[[45]]' >/dev/null
     then
         AC_MSG_NOTICE([(${PACKAGE}) "make check" will skip daemon tests which require Python 2.6 or later])
     fi
 
-    AC_DEFINE_UNQUOTED([ENABLE_PYTHON], [$ENABLE_PYTHON],
+    AC_DEFINE_UNQUOTED([ENABLE_PYTHON], [${ENABLE_PYTHON}],
         [Define to 1 to build with support for Python.])
 
     # this is true if we are building with python plugin support
-    AM_CONDITIONAL([HAVE_PYTHON], [test "x$ENABLE_PYTHON" = "x1"])
+    AM_CONDITIONAL([HAVE_PYTHON], [test "x${ENABLE_PYTHON}" = "x1"])
 
     # determine version of python
     AM_CONDITIONAL([HAVE_PYTHON24],
-                   [expr "x$PYTHON_VERSION" : 'x2\.[[45]]' >/dev/null])
+                   [expr "x${PYTHON_VERSION}" : 'x2\.[[45]]' >/dev/null])
     AM_CONDITIONAL([HAVE_PYTHON30],
-                   [expr "x$PYTHON_VERSION" : 'x3\.' >/dev/null])
+                   [expr "x${PYTHON_VERSION}" : 'x3\.' >/dev/null])
 
     # this is true if python 2.4 or newer was found. this is used to
     # determine whether stand-alone python scripts are built
     AM_CONDITIONAL([HAVE_PYTHONBIN],
-                   [expr "x$PYTHON_VERSION" : 'x[[23]]' >/dev/null ])
+                   [expr "x${PYTHON_VERSION}" : 'x[[23]]' >/dev/null ])
 
 ])# SILK_AC_PYTHON
 

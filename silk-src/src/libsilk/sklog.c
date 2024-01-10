@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2001-2020 by Carnegie Mellon University.
+** Copyright (C) 2001-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -20,7 +62,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: sklog.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: sklog.c 05d39531ae59 2023-05-17 15:23:40Z mthomas $");
 
 #include <silk/sklog.h>
 #include <silk/skstringmap.h>
@@ -617,7 +659,8 @@ logRotatedLog(
                 /* restore the old settings */
                 logctx->l_sim.fp = rotated_fp;
                 strncpy(logctx->l_sim.path, rotated_path,
-                        sizeof(logctx->l_sim.path));
+                        sizeof(logctx->l_sim.path) - 1);
+                logctx->l_sim.path[sizeof(logctx->l_sim.path) - 1] = '\0';
                 rotated_fp = NULL;
                 free(rotated_path);
                 rotated_path = NULL;
@@ -1596,12 +1639,12 @@ sklogSetDestination(
                           logOptions[OPT_LOG_DESTINATION].name, destination);
             return -1;
         }
-        strncpy(logctx->l_sim.path, destination, sizeof(logctx->l_sim.path));
-        if ('\0' != logctx->l_sim.path[sizeof(logctx->l_sim.path)-1]) {
+        if (strlen(destination) >= sizeof(logctx->l_sim.path)) {
             skAppPrintErr("Invalid %s: The path is too long",
                           logOptions[OPT_LOG_DESTINATION].name);
             return -1;
         }
+        strncpy(logctx->l_sim.path, destination, sizeof(logctx->l_sim.path));
         return 0;
     }
     /* else, see which of the possible destinations it matches */
@@ -1686,20 +1729,20 @@ sklogSetDirectory(
     }
 
     /* copy directory name */
-    strncpy(logctx->l_rot.dir, dir_name, sizeof(logctx->l_rot.dir));
-    if ('\0' != logctx->l_rot.dir[sizeof(logctx->l_rot.dir)-1]) {
+    if (strlen(dir_name) >= sizeof(logctx->l_rot.dir)) {
         skAppPrintErr("Invalid %s '%s': Value is too long",
                       logOptions[OPT_LOG_DIRECTORY].name, dir_name);
         return -1;
     }
+    strncpy(logctx->l_rot.dir, dir_name, sizeof(logctx->l_rot.dir));
 
     /* copy base name */
-    strncpy(logctx->l_rot.basename, base_name, sizeof(logctx->l_rot.basename));
-    if ('\0' != logctx->l_rot.basename[sizeof(logctx->l_rot.basename)-1]) {
+    if (strlen(base_name) >= sizeof(logctx->l_rot.basename)) {
         skAppPrintErr("Invalid %s '%s': Value is too long",
                       logOptions[OPT_LOG_BASENAME].name, base_name);
         return -1;
     }
+    strncpy(logctx->l_rot.basename, base_name, sizeof(logctx->l_rot.basename));
 
     logctx->l_dest = SKLOG_DEST_DIRECTORY;
     return 0;

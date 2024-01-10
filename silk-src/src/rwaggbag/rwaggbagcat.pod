@@ -6,7 +6,9 @@ B<rwaggbagcat> - Output a binary Aggregate Bag file as text
 
 =head1 SYNOPSIS
 
-  rwaggbagcat [--timestamp-format=FORMAT] [--ip-format=FORMAT]
+  rwaggbagcat [--fields=FIELDS
+        [--missing-field=FIELD=STRING [--missing-field=FIELD=STRING...]]]
+        [--timestamp-format=FORMAT] [--ip-format=FORMAT]
         [--integer-sensors] [--integer-tcp-flags]
         [--no-titles] [--no-columns] [--column-separator=C]
         [--no-final-delimiter] [{--delimited | --delimited=C}]
@@ -16,6 +18,8 @@ B<rwaggbagcat> - Output a binary Aggregate Bag file as text
 
   rwaggbagcat --help
 
+  rwaggbagcat --help-fields
+
   rwaggbagcat --version
 
 =head1 DESCRIPTION
@@ -23,6 +27,9 @@ B<rwaggbagcat> - Output a binary Aggregate Bag file as text
 B<rwaggbagcat> reads a binary Aggregate Bag as created by
 B<rwaggbag(1)> or B<rwaggbagbuild(1)>, converts it to text, and
 outputs it to the standard output, the pager, or the specified file.
+
+As of SiLK 3.22.0, B<rwaggbagcat> accepts a B<--fields> switch to
+control the order in which the fields are printed.
 
 B<rwaggbagcat> reads the I<AGGBAGFILE>s specified on the command line;
 if no I<AGGBAGFILE> arguments are given, B<rwaggbagcat> attempts to
@@ -35,7 +42,11 @@ abnormally.
 When multiple I<AGGBAGFILE>s are specified on the command line, each
 is handled individually.  To process the files as a single Aggregate
 Bag, use B<rwaggbagtool(1)> to combine the Aggregate Bags and pipe the
-output of B<rwaggbagtool> into B<rwaggbagcat>.
+output of B<rwaggbagtool> into B<rwaggbagcat>.  Using B<--fields> in
+this situation allows for a consistent output across the multiple
+files and causes the titles to appear only once.  No value is printed
+if B<--fields> names a key or counter that is not present in one of
+the files.
 
 =head1 OPTIONS
 
@@ -45,6 +56,201 @@ as B<--arg>=I<param> or S<B<--arg> I<param>>, though the first form is
 required for options that take optional parameters.
 
 =over 4
+
+=item B<--fields>=I<FIELDS>
+
+Print only the key and/or counter fields given in this comma separated
+list.  Fields are printed in the order given in I<FIELDS>, and keys
+and counters may appear in any order or not at all.  Specifying
+B<--fields> only changes the order in which the columns are printed,
+it does not re-order the entries (rows) in the Aggregate Bag file.  If
+I<FIELDS> includes fields not present in an input Aggregate Bag file,
+prints the string specified for that field by B<--missing-field> or an
+empty value.  The title line is printed only one time even if multiple
+Aggregate Bag files are read.
+
+The names of the fields that may appear in I<FIELDS> are:
+
+=over 4
+
+=item sIPv4
+
+source IP address, IPv4 only
+
+=item dIPv4
+
+destination IP address, IPv4 only
+
+=item nhIPv4
+
+next hop IP address, IPv4 only
+
+=item any-IPv4
+
+a generic IPv4 address
+
+=item sIPv6
+
+source IP address, IPv6 only
+
+=item dIPv6
+
+destination IP address, IPv6 only
+
+=item nhIPv6
+
+next hop IP address, IPv6 only
+
+=item any-IPv6
+
+a generic IPv6 address
+
+=item sPort
+
+source port
+
+=item dPort
+
+destination port
+
+=item any-port
+
+a generic port
+
+=item protocol
+
+IP protocol
+
+=item packets
+
+packet count
+
+=item bytes
+
+byte count
+
+=item flags
+
+bit-wise OR of TCP flags over all packets
+
+=item initialFlags
+
+TCP flags on the first packet
+
+=item sessionFlags
+
+bit-wise OR of TCP flags on the second through final packet
+
+=item sTime
+
+starting time in seconds
+
+=item eTime
+
+ending time in seconds
+
+=item any-time
+
+a generic time in seconds
+
+=item duration
+
+duration of flow
+
+=item sensor
+
+sensor name or ID at the collection point
+
+=item class
+
+class at collection point
+
+=item type
+
+type at collection point
+
+=item input
+
+router SNMP ingress interface or vlanId
+
+=item output
+
+router SNMP egress interface or postVlanId
+
+=item any-snmp
+
+a generic SNMP value
+
+=item attribute
+
+flow attributes set by the flow generator
+
+=item application
+
+guess as to the content of the flow
+
+=item icmpType
+
+ICMP type
+
+=item icmpCode
+
+ICMP code
+
+=item scc
+
+the country code of the source
+
+=item dcc
+
+the country code of the destination
+
+=item any-cc
+
+a generic country code
+
+=item custom-key
+
+a generic key
+
+=item records
+
+counter: count of records that match the key
+
+=item sum-packets
+
+counter: sum of packet counts
+
+=item sum-bytes
+
+counter: sum of byte counts
+
+=item sum-duration
+
+counter: sum of duration values
+
+=item custom-counter
+
+counter: a generic counter
+
+=back
+
+I<Since SiLK 3.22.0>.
+
+=for comment
+##########################################################################
+# The end of the --fields help
+
+=item B<--missing-field>=I<FIELD>B<=>I<STRING>
+
+When B<--fields> is active, print I<STRING> as the value for I<FIELD>
+when I<FIELD> is not present in the input Aggregate Bag file.  The
+default value is the empty string.  The switch may be repeated to set
+the missing value string for multiple fields.  B<rwaggbagcat> exits
+with an error if I<FIELD> is not present in B<--fields> or if this
+switch is specified but B<--fields> is not.  I<STRING> may be any
+string.
+I<Since SiLK 3.22.0>.
 
 =item B<--timestamp-format>=I<FORMAT>
 
@@ -242,6 +448,12 @@ section.
 
 Print the available options and exit.
 
+=item B<--help-fields>
+
+Print the names and descriptions of the keys and counters that may be
+used in the B<--fields> and B<--missing-field> switches and exit.
+I<Since SiLK 3.22.0>.
+
 =item B<--version>
 
 Print the version number and information about how SiLK was
@@ -259,13 +471,15 @@ Lines have been wrapped for improved readability, and the back slash
 The formatting switches on B<rwaggbagcat> are similar to those on the
 other SiLK tools.
 
+=head2 Creating and printing an Aggregate Bag file
+
 First, use B<rwaggbag(1)> to create an Aggregate Bag file from the
 SiLK Flow file F<data.rw>:
 
  $ rwaggbag --key=sport,dport --counter=sum-pack,sum-byte \
         --output-path=ab.aggbag data.rw
 
-To print Aggregate Bag:
+To print the contents of the Aggregate Bag file:
 
  $ rwaggbagcat ab.aggbag | head -4
  sPort|dPort|    sum-packets|           sum-bytes|
@@ -273,7 +487,73 @@ To print Aggregate Bag:
      0|  769|          15052|              842912|
      0|  771|          14176|              793856|
 
-To produce column separated data:
+=head2 Reordering the columns
+
+Use the B<--fields> switch (added in SiLK 3.22.0) to control the order
+of the columns in the output or to select only some columns:
+
+ $ rwaggbagcat --fields=dPort,sPort,sum-bytes ab.aggbag | head -4
+ dPort|sPort|           sum-bytes|
+     0|    0|             6169968|
+   769|    0|              842912|
+   771|    0|              793856|
+
+The B<--fields> switch only changes the positions of the columns.  The
+C<sPort> field is still the primary key in the output shown above.
+
+The B<--fields> switch may also include fields that are not in the
+input.  By default, B<rwaggbagcat> prints an empty value for those
+fields, but the B<--missing-field> switch may be used to display any
+string instead.  The argument to B<--missing-field> is
+I<FIELD>=I<STRING> where I<FIELD> is one of the fields in B<--fields>.
+
+ $ rwaggbagcat --fields=sipv4,proto,dport,sum-bytes \
+        --missing=sipv4=n/a ab.aggbag | head -4
+          sIPv4|pro|dPort|           sum-bytes|
+            n/a|   |    0|             6169968|
+            n/a|   |  769|              842912|
+            n/a|   |  771|              793856|
+
+=head2 Using --fields with IP addresses
+
+When creating an Aggregate Bag file with the source IP address and
+protocol as keys, B<rwaggbagcat> prints the columns in a different
+order depending on whether the address is treated as IPv4 or IPv6.
+
+When the key is the source IPv4 address and the protocol, the
+Aggregate Bag is built with the source address as the primary key:
+
+ $ rwaggbag --key=sipv4,proto --counter=records data.rw         \
+   | rwaggbagcat
+          sIPv4|pro|   records|
+    10.4.52.235|  6|         1|
+   10.5.231.251|  6|         1|
+    10.9.77.117|  6|         1|
+
+Reading the same file but treating the data as IPv6 results in
+the protocol being the primary key:
+
+ $ rwaggbag --key=sipv6,proto --counter=records data.rw         \
+   | rwaggbagcat
+ pro|                                  sIPv6|   records|
+   1|                   ::ffff:10.40.151.242|         1|
+   1|                   ::ffff:10.44.140.138|         1|
+   1|                    ::ffff:10.53.204.62|         1|
+
+In the latter case, the B<--fields> may be used to display the source
+IPv6 address first, but the switch only changes the positions of the
+columns, it does not reorder the entries (rows):
+
+ $ rwaggbag --key=sipv6,proto --counter=records data.rw         \
+   | rwaggbagcat --fields=sipv6,proto,records
+                                  sIPv6|pro|   records|
+                   ::ffff:10.40.151.242|  1|         1|
+                   ::ffff:10.44.140.138|  1|         1|
+                    ::ffff:10.53.204.62|  1|         1|
+
+=head2 Removing the columns or the title from the output
+
+To produce comma separated data:
 
  rwaggbagcat --delimited=, /tmp/ab.aggbag | head -4
  sPort,dPort,sum-packets,sum-bytes
@@ -289,6 +569,8 @@ To remove the title:
      0|  771|          14176|              793856|
      0| 2048|          14356|             1205904|
 
+=head2 Customizing the IP and timestamp format
+
 To change the format of IP addresses:
 
  $ rwaggbag --key=sipv4,dipv4 --counter=sum-pack,sum-byte data.rw   \
@@ -300,7 +582,7 @@ To change the format of IP addresses:
 
 To change the format of timestamps:
 
- $ rwaggbag --key=stime,etime --counter=sum-pack,sum-byte data.rwf  \
+ $ rwaggbag --key=stime,etime --counter=sum-pack,sum-byte data.rw   \
    | rwaggbagcat --timestamp-format=epoch | head -4
       sTime|     eTime|    sum-packets|           sum-bytes|
  1234396802|1234396802|              2|                 259|
@@ -396,6 +678,9 @@ checked when the B<--site-config-file> switch is not provided.
 
 =head1 NOTES
 
+The B<--fields>, B<--missing-field>, and B<--help-fields> switches
+were added in SiLK 3.22.0.
+
 B<rwaggbagcat> and the other Aggregate Bag tools were introduced in
 SiLK 3.15.0.
 
@@ -406,7 +691,7 @@ B<tzset(3)>, B<environ(7)>
 
 =cut
 
-$SiLK: rwaggbagcat.pod 9e3cbf975420 2019-09-24 14:42:59Z mthomas $
+$SiLK: rwaggbagcat.pod 0e0426562cda 2023-09-05 21:34:53Z mthomas $
 
 Local Variables:
 mode:text

@@ -1,4 +1,52 @@
-# RCSIDENT("$SiLK: Makefile.am 329106c5d390 2015-10-08 15:38:45Z mthomas $");
+## Copyright (C) 2001-2023 by Carnegie Mellon University.
+##
+## @OPENSOURCE_LICENSE_START@
+##
+## SiLK 3.22.0
+##
+## Copyright 2023 Carnegie Mellon University.
+##
+## NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+## INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+## UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+## AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+## PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+## THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+## ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+## INFRINGEMENT.
+##
+## Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+## contact permission@sei.cmu.edu for full terms.
+##
+## [DISTRIBUTION STATEMENT A] This material has been approved for public
+## release and unlimited distribution.  Please see Copyright notice for
+## non-US Government use and distribution.
+##
+## GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+##
+## Contract No.: FA8702-15-D-0002
+## Contractor Name: Carnegie Mellon University
+## Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+##
+## The Government's rights to use, modify, reproduce, release, perform,
+## display, or disclose this software are restricted by paragraph (b)(2) of
+## the Rights in Noncommercial Computer Software and Noncommercial Computer
+## Software Documentation clause contained in the above identified
+## contract. No restrictions apply after the expiration date shown
+## above. Any reproduction of the software or portions thereof marked with
+## this legend must also reproduce the markings.
+##
+## Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+## Trademark Office by Carnegie Mellon University.
+##
+## This Software includes and/or makes use of Third-Party Software each
+## subject to its own license.
+##
+## DM23-0973
+##
+## @OPENSOURCE_LICENSE_END@
+##
+## RCSIDENT("$SiLK: Makefile.am 391c69a44422 2023-06-22 20:19:07Z mthomas $");
 
 # Installed Targets
 
@@ -59,7 +107,6 @@ TESTS = \
 	tests/rwsort-empty-input.pl \
 	tests/rwsort-empty-input-presorted.pl \
 	tests/rwsort-empty-input-presorted-xargs.pl \
-	tests/rwsort-many-presorted.pl \
 	tests/rwsort-multiple-inputs.pl \
 	tests/rwsort-output-path.pl \
 	tests/rwsort-stdin.pl \
@@ -85,7 +132,6 @@ TESTS = \
 	tests/rwsort-int-ext-fields-ext.pl \
 	tests/rwsort-int-ext-fields-int-v6.pl \
 	tests/rwsort-flowrate-payload.pl \
-	tests/rwsort-skplugin-test.pl \
 	tests/rwsort-pysilk-key.pl \
 	tests/rwsort-pysilk-simple-ipv4.pl \
 	tests/rwsort-pysilk-simple-int.pl \
@@ -127,6 +173,8 @@ TESTS = \
 # above tests are automatically generated;
 # those below are written by hand
 TESTS += \
+	tests/rwsort-many-presorted.pl \
+	tests/rwsort-skplugin-test.pl \
 	tests/rwdedupe-mix-v4-v6.pl \
 	tests/rwdedupe-mix-v4-v6-ignore.pl
 

@@ -6,16 +6,20 @@ B<rwaggbagtool> - Manipulate binary Aggregate Bag files
 
 =head1 SYNOPSIS
 
-  rwaggbagtool [{ --add | --subtract }]
-        [--insert-field=FIELD=VALUE [--insert-field=FIELD2=VALUE2...]]
+  rwaggbagtool
         [{ --remove-fields=REMOVE_LIST | --select-fields=SELECT_LIST
-           | --to-ipset=FIELD [--ipset-record-version=VERSION]
-           | --to-bag=BAG_KEY,BAG_COUNTER }]
+           | --to-bag=BAG_KEY,BAG_COUNTER
+           | --to-ipset=FIELD [--ipset-record-version=VERSION] }]
+        [--insert-field=FIELD=VALUE [--insert-field=FIELD2=VALUE2...]]
+        [{ --add | --subtract | --divide }]
+        [--zero-divisor-result={error | remove | maximum | VALUE}]
+        [--scalar-multiply={VALUE | FIELD=VALUE}
+          [--scalar-multiply={VALUE | FIELD=VALUE}...]]
         [--min-field=FIELD=VALUE [--min-field=FIELD=VALUE...]]
         [--max-field=FIELD=VALUE [--max-field=FIELD=VALUE...]]
         [--set-intersect=FIELD=FILE [--set-intersect=FIELD=FILE...]]
         [--set-complement=FIELD=FILE [--set-complement=FIELD=FILE...]]
-        [--output-path=PATH]
+        [--output-path=PATH [--modify-inplace [--backup-path=BACKUP]]]
         [--note-strip] [--note-add=TEXT] [--note-file-add=FILE]
         [--compression-method=COMP_METHOD]
         [--site-config-file=FILENAME]
@@ -23,17 +27,27 @@ B<rwaggbagtool> - Manipulate binary Aggregate Bag files
 
   rwaggbagtool --help
 
+  rwaggbagtool --help-fields
+
   rwaggbagtool --version
 
 =head1 DESCRIPTION
 
 B<rwaggbagtool> performs operations on one or more Aggregate Bag files
-and creates a new Aggregate Bag file.  An I<Aggregate Bag> is a binary
-file that maps a key to a counter, where the key and the counter are
-both composed of one or more fields.  B<rwaggbag(1)> and
-B<rwaggbagbuild(1)> are the primary tools used to create an Aggregate
-Bag file.  B<rwaggbagcat(1)> prints a binary Aggregate Bag file as
-text.
+and creates a new Aggregate Bag file, a new Bag file, or an new IPset
+file.  An I<Aggregate Bag> is a binary file that maps a key to a
+counter, where the key and the counter are both composed of one or
+more fields.  B<rwaggbag(1)> and B<rwaggbagbuild(1)> are the primary
+tools used to create an Aggregate Bag file.  B<rwaggbagcat(1)> prints
+a binary Aggregate Bag file as text.
+
+The operations that B<rwaggbagtool> supports are field manipulation
+(inserting or removing keys or counters), adding, subtracting, and
+dividing counters (all files must have the same keys and counters)
+across multiple Aggregate Bag files, multiplying all counters or only
+selected counters by a value, intersecting with an IPset, selecting
+rows based on minimum and maximum values of keys and counters, and
+creating a new IPset or Bag file.
 
 B<rwaggbagtool> processes the Aggregate Bag files listed on the
 command line.  When no file names are specified, B<rwaggbagtool>
@@ -43,6 +57,16 @@ C<stdin> as a file name.  If any input is not an Aggregate Bag file,
 B<rwaggbagtool> prints an error to the standard error and exits with
 an error status.
 
+By default, B<rwaggbagtool>'s output is written to the standard
+output.  Use B<--output-path> to specify a different location.  As of
+SiLK 3.21.0, B<rwaggbagtool> supports the B<--modify-inplace> switch
+which correctly handles the case when an input file is also used as
+the output file.  That switch causes B<rwaggbagtool> to write the
+output to a temporary file first and then replace the original output
+file.  The B<--backup-path> switch may be used in conjunction with
+B<--modify-inplace> to set the pathname where the original output file
+is copied.
+
 =head1 OPTIONS
 
 Option names may be abbreviated if the abbreviation is unique or is an
@@ -50,52 +74,25 @@ exact match for an option.  A parameter to an option may be specified
 as B<--arg>=I<param> or S<B<--arg> I<param>>, though the first form is
 required for options that take optional parameters.
 
-=over 4
-
-=item B<--add>
-
-Sum each of the counters for each key for all the Aggregate Bag input
-files.  All the Aggregate Bag files must have the same set of key
-fields and counter fields.  (The values of the keys may differ, but
-the set of fields that comprise the key must match.)  If no other
-operation is specified, the add operation is the default.
-
-=item B<--subtract>
-
-Subtract from the first Aggregate Bag file all subsequent Aggregate
-Bag files.  All the Aggregate Bag files must have the same set of key
-fields and counter fields.  If a key does not appear in the first
-Aggregate Bag file, B<rwaggbagtool> assumes it has a value of 0.  If
-any counter subtraction results in a negative number, the key will not
-appear in the resulting Aggregate Bag file.
-
-=back
+The options are presented here in the order in which B<rwaggbagtool>
+performs them: Field manipulation switches are applied to each file
+when it is read; multi-file operation switches combine the Aggregate
+Bags together; single-file operation switches are applied; filtering
+switches remove rows from the Aggregate Bag; the result is output as
+an Aggregate Bag, a standard Bag, or as an IPset.
 
 =head2 Field manipulation switches
 
 The following switches allow modification of the fields in the
 Aggregate Bag file.  The B<--remove-fields> and B<--select-fields>
 switches are mutually exclusive, and they reduce the number of fields
-in the Aggregate Bag input files.  The B<--insert-field> switch is
-applied after B<--remove-fields> or B<--select-fields>, and it adds a
-field unless that field is already present.
+in the Aggregate Bag input files.  Those switches also conflict with
+B<--to-ipset> and B<--to-bag> which resemble field selectors.  The
+B<--insert-field> switch is applied after B<--remove-fields> or
+B<--select-fields>, and it adds a field unless that field is already
+present.
 
 =over 4
-
-=item B<--insert-field>=I<FIELD>B<=>I<VALUE>
-
-For each entry read from an Aggregate Bag input file, insert a field
-named I<FIELD> and set its value to I<VALUE> if one of the following
-is true: (1)the input file does not contain a field named I<FIELD> or
-(2)the input file does have a field named I<FIELD> but it was removed
-by either (2a)being listed in the B<--remove-fields> list or (2b)not
-being listed in the B<--select-fields> list.  That is, this switch
-only inserts I<FIELD> when I<FIELD> is not present in the input
-Aggregate Bag, but specifying I<FIELD> in B<--remove-fields> removes
-it from the input.  I<VALUE> is a textual representation of the
-field's value as described in the description of the B<--fields>
-switch in the B<rwaggbagbuild(1)> tool.  This switch may be repeated
-in order to insert multiple fields.
 
 =item B<--remove-fields>=I<REMOVE_LIST>
 
@@ -125,6 +122,146 @@ If selecting only some key fields produces multiple copies of a key,
 the counters of those keys are merged.  B<rwaggbagbuild> exits with an
 error when this switch is used with B<--remove-fields>, B<--to-ipset>,
 or B<--to-bag>.
+
+=item B<--insert-field>=I<FIELD>B<=>I<VALUE>
+
+For each entry read from an Aggregate Bag input file, insert a field
+named I<FIELD> and set its value to I<VALUE> if one of the following
+is true: (1)the input file does not contain a field named I<FIELD> or
+(2)the input file does have a field named I<FIELD> but it was removed
+by either (2a)being listed in the B<--remove-fields> list or (2b)not
+being listed in the B<--select-fields> list.  That is, this switch
+only inserts I<FIELD> when I<FIELD> is not present in the input
+Aggregate Bag, but specifying I<FIELD> in B<--remove-fields> removes
+it from the input.  I<VALUE> is a textual representation of the
+field's value as described in the description of the B<--fields>
+switch in the B<rwaggbagbuild(1)> tool.  This switch may be repeated
+in order to insert multiple fields.  If B<--to-ipset> or B<--to-bag>
+is specified, B<--insert-field> may only name a field that is an
+argument to that switch.
+
+=back
+
+=head2 Operations on multiple Aggregate Bag files
+
+The following operations act on multiple Aggregate Bag files.  These
+operations require all of the Aggregate Bag files to have the same set
+of key fields and counter fields.  (Use the field manipulation
+switches to ensure this.)  The values of the keys may differ, but the
+set of fields that comprise the key must match.  It is an error if
+multiple operations are specified.
+
+=over 4
+
+=item B<--add>
+
+Sum each of the counters for each key for all the Aggregate Bag input
+files.  The keys in the result are the union of the set of keys that
+appear in all input files.  Addition operations that overflow an
+unsigned 64-bit value are set to the maximum (18446744073709551615).
+If no other operation is specified, the add operation is the default.
+
+=item B<--subtract>
+
+Subtract from the counters in the first Aggregate Bag file the
+counters in the second Aggregate Bag file, and repeat the process for
+each additional Aggregate Bag file.  The keys in the result are a
+subset of the keys that appear in the first file: If a key does not
+appear in the first Aggregate Bag file, its counters are ignored in
+subsequent files.  If a key does not appear in the second file, its
+counters in the first file are unchanged.  Subtraction operations that
+result in a negative value are set to zero.  If all counters for a key
+are zero, the key does not appear in the output.
+
+=item B<--divide>
+
+Divide the counters in first Aggregate Bag file by the second
+Aggregate Bag file, and repeat the process for each additional
+Aggregate Bag file.  The keys in the result are a subset of the keys
+that appear in the first file: If a key does not appear in the first
+Aggregate Bag file, its counters are ignored in subsequent files.  If
+a key does not appear in the second file, its counters are treated as
+zero and the outcome is determined by the action specified by
+B<--zero-divisor-result>.  That option also determines the result when
+the two Aggregate Bag files have matching keys but a counter in the
+second bag is zero.  If B<--zero-divisor-result> is not given,
+B<rwaggbagtool> exits with error if division by zero is detected.
+Since Aggregate Bag files do not support floating point numbers, the
+result of the division is rounded to the nearest integer (values
+ending in .5 are rounded up).
+I<Since SiLK 3.22.0.>
+
+=back
+
+While not an operation, the next switch is related to B<--divide> and
+is described here.
+
+=over 4
+
+=item B<--zero-divisor-result>={ B<error> | B<remove> | B<maximum> | I<VALUE> }
+
+Specify how to handle division by zero in the B<--divide> operation,
+which can occur either because the first Aggregate Bag file (the
+dividend) contains a key that does not exist in the second file (the
+divisor) or because an individual counter in the divisor is zero.  The
+supported arguments are:
+
+=over 4
+
+=item B<error>
+
+Causes B<rwaggbagtool> to exit with an error.  This is the default
+when B<--zero-divisor-result> is not given.
+
+=item B<remove>
+
+Tells B<rwaggbagtool> to remove this key from the output.
+
+=item B<nochange>
+
+Tells B<rwaggbagtool> to leave the individual counter in the first
+Aggregate Bag unchanged.
+
+=item B<maximum>
+
+Sets the individual counter to the maximum value supported, which is
+the maximum unsigned 64-bit value (18446744073709551615).
+
+=item I<VALUE>
+
+Sets the individual counter to I<VALUE>, which can be any unsigned
+64-bit value (0 to 18446744073709551615 inclusive).
+
+=back
+
+This switch has no effect when B<--divide> is not used.
+I<Since SiLK 3.22.0.>
+
+=back
+
+=head2 Counter operations
+
+The following switch modifies the counters in an Aggregate Bag file.
+The operation may be combined with any of those from the previous
+section.  This operation occurs after the above and before any
+filtering operation.
+
+=over 4
+
+=item B<--scalar-multiply>=I<VALUE>
+
+=item B<--scalar-multiply>=I<FIELD>B<=>I<VALUE>
+
+Multiply all counter fields or one counter field by a value.  If the
+argument is a positive integer value (1 or greater), multiply all
+counters by that value.  If the argument contains an equals sign,
+treat the part to the left as a counter's field name and the part to
+the right as the multiplier for that field: a non-negative integer
+value (0 or greater).  The maximum I<VALUE> is 18446744073709551615.
+This switch may be repeated; when a counter name is repeated or the
+all-counters form is repeated, the final multiplier is the B<product>
+of all the values.
+I<Since SiLK 3.22.0.>
 
 =back
 
@@ -180,6 +317,18 @@ The following switches control the output.
 
 =over 4
 
+=item B<--to-bag>=I<BAG_KEY>,I<BAG_COUNTER>
+
+After operating on the Aggregate Bag input files, create a (normal)
+Bag file from the resulting Aggregate Bag.  Use the I<BAG_KEY> field
+as the key of the Bag, and the I<BAG_COUNTER> field as the counter of
+the Bag.  Write the Bag to the standard output or the destination
+specified by B<--output-path>.  When this switch is used, the only
+legal field names that may be used in the B<--insert-field> switch are
+I<BAG_KEY> and I<BAG_COUNTER>.  B<rwaggbagbuild> exits with an error
+when this switch is used with B<--remove-fields>, B<--select-fields>,
+or B<--to-ipset>.
+
 =item B<--to-ipset>=I<FIELD>
 
 After operating on the Aggregate Bag input files, create an IPset file
@@ -231,18 +380,6 @@ are usually more compact that version 4.
 
 =back
 
-=item B<--to-bag>=I<BAG_KEY>,I<BAG_COUNTER>
-
-After operating on the Aggregate Bag input files, create a (normal)
-Bag file from the resulting Aggregate Bag.  Use the I<BAG_KEY> field
-as the key of the Bag, and the I<BAG_COUNTER> field as the counter of
-the Bag.  Write the Bag to the standard output or the destination
-specified by B<--output-path>.  When this switch is used, the only
-legal field names that may be used in the B<--insert-field> switch are
-I<BAG_KEY> and I<BAG_COUNTER>.  B<rwaggbagbuild> exits with an error
-when this switch is used with B<--remove-fields>, B<--select-fields>,
-or B<--to-ipset>.
-
 =item B<--output-path>=I<PATH>
 
 Write the resulting Aggregate Bag, IPset (see B<--to-ipset>), or Bag
@@ -250,10 +387,38 @@ Write the resulting Aggregate Bag, IPset (see B<--to-ipset>), or Bag
 pipe, the keyword C<stderr> to write the output to the standard error,
 or the keyword C<stdout> or C<-> to write the output to the standard
 output.  If I<PATH> names an existing file, B<rwaggbagtool> exits with
-an error unless the SILK_CLOBBER environment variable is set, in which
-case I<PATH> is overwritten.  If this switch is not given, the output
-is written to the standard output.  Attempting to write the binary
-output to a terminal causes B<rwaggbagtool> to exit with an error.
+an error unless the B<--modify-inplace> switch is given or the
+SILK_CLOBBER environment variable is set, in which case I<PATH> is
+overwritten.  If B<--output-path> is not given, the output is written
+to the standard output.  Attempting to write the binary output to a
+terminal causes B<rwaggbagtool> to exit with an error.
+
+=item B<--modify-inplace>
+
+Allow B<rwaggbagtool> to overwrite an existing file and properly
+account for the output file (I<PATH>) also being an input file.  When
+this switch is given, B<rwaggbagtool> writes the output to a temporary
+location first, then overwrites I<PATH>.  B<rwaggbagtool> attempts to
+copy the permission, owner, and group from the original file to the
+new file.  The switch is ignored when I<PATH> does not exist or the
+output is the standard output or standard error.  B<rwaggbagtool>
+exits with an error when this switch is given and I<PATH> is not a
+regular file.  If B<rwaggbagtool> encounters an error or is
+interrupted prior to closing the temporary file, the temporary file is
+removed.  See also B<--backup-path>.  I<Since SiLK 3.21.0.>
+
+=item B<--backup-path>=I<BACKUP>
+
+Move the file named by B<--output-path> (I<PATH>) to the path
+I<BACKUP> immediately prior to moving the temporary file created by
+B<--modify-inplace> over I<PATH>.  If I<BACKUP> names a directory, the
+file is moved into that directory.  This switch will overwrite an
+existing file.  If I<PATH> and I<BACKUP> point to the same location,
+the output is written to I<PATH> and no backup is created.  If
+B<BACKUP> cannot be created, the output is left in the temporary file
+and B<rwaggbagtool> exits with a message and an error.
+B<rwaggbagtool> exits with an error if this switch is given without
+B<--modify-inplace>.  I<Since SiLK 3.21.0.>
 
 =item B<--note-strip>
 
@@ -338,6 +503,12 @@ section.
 
 Print the available options and exit.
 
+=item B<--help-fields>
+
+Print the names and descriptions of the fields that may be used in the
+command line options that require a field name.
+I<Since SiLK 3.22.0.>
+
 =item B<--version>
 
 Print the version number and information about how SiLK was
@@ -352,46 +523,70 @@ prompt.  The text after the dollar sign represents the command line.
 Lines have been wrapped for improved readability, and the back slash
 (C<\>) is used to indicate a wrapped line.
 
-To create two Aggregate Bag files, F<in.aggbag> and F<inweb.aggbag>,
-and then add the counters to create F<total.aggbag>:
+=head2 Add two files
 
- $ rwfilter --type=in --pass=-                              \
+Read today's incoming flow records by type and use B<rwaggbag(1)> to
+create an Aggregate Bag file for each, F<in.aggbag> and
+F<inweb.aggbag>, that count records using the protocol and both ports
+as the key.  Add the counters in the two files to create
+F<total.aggbag>.  Use B<rwaggbagcat(1)> to display the result.
+
+ $ rwfilter --type=in --all=-                               \
    | rwaggbag --key=sport,dport,proto --counter=records     \
         --output-path=in.aggbag
- $ rwfilter --type=inweb --pass=-                           \
+ $ rwfilter --type=inweb --all=-                            \
    | rwaggbag --key=sport,dport,proto --counter=records     \
         --output-path=inweb.aggbag
  $ rwaggbagtool --add in.aggbag inweb.aggbag --output-path=total.aggbag
  $ rwaggbagcat total.aggbag
 
-To subtract F<inweb.aggbag> from F<total.aggbag>:
+=head2 Subtract a file
+
+Subtract F<inweb.aggbag> from F<total.aggbag>.
 
  $ rwaggbagtool --subtract total.aggbag inweb.aggbag    \
    | rwaggbagcat
 
-Create an Aggregate Bag file:
+=head2 Percent of traffic
+
+Compute the percent of all incoming traffic per protocol and ports
+that was stored in the B<inweb> type by multiplying the counters in
+F<inweb.aggbag> by 100 and dividing by F<total.aggbag>.
+
+ $ rwaggbagtool --scalar-multiply=100 inweb.aggbag  \
+   | rwaggbagtool --divide stdin total.aggbag       \
+   | rwaggbagcat
+
+=head2 Create a file
+
+Create an Aggregate Bag file from F<data.rw> where the ports are the
+key and that sums the bytes and packets.
 
  $ rwaggbag --key=sport,dport                       \
         --counter=sum-bytes,sum-packets data.rw     \
         --output-path=my-ab.aggbag
 
-To get just the source port and byte count from the file
-F<my-ab.aggbag>, you may either remove the destination port and packet
-count:
+=head2 Choose selected fields
+
+Using the previous file, get just the source port and byte count from
+the file F<my-ab.aggbag>.  One approach is to remove the destination
+port and packet count.
 
  $ rwaggbagtool --remove=dport,sum-packets my-ab.aggbag  \
         --output-path=source-bytes.aggbag
 
-or you may select the source port and byte count:
+The other approach selects the source port and byte count.
 
  $ rwaggbagtool --select=sport,sum-bytes my-ag.aggbag    \
         --output-path=source-bytes.aggbag
 
 To replace the packet count in F<my-ab.aggbag> with zeros, remove the
-field and insert it with the value you want:
+field and insert it with the value you want.
 
  $ rwaggbagtool --remove=sum-packets --insert=sum-packets=0  \
         my-ab.aggbag --output-path=zero-packets.aggbag
+
+=head2 Convert to different formats
 
 To create a regular Bag with the source port and byte count from
 F<my-ab.aggbag>, use the B<--to-bag> switch:
@@ -468,6 +663,20 @@ checked when the B<--site-config-file> switch is not provided.
 
 =back
 
+=head1 NOTES
+
+The Aggregate Bag tools were added in SiLK 3.15.0.
+
+SiLK 3.17.0 added the B<--min-field>, B<--max-field>,
+B<--set-intersect>, and B<--set-complement> switches.
+
+Support for country codes was added in SiLK 3.19.0.
+
+The B<--modify-inplace> switch was added in SiLK 3.21.  When
+B<--backup-path> is also given, there is a small time window when the
+original file does not exist: the time between moving the original
+file to the backup location and moving the temporary file into place.
+
 =head1 SEE ALSO
 
 B<rwaggbag(1)>, B<rwaggbagbuild(1)>, B<rwaggbagcat(1)>,
@@ -475,7 +684,7 @@ B<rwfilter(1)>, B<rwfileinfo(1)>, B<silk(7)>, B<zlib(3)>
 
 =cut
 
-$SiLK: rwaggbagtool.pod c56bd724bfc8 2019-10-11 19:38:12Z mthomas $
+$SiLK: rwaggbagtool.pod e95eb8cd5b0c 2023-09-05 21:09:53Z mthomas $
 
 Local Variables:
 mode:text

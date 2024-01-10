@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2008-2020 by Carnegie Mellon University.
+** Copyright (C) 2008-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -21,7 +63,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENTVAR(rcs_CHECK_STRUCT_C, "$SiLK: check-struct.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENTVAR(rcs_CHECK_STRUCT_C, "$SiLK: check-struct.c b2b562f1ea39 2023-02-20 17:50:25Z mthomas $");
 
 
 /*
@@ -99,9 +141,9 @@ checkDataStructDoElement(
     const char *ie_ok;
     const char *hole;
     size_t end;
-    fbInfoElement_t *ie;
+    const fbTemplateField_t *ie;
 
-    ie = fbTemplateGetIndexedIE(tmpl, *tmpl_idx);
+    ie = fbTemplateGetFieldByPosition(tmpl, *tmpl_idx);
     ++*tmpl_idx;
 
     hole = ((*struct_pos != elem_off) ? "hole" : "");
@@ -110,13 +152,13 @@ checkDataStructDoElement(
     alerr = (((elem_off % elem_size) != 0) ? "alerr" : "");
     if (NULL == ie) {
         ie_ok = "absent";
-    } else if (0 != strcmp(elem_name, ie->ref.canon->ref.name)) {
-        if (elem_size != ie->len) {
+    } else if (0 != strcmp(elem_name, fbTemplateFieldGetName(ie))) {
+        if (elem_size != fbTemplateFieldGetLen(ie)) {
             ie_ok = "nm,len";
         } else {
             ie_ok = "name";
         }
-    } else if (elem_size != ie->len) {
+    } else if (elem_size != fbTemplateFieldGetLen(ie)) {
         ie_ok = "length";
     } else {
         ie_ok = "";

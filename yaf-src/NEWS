@@ -1,3 +1,66 @@
+Version 2.15.0: 2023-12-21
+==========================
+
+Enhanced the deep packet inspection capabilities for SSH connections to include negotiated algorithms and HASSH hash.
+
+Added the JA3 hash to the DPI for TLS connections.
+
+Added support for reading VxLAN-encapsulated packets, Geneve-encapsulated packets, and Geneve-encapsulated VxLAN-encapsulated packets.
+
+Fixed TLS certificate parsing to be more selective on which values are stored in the list of sslObjectType-sslObjectValue pairs.
+
+Fixed a potential bug in the Shannon entropy calculation that may cause small differences in calculated values.
+
+Version 3.0.0.alpha4: 2023-12-21
+================================
+
+Added the ability to decode VxLAN-encapsulated packets, Geneve-encapsulated packets, and Geneve-encapsulated VxLAN-encapsulated packets.
+
+Added a --no-mpls option to disable export of MPLS labels when YAF has been built with MPLS support.
+
+Fixed TLS certificate parsing to be more selective on which values are stored in the list of sslObjectType-sslObjectValue pairs.
+
+Version 3.0.0.alpha3: 2023-07-18
+================================
+
+Changed DNS deep packet inspection to produce names and text records with escape codes for special characters (non-ASCII, non-printable, special whitespace, and label-internal dots in names).
+
+Made DNS deep packet inspection more strict about parsing malformed DNS Resource Records across RR boundaries within the packet.
+
+Enhanced the --time and --etime options of yafMeta2Pcap to accept a human-readable timestamp in addition to milliseconds.
+
+Changed the destination of --version output to the standard output.
+
+Changed yaf to only export the fingerprint-related elements (firstPacketBanner, etc) when the --fpexport option is given.  (Requires YAF to be built with --enable-fpexporter.)
+
+Changed yaf to only export the p0f-related elements (osName, etc) when the --p0fprint option is given.  (Requires YAF to be built with --with-p0f.)
+
+Fixed a crash in YAF that occurs when it is built with GLib 2.75.3 or newer.
+
+Version 2.14.0: 2023-03-23
+==========================
+
+Changed DNS deep packet inspection to produce names and text records with escape codes for special characters (non-ASCII, non-printable, special whitespace, and label-internal dots in names).
+
+Made DNS deep packet inspection more strict about parsing malformed DNS Resource Records across RR boundaries within the packet.
+
+Changed destination of --version output to the standard output.
+
+Fixed a crash in YAF that occurs when it is built with GLib 2.75.3 or newer.
+
+Version 3.0.0.alpha2: 2023-02-09
+================================
+
+Enhanced the deep packet inspection capabilities for SSH connections to include negotiated algorithms and HASSH hash.
+
+Added the JA3 hash to the DPI for TLS connections.
+
+Made several changes to the yafDPIRules.conf file for applabels written as C plugins: Allow the user to disable the export of arbitrary DPI elements and SMTP headers. Allow a protocol to be specified. Moved the regex definitions from C to yafDPIRules.conf.
+
+Increased the maximum payload that YAF may capture for performing DPI.
+
+Fixed a potential bug in the Shannon entropy calculation that may cause small differences in calculated values.
+
 Version 2.13.0: 2023-02-09
 ==========================
 
@@ -14,19 +77,6 @@ Stopped export of full flow template that is never used for data records.
 Fixed minor bug in --version where Compact IPv4 support always reported NO.
 
 Fixed bugs in regular expressions for nntpResponseRegex and smtpURLRegex.
-
-Version 3.0.0.alpha2: 2023-02-09
-================================
-
-Enhanced the deep packet inspection capabilities for SSH connections to include negotiated algorithms and HASSH hash.
-
-Added the JA3 hash to the DPI for TLS connections.
-
-Made several changes to the yafDPIRules.conf file for applabels written as C plugins: Allow the user to disable the export of arbitrary DPI elements and SMTP headers. Allow a protocol to be specified. Moved the regex definitions from C to yafDPIRules.conf.
-
-Increased the maximum payload that YAF may capture for performing DPI.
-
-Fixed a potential bug in the Shannon entropy calculation that may cause small differences in calculated values.
 
 Version 3.0.0.alpha1: 2022-02-28
 ================================
@@ -74,13 +124,6 @@ Updated the POP3 DPI plugin.
 
 Updated yafzcbalance to be compatibile with PF_Ring-8.
 
-Version 2.12.1: 2020-12-22
-==========================
-
-Changed the templates and IEs used for SMTP DPI.  The new templates use different IDs than those used by previous releases of YAF.  super_mediator-1.8.0 or later is required to read this format.  Currently there is no version of Analysis Pipeline that reads the SMTP DPI.
-
-First public release of YAF 2.12.x.
-
 Version 2.11.3: 2021-10-14
 ==========================
 
@@ -91,6 +134,13 @@ Updated the SMTP regexes used in the yafDPIRules.conf file to be similar to thos
 Updated yafzcbalance to be compatibile with PF_Ring-8.
 
 Note: The yafAppLabelRules.conf file yafDPIRules.conf files in this release are usuable in prior releases of YAF also.
+
+Version 2.12.1: 2020-12-22
+==========================
+
+Changed the templates and IEs used for SMTP DPI.  The new templates use different IDs than those used by previous releases of YAF.  super_mediator-1.8.0 or later is required to read this format.  Currently there is no version of Analysis Pipeline that reads the SMTP DPI.
+
+First public release of YAF 2.12.x.
 
 Version 2.11.2: 2020-11-20
 ==========================

@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2016-2020 by Carnegie Mellon University.
+** Copyright (C) 2016-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 #ifndef _SKAGGBAG_H
@@ -13,7 +55,7 @@ extern "C" {
 
 #include <silk/silk.h>
 
-RCSIDENTVAR(rcsID_SKAGGBAG_H, "$SiLK: skaggbag.h ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENTVAR(rcsID_SKAGGBAG_H, "$SiLK: skaggbag.h 6a1929dbf54d 2023-09-13 14:12:09Z mthomas $");
 
 #include <silk/silk_types.h>
 #include <silk/skstream.h>
@@ -240,7 +282,7 @@ typedef enum sk_aggbag_type_en {
 #define SK_AGGBAG_KEY       1
 
 /**
- *    Specify SK_AGGBAG_KEY as the value of the 'key_counter_flag'
+ *    Specify SK_AGGBAG_COUNTER as the value of the 'key_counter_flag'
  *    parameter to skAggBagFieldTypeIteratorBind() to visit the field
  *    types that represent counters.
  */
@@ -251,6 +293,48 @@ typedef enum sk_aggbag_type_en {
  *    may occupy.
  */
 #define SKAGGBAG_AGGREGATE_MAXLEN  UINT16_MAX
+
+/**
+ *    Specifies the possible actions to take when dividing one AggBag by
+ *    another and the divisor has a counter whose value is zero.
+ *
+ *    Since SiLK 3.22.0.
+ */
+typedef enum sk_aggbag_div_zero_action_en {
+    /**
+     *    Causes the operation to return SKAGGBAG_E_DIVIDE_BY_ZERO
+     */
+    SKAGGBAG_DIV_ZERO_ERROR,
+    /**
+     *    Causes the operation either to remove the key from the AggBag or to
+     *    set all counters for the current key to zero, in effect removing the
+     *    key when the AggBag is saved.
+     */
+    SKAGGBAG_DIV_ZERO_DELETE,
+    /**
+     *    Causes the operation to set the quotient for the affected counter to
+     *    the specified value.
+     */
+    SKAGGBAG_DIV_ZERO_VALUE,
+    /**
+     *    Causes the operation to leave the dividend unchanged.
+     */
+    SKAGGBAG_DIV_ZERO_NOCHANGE
+} sk_aggbag_div_zero_action_t;
+
+/**
+ *    Specifies the specific action to take  when dividing one AggBag by
+ *    another and the divisor has a counter whose value is zero.
+ *
+ *    Since SiLK 3.22.0.
+ */
+typedef struct sk_aggbag_div_zero_st {
+    /** The action to take */
+    sk_aggbag_div_zero_action_t action;
+    /** The value to use when 'action' is SKAGGBAG_DIV_ZERO_VALUE. */
+    uint64_t                    value;
+} sk_aggbag_div_zero_t;
+
 
 
 /**
@@ -407,6 +491,23 @@ skAggBagDestroy(
 
 
 /**
+ *    Divide the AggBag 'ab_dividend' by the AggBag 'ab_divisor'.
+ *
+ *    For each key in 'ab_dividend', divide the key's counters by those for
+ *    the key in 'ab_divisor'.  If 'ab_divisor' does not contain that key or
+ *    one of the counters in 'ab_divisor' is zero, follow the action specified
+ *    by 'div_zero'.
+ *
+ *    Since SiLK 3.22.0.
+ */
+int
+skAggBagDivideAggBag(
+    sk_aggbag_t                *ab_dividend,
+    const sk_aggbag_t          *ab_divisor,
+    const sk_aggbag_div_zero_t *div_zero);
+
+
+/**
  *    Return the type of the current field at position 'field_iter'.
  *    Return SKAGGBAG_FIELD_INVALID if 'field_iter' is NULL or if it
  *    is not positioned on a valid key field or counter field.
@@ -439,7 +540,35 @@ skAggBagFieldIterReset(
 
 
 /**
- *    Return the name associated with the field type 'field_type'.
+ *    Return a description of the field type 'field_type'.  The returned value
+ *    is a constant string that the caller must not modify.  Return NULL if
+ *    the field type is not known.
+ *
+ *    Since SiLK 3.22.0.
+ */
+const char *
+skAggBagFieldTypeGetDescription(
+    sk_aggbag_type_t    field_type);
+
+/**
+ *    Return the key and counter disposition of the field type 'field_type'.
+ *    That is, returns SK_AGGBAG_KEY if 'field_type' is a key or
+ *    SK_AGGBAG_COUNTER if 'field_type' is a counter.  Returns 0 if
+ *    'field_type' is not a known field type.
+ *
+ *    This function may also return (SK_AGGBAG_KEY|SK_AGGBAG_COUNTER) if a
+ *    field may be either a key or a counter, though no fields in SiLK 3.22.0
+ *    support that.
+ *
+ *    Since SiLK 3.22.0.
+ */
+unsigned int
+skAggBagFieldTypeGetDisposition(
+    sk_aggbag_type_t    field_type);
+
+/**
+ *    Return the name associated with the field type 'field_type'.  The
+ *    returned value is a constant string that the caller must not modify.
  *    Return NULL if the field type is not known.
  */
 const char *
@@ -594,20 +723,57 @@ skAggBagIteratorReset(
 
 
 /**
- *    In the AggBag 'ab', add to the counter associated with 'key' the
- *    value in 'counter'.  If 'key' does not exist in 'ab', insert it
- *    into 'ab' and set its value to 'counter'.
+ *    In the AggBag 'ab', add to each counter associated with 'key' the values
+ *    in 'counter'.  If 'key' does not exist in 'ab', insert it into 'ab' and
+ *    set its values to those in 'counter'.  Set a counter to the maximum
+ *    supported by the AggBag if the computed sum would exceed the maximum.
  *
- *    If 'new_counter' is not NULL, the new value of the counter is
- *    copied into that location.  'new_counter' is unchanged when this
- *    function turns a value other than SKAGGBAG_OK.
+ *    If 'new_counter' is not NULL, the new value of the counter is copied
+ *    into that location.  'new_counter' is unchanged when this function turns
+ *    a value other than SKAGGBAG_OK.
  *
+ *    Return SKAGGBAG_E_UNDEFINED_KEY or SKAGGBAG_E_UNDEFINED_COUNTER if 'ab'
+ *    has not had its key or counter fields defined.
+ *
+ *    Return SKAGGBAG_E_FIELDS_DIFFER_KEY or SKAGGBAG_E_FIELDS_DIFFER_COUNTER
+ *    when 'ab' has different fields that 'key' or 'counter'.
+ *
+ *    Return SKAGGBAG_E_NULL_PARM when any required function parameter is
+ *    NULL.
  */
 int
 skAggBagKeyCounterAdd(
     sk_aggbag_t                    *ab,
     const sk_aggbag_aggregate_t    *key,
     const sk_aggbag_aggregate_t    *counter,
+    sk_aggbag_aggregate_t          *new_counter);
+
+/**
+ *    In the AggBag 'ab', divide the counters associated with 'key' by the
+ *    values in 'counter'.  If 'key' does not exist in 'ab', take no action
+ *    and return SKAGGBAG_OK.  Quotients are rounded to the nearest integer
+ *    (0.5 always rounds up). and quotients less than 0.5 become zero.
+ *
+ *    If a value in 'counter' is zero, use 'div_zero' as the resolution: Leave
+ *    the counter in 'ab' unchanged when the action is
+ *    SKAGGBAG_DIV_ZERO_NOCHANGE; set the counter in 'ab' to the specified
+ *    value when the action is SKAGGBAG_DIV_ZERO_VALUE; remove 'key' from 'ab'
+ *    when the action is SKAGGBAG_DIV_ZERO_DELETE, and return
+ *    SKAGGBAG_E_DIVIDE_BY_ZERO when the action is SKAGGBAG_DIV_ZERO_ERROR.
+ *
+ *    If 'new_counter' is not NULL, the new value of the counter is copied
+ *    into that location.  When 'key' is removed from 'ab' because of division
+ *    by zero, all values in 'new_counter' are set to 0.  'new_counter' is
+ *    unchanged when this function turns a value other than SKAGGBAG_OK.
+ *
+ *    Since SiLK 3.22.0.
+ */
+int
+skAggBagKeyCounterDivide(
+    sk_aggbag_t                    *ab,
+    const sk_aggbag_aggregate_t    *key,
+    const sk_aggbag_aggregate_t    *counter,
+    const sk_aggbag_div_zero_t     *div_zero,
     sk_aggbag_aggregate_t          *new_counter);
 
 /**
@@ -644,18 +810,23 @@ skAggBagKeyCounterSet(
     const sk_aggbag_aggregate_t    *counter);
 
 /**
- *    In the AggBag 'ab', subtract from the counter associated with
- *    'key' the value 'counter'.  If 'counter' is 0, return
- *    SKAGGBAG_OK regardless of whether 'key' is in 'bag', but set
- *    'new_counter' to the counter if 'key' is in 'ab' and if
- *    'new_counter' is supplied.  When 'counter' is non-zero,
- *    'key' must exist in 'bag'; if it does not, SKBAG_ERR_OP_BOUNDS
- *    is returned.  SKBAG_ERR_OP_BOUNDS is also returned when 'key' is
- *    outside the range of keys supported by 'ab'.
+ *    In the AggBag 'ab', subtract from the counters associated with 'key' the
+ *    values in 'counter'.  If 'key' is not in 'ab', take no action and return
+ *    SKAGGBAG_OK.  Set a counter to zero if the computed difference would
+ *    result in negative number.
  *
- *    If 'new_counter' is not NULL, the new value of the counter is
- *    copied into that location.  'new_counter' is unchanged when this
- *    function turns a value other than SKAGGBAG_OK.
+ *    If 'new_counter' is not NULL, the new value of the counter is copied
+ *    into that location.  'new_counter' is unchanged when 'key' is not in
+ *    'ab' or when this function turns a value other than SKAGGBAG_OK.
+ *
+ *    Return SKAGGBAG_E_UNDEFINED_KEY or SKAGGBAG_E_UNDEFINED_COUNTER if 'ab'
+ *    has not had its key or counter fields defined.
+ *
+ *    Return SKAGGBAG_E_FIELDS_DIFFER_KEY or SKAGGBAG_E_FIELDS_DIFFER_COUNTER
+ *    when 'ab' has different fields that 'key' or 'counter'.
+ *
+ *    Return SKAGGBAG_E_NULL_PARM when any required function parameter is
+ *    NULL.
  */
 int
 skAggBagKeyCounterSubtract(
@@ -859,22 +1030,76 @@ struct sk_aggbag_type_iter_st {
 
 
 typedef enum sk_aggbag_retval_en {
+    /**
+     *    Command succeeded
+     */
     SKAGGBAG_OK,
+    /**
+     *    Memory allocation failed
+     */
     SKAGGBAG_E_ALLOC,
+    /**
+     *    NULL or invalid parameter passed to function
+     */
     SKAGGBAG_E_NULL_PARM,
+    /**
+     *    Aggregate Bag's fields are immutable
+     */
     SKAGGBAG_E_FIXED_FIELDS,
+    /**
+     *    Aggregate Bag's key fields are undefined
+     */
     SKAGGBAG_E_UNDEFINED_KEY,
+    /**
+     *    Aggregate Bag's counter fields are undefined
+     */
     SKAGGBAG_E_UNDEFINED_COUNTER,
+    /**
+     *    Field has the incorrect type (key vs counter)
+     */
     SKAGGBAG_E_FIELD_CLASS,
+    /**
+     *    Sets of key fields do not match
+     */
     SKAGGBAG_E_FIELDS_DIFFER_KEY,
+    /**
+     *    Sets of counter fields do not match
+     */
     SKAGGBAG_E_FIELDS_DIFFER_COUNTER,
+    /**
+     *    Incorrect get or set function called for field type
+     */
     SKAGGBAG_E_GET_SET_MISMATCH,
+    /**
+     *    Iterator points to an invalid field
+     */
     SKAGGBAG_E_BAD_INDEX,
+    /**
+     *    Error while reading an Aggregate Bag from a stream or file
+     */
     SKAGGBAG_E_READ,
+    /**
+     *    Error while writing an Aggregate Bag to a stream or file
+     */
     SKAGGBAG_E_WRITE,
+    /**
+     *    File header contains an unexpected value
+     */
     SKAGGBAG_E_HEADER,
+    /**
+     *    Unexpected error during insert
+     */
     SKAGGBAG_E_INSERT,
-    SKAGGBAG_E_UNSUPPORTED_IPV6
+    /**
+     *    SiLK is compiled without IPv6 support
+     */
+    SKAGGBAG_E_UNSUPPORTED_IPV6,
+    /**
+     *    Aggregate Bag divisor has a value of 0 or is absent
+     *
+     *    Since SiLK 3.22.0.
+     */
+    SKAGGBAG_E_DIVIDE_BY_ZERO
 } sk_aggbag_retval_t;
 
 

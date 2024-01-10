@@ -1,5 +1,53 @@
 /* include/yaf/config.h.in.  Generated from configure.ac by autoheader.  */
 
+/*
+ *  Copyright 2006-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+/*
+ *  autoheader generated header file
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
+ *
+ *  Copyright 2023 Carnegie Mellon University.
+ *
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
+ *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
+ *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ */
+
 /* Define to 1 to use the local timezone for command input and printing
    records. Define to 0 to use UTC. */
 #undef ENABLE_LOCALTIME
@@ -50,7 +98,8 @@
    you don't. */
 #undef HAVE_DECL_CYGWIN_CONV_PATH
 
-/* Define to 1 if you have the <dirent.h> header file. */
+/* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
+   */
 #undef HAVE_DIRENT_H
 
 /* Define if you have the GNU dld library. */
@@ -76,6 +125,21 @@
 
 /* Define to 1 if the system has the type `error_t'. */
 #undef HAVE_ERROR_T
+
+/* Define to 1 if you have the `EVP_md5' function. */
+#undef HAVE_EVP_MD5
+
+/* Define to 1 if you have the `EVP_MD_fetch' function. */
+#undef HAVE_EVP_MD_FETCH
+
+/* Define to 1 if you have the `EVP_Q_digest' function. */
+#undef HAVE_EVP_Q_DIGEST
+
+/* Define to 1 if you have the `EVP_sha1' function. */
+#undef HAVE_EVP_SHA1
+
+/* Define to 1 if you have the `EVP_sha256' function. */
+#undef HAVE_EVP_SHA256
 
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
@@ -131,11 +195,17 @@
 /* Define to 1 if you have the <math.h> header file. */
 #undef HAVE_MATH_H
 
+/* Define to 1 if you have the `MD5' function. */
+#undef HAVE_MD5
+
 /* Define to 1 if you have the `memchr' function. */
 #undef HAVE_MEMCHR
 
 /* Define to 1 if you have the `memset' function. */
 #undef HAVE_MEMSET
+
+/* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
+#undef HAVE_NDIR_H
 
 /* Define to 1 if you have the `ndpi_finalize_initalization' function. */
 #undef HAVE_NDPI_FINALIZE_INITALIZATION
@@ -154,6 +224,18 @@
 
 /* Define to 1 if you have the `opendir' function. */
 #undef HAVE_OPENDIR
+
+/* Define to 1 to enable OpenSSL support */
+#undef HAVE_OPENSSL
+
+/* Define to 1 if you have the <openssl/evp.h> header file. */
+#undef HAVE_OPENSSL_EVP_H
+
+/* Define to 1 if you have the <openssl/md5.h> header file. */
+#undef HAVE_OPENSSL_MD5_H
+
+/* Define to 1 if you have the <openssl/sha.h> header file. */
+#undef HAVE_OPENSSL_SHA_H
 
 /* Define to 1 if you have the <pcap.h> header file. */
 #undef HAVE_PCAP_H
@@ -190,6 +272,12 @@
 
 /* Define to 1 if you have the `select' function. */
 #undef HAVE_SELECT
+
+/* Define to 1 if you have the `SHA1' function. */
+#undef HAVE_SHA1
+
+/* Define to 1 if you have the `SHA256' function. */
+#undef HAVE_SHA256
 
 /* Define if you have the shl_load function. */
 #undef HAVE_SHL_LOAD
@@ -254,17 +342,28 @@
 /* Define to 1 if you have the `strtoull' function. */
 #undef HAVE_STRTOULL
 
+/* Define to 1 if `d_type' is a member of `struct dirent'. */
+#undef HAVE_STRUCT_DIRENT_D_TYPE
+
 /* Define to 1 if the system has the type `struct ndpi_id_struct'. */
 #undef HAVE_STRUCT_NDPI_ID_STRUCT
 
 /* Define to 1 if you have the <syslog.h> header file. */
 #undef HAVE_SYSLOG_H
 
+/* Define to 1 if you have the <sys/dir.h> header file, and it defines `DIR'.
+   */
+#undef HAVE_SYS_DIR_H
+
 /* Define to 1 if you have the <sys/dl.h> header file. */
 #undef HAVE_SYS_DL_H
 
 /* Define to 1 if you have the <sys/errno.h> header file. */
 #undef HAVE_SYS_ERRNO_H
+
+/* Define to 1 if you have the <sys/ndir.h> header file, and it defines `DIR'.
+   */
+#undef HAVE_SYS_NDIR_H
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #undef HAVE_SYS_SOCKET_H
@@ -314,6 +413,9 @@
 
 /* Define if dlsym() requires a leading underscore in symbol names. */
 #undef NEED_USCORE
+
+/* Define to 1 if your C compiler doesn't accept -c and -o together. */
+#undef NO_MINUS_C_MINUS_O
 
 /* Name of package */
 #undef PACKAGE
@@ -365,7 +467,7 @@
 /* Define to 1 to enable BIVIO support */
 #undef YAF_ENABLE_BIVIO
 
-/* Define to 1 to compact IPv4 addresses where possible */
+/* Define to 1 to use compact IPv4 address data structures where possible */
 #undef YAF_ENABLE_COMPACT_IP4
 
 /* Define to 1 to enable DAG support */
@@ -416,8 +518,8 @@
 /* Define to 1 to enable recording interface numbers */
 #undef YAF_ENABLE_SEPARATE_INTERFACES
 
-/* Define to 1 build with support for zlib compression. Define to 0 otherwise.
-   Requires the libz library and the <zlib.h> header file. */
+/* Define to 1 build with support for zlib compression. Requires the libz
+   library and the <zlib.h> header file. */
 #undef YAF_ENABLE_ZLIB
 
 /* Define to 1 to enable mpls support */

@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2006-2020 by Carnegie Mellon University.
+** Copyright (C) 2006-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -13,7 +55,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: skpolldir.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: skpolldir.c 806cac94b1d1 2023-09-11 19:50:13Z mthomas $");
 
 #include <silk/skdeque.h>
 #include <silk/redblack.h>
@@ -26,25 +68,42 @@ RCSIDENT("$SiLK: skpolldir.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
 
 #ifdef SKPOLLDIR_TRACE_LEVEL
 #define TRACEMSG_LEVEL SKPOLLDIR_TRACE_LEVEL
+/*
+ *    Messages at various tracing levels
+ *
+ *    1 - Startup, Shutdown, Dir-Scan begin/end, Mark+Sweep begin/end
+ *
+ *    2 - Number of files found during Dir-Scan, Number of deleted files found
+ *    while trying to GetNextFile() if non-zero
+ *
+ *    3 - The names of deleted files found during GetNextFile()
+ *
+ *    4 - Names of files when first noticed, when size changes before queuing,
+ *    when first enqueued, when the file is no longer present, when file is
+ *    returned from GetNextFile()
+ *
+ *    5 - Names of ignored files and previously queued files (on every
+ *    directory poll), Result of every skDequePopBack() in GetNextFile()
+ */
 #endif
 #define TRACEMSG(tm_lvl, tm_msg)  TRACEMSG_TO_TRACEMSGLVL(tm_lvl, tm_msg)
 #include <silk/sktracemsg.h>
+#if TRACEMSG_LEVEL >= 2
+#define SKPOLLDIR_FILE_COUNT 1
+#endif
 
 
 /* LOCAL DEFINES AND TYPEDEFS */
 
 /*
- *    Define SKPOLLDIR_USE_INODE to a non-zero value to include the
- *    inode in the key for the red-black tree.
+ *    Define SKPOLLDIR_USE_INODE to zero not to have the inode be included in
+ *    the key for the red-black tree.
  *
- *    The inode was added in an attempt to speed access in the
- *    red-black tree, but in testing on Linux RHEL 5.10 in a directory
- *    of 250,000, it only shaved about a tenth of a second from the
- *    times for directory-scan.
+ *    The inode provides a very small speed increase during a directory-scan.
  */
-/* #define SKPOLLDIR_USE_INODE 1 */
+/* #define SKPOLLDIR_USE_INODE 0 */
 #ifndef SKPOLLDIR_USE_INODE
-#define SKPOLLDIR_USE_INODE 0
+#define SKPOLLDIR_USE_INODE 1
 #endif
 
 /*
@@ -92,7 +151,7 @@ typedef struct sk_polldir_st {
 typedef struct pd_dirent_st {
     /* basename of the file */
     char        *name;
-    /* size of the file */
+    /* size of the file; used to check for constant file size */
     off_t        size;
 #if SKPOLLDIR_USE_INODE
     /* the inode of the file */
@@ -107,12 +166,9 @@ typedef struct pd_dirent_st {
 
 /* The file entry for items stored in the deque. */
 typedef struct pd_qentry_st {
-    /* complete path to the file */
-    char       *path;
-    /* basename of the file; points into 'path' */
-    char       *name;
+    /* basename of the file */
+    char       *qe_name;
 } pd_qentry_t;
-
 
 
 /* LOCAL VARIABLE DEFINITIONS */
@@ -168,6 +224,35 @@ skPollDirSetMaximumFileHandles(
     return 0;
 }
 
+/* Allocates and returns pd_qentry_t to hold 'filename'. */
+static pd_qentry_t *
+pd_qentry_new(
+    const sk_polldir_t  UNUSED(*pd),
+    const char                 *filename)
+{
+    pd_qentry_t *qe = (pd_qentry_t *)malloc(sizeof(*qe));
+    if (!qe) {
+        return NULL;
+    }
+
+    qe->qe_name = strdup(filename);
+    if (!qe->qe_name) {
+        free(qe);
+        return NULL;
+    }
+    return qe;
+}
+
+/* Frees a pd_qentry_t and its path. */
+static void
+pd_qentry_free(
+    pd_qentry_t    *qe)
+{
+    free(qe->qe_name);
+    free(qe);
+}
+
+
 /* Comparison function for pd_dirent_t items (used by red black tree) */
 static int
 compare(
@@ -178,16 +263,13 @@ compare(
     const pd_dirent_t *a = (const pd_dirent_t *)va;
     const pd_dirent_t *b = (const pd_dirent_t *)vb;
 
-#if SKPOLLDIR_USE_INODE
-    if (a->inode < b->inode) {
-        return -1;
-    }
-    if (a->inode > b->inode) {
-        return 1;
-    }
-#endif
-
+#if !SKPOLLDIR_USE_INODE
     return strcmp(a->name, b->name);
+#else  /* SKPOLLDIR_USE_INODE */
+    return ((a->inode == b->inode)
+            ? strcmp(a->name, b->name)
+            : ((a->inode < b->inode) ? -1 : 1));
+#endif /* #else of #if !SKPOLLDIR_USE_INODE */
 }
 
 
@@ -205,6 +287,9 @@ remove_unseen(
     size_t i;
 #if SKPOLLDIR_TIMING
     clock_t t1, t2 = 0, t3 = 0;
+#endif
+#if TRACEMSG_LEVEL >= 1
+    size_t seen = 0;
 #endif
 
     TRACEMSG(1, ("polldir %p: Starting mark and sweep", pd));
@@ -224,8 +309,11 @@ remove_unseen(
         if (x->seen) {
             /* Seen.  Reset to zero for next pass. */
             x->seen = 0;
+#if TRACEMSG_LEVEL >= 1
+            ++seen;
+#endif
         } else {
-            TRACEMSG(2, (("polldir %p: File '%s' was not noticed."
+            TRACEMSG(4, (("polldir %p: File '%s' was not noticed."
                           " Removing from consideration."),
                          pd, x->name));
 
@@ -255,8 +343,8 @@ remove_unseen(
     t3 = clock();
 #endif
     TRACEMSG(1, (("polldir %p: Finished mark and sweep."
-                  " Removed %" SK_PRIuZ " nodes"),
-                 pd, skVectorGetCount(dellist)));
+                  " Kept %" SK_PRIuZ " nodes. Removed %" SK_PRIuZ " nodes"),
+                 pd, seen, skVectorGetCount(dellist)));
 
 #if SKPOLLDIR_TIMING
     DEBUGMSG(("polldir %p: Mark and sweep required %f seconds:"
@@ -347,6 +435,14 @@ pollDir(
 #if SKPOLLDIR_TIMING
     clock_t t1, t2 = 0;
 #endif
+#ifdef SKPOLLDIR_FILE_COUNT
+    unsigned int non_file = 0, dot_file = 0, ignore_stat = 0;
+    unsigned int new_file = 0, size_change = 0, added = 0, existing = 0;
+#endif
+
+    if (pd->stopped) {
+        goto unblock_and_end_timer;
+    }
 
     skp_fh_sem_aquire();
     TRACEMSG(1, ("polldir %p: Starting directory scan of '%s'",
@@ -364,12 +460,14 @@ pollDir(
         goto cleanup_and_exit;
     }
 
+    path[sizeof(path) - 1] = '\0';
     rv = snprintf(path, sizeof(path), "%s/", pd->directory);
     assert((size_t)rv == pd->filename_offset);
 
     /* Loop over all files in the directory */
-    while (PDERR_NONE == pd->error &&
-           (entry = readdir(dir)))
+    while (!pd->stopped
+           && PDERR_NONE == pd->error
+           && (entry = readdir(dir)))
     {
 #ifdef SK_HAVE_STRUCT_DIRENT_D_TYPE
         switch (entry->d_type) {
@@ -378,7 +476,10 @@ pollDir(
           case DT_LNK:
             break;
           default:
-            TRACEMSG(2, ("polldir %p: File '%s' was ignored (non-file [%d])",
+#ifdef SKPOLLDIR_FILE_COUNT
+            ++non_file;
+#endif
+            TRACEMSG(5, ("polldir %p: File '%s' was ignored (non-file [%d])",
                          pd, entry->d_name, entry->d_type));
             continue;
         }
@@ -386,7 +487,10 @@ pollDir(
 
         /* Ignore dot files. */
         if (entry->d_name[0] == '.') {
-            TRACEMSG(2, ("polldir %p: File '%s' was ignored (dotfile)",
+#ifdef SKPOLLDIR_FILE_COUNT
+            ++dot_file;
+#endif
+            TRACEMSG(5, ("polldir %p: File '%s' was ignored (dotfile)",
                          pd, entry->d_name));
             continue;
         }
@@ -401,7 +505,10 @@ pollDir(
             || !(st.st_mode & (S_IFREG | S_IFLNK))
             || (0 == st.st_size))
         {
-            TRACEMSG(2, ("polldir %p: File '%s' was ignored (%s)",
+#ifdef SKPOLLDIR_FILE_COUNT
+            ++ignore_stat;
+#endif
+            TRACEMSG(5, ("polldir %p: File '%s' was ignored (%s)",
                          pd, entry->d_name,
                          ((-1 == rv)
                           ? strerror(errno)
@@ -421,6 +528,10 @@ pollDir(
             node->queued = 0;
         }
 
+        if (pd->stopped) {
+            break;
+        }
+
         node->name = entry->d_name;
 #if SKPOLLDIR_USE_INODE
         node->inode = st.st_ino;
@@ -431,7 +542,10 @@ pollDir(
 
         if (found == node) {
             /* New node has been added to the tree */
-            TRACEMSG(2, (("polldir %p: File '%s' noticed with size %" PRId64
+#ifdef SKPOLLDIR_FILE_COUNT
+            ++new_file;
+#endif
+            TRACEMSG(4, (("polldir %p: File '%s' noticed with size %" PRId64
                           " for the first time"),
                          pd, node->name, st.st_size));
 
@@ -453,50 +567,47 @@ pollDir(
             /* Node already existed but not yet queued. */
             if (st.st_size != found->size) {
                 /* file size still changing */
-                TRACEMSG(2, (("polldir %p: File '%s' was noticed with size %"
+#ifdef SKPOLLDIR_FILE_COUNT
+                ++size_change;
+#endif
+                TRACEMSG(4, (("polldir %p: File '%s' was noticed with size %"
                               PRId64 "; different from previous %" PRId64),
                             pd, node->name, st.st_size, found->size));
                 found->size = st.st_size;
             } else {
                 /* Size has stabalized, add to queue */
-                TRACEMSG(2, (("polldir %p: File '%s' was noticed with size %"
+#ifdef SKPOLLDIR_FILE_COUNT
+                ++added;
+#endif
+                TRACEMSG(4, (("polldir %p: File '%s' was noticed with size %"
                               PRId64 "; size is stable.  Queuing"),
                              pd, node->name, st.st_size));
                 found->queued = 1;
 
-                item = (pd_qentry_t *)malloc(sizeof(pd_qentry_t));
+                item = pd_qentry_new(pd, node->name);
                 if (NULL == item) {
                     TRACEMSG(1, ("polldir %p: Entry allocation error for '%s'",
                                  pd, node->name));
                     pd->error = PDERR_MEMORY;
                     continue;
                 }
-                item->path = strdup(path);
-                if (NULL == item->path) {
-                    TRACEMSG(1, ("polldir %p: Path allocation error for '%s'",
-                                 pd, node->name));
-                    free(item);
-                    pd->error = PDERR_MEMORY;
-                    continue;
-                }
-                item->name = item->path + pd->filename_offset;
 
                 err = skDequePushFront(pd->queue, item);
                 if (err != SKDQ_SUCCESS) {
                     TRACEMSG(1, ("polldir %p: Deque allocation error for '%s'",
                                  pd, node->name));
-                    free(item->path);
-                    free(item);
+                    pd_qentry_free(item);
                     pd->error = PDERR_MEMORY;
                     continue;
                 }
             }
-#ifdef SKPOLLDIR_TRACE_LEVEL
+#ifdef SKPOLLDIR_FILE_COUNT
         } else {
-            TRACEMSG(2, (("polldir %p: File '%s' with size %" PRId64
+            ++existing;
+            TRACEMSG(5, (("polldir %p: File '%s' with size %" PRId64
                           "; prevously queued with size %" PRId64),
                          pd, node->name, st.st_size, found->size));
-#endif  /* ENABLE_TRACEMSG */
+#endif  /* SKPOLLDIR_FILE_COUNT */
         }
 
         /* Mark this file as seen this time around */
@@ -508,9 +619,15 @@ pollDir(
 #if SKPOLLDIR_TIMING
     t2 = clock();
 #endif
+    skp_fh_sem_release();
+
     TRACEMSG(1, ("polldir %p: Finished directory scan of '%s'",
                  pd, pd->directory));
-    skp_fh_sem_release();
+    TRACEMSG(2, (("polldir %p: Ignored %u, First-seen %u, Size-change %u,"
+                  " Stable-size %u, Prev-Queued %u, Total-Seen %u"),
+                 pd, (non_file + dot_file + ignore_stat),
+                 new_file, size_change, added, existing,
+                 (new_file + size_change + added + existing)));
 
 #if SKPOLLDIR_TIMING
     DEBUGMSG("polldir %p: Directory scan required %f seconds",
@@ -523,13 +640,20 @@ pollDir(
     }
 
     /* Remove entries we did not see, and re-mark tree as unseen. */
-    if (PDERR_NONE == pd->error) {
+    if (!pd->stopped && PDERR_NONE == pd->error) {
         remove_unseen(pd);
     }
 
     /* Repeat if no error */
-    if (PDERR_NONE == pd->error) {
+    if (!pd->stopped && PDERR_NONE == pd->error) {
         return SK_TIMER_REPEAT;
+    }
+
+  unblock_and_end_timer:
+    /* Ensure that pd->error is set to an error code before unblocking Deque
+     * in case GetNextFile() is waiting */
+    if (pd->stopped && PDERR_NONE == pd->error) {
+        pd->error = PDERR_STOPPED;
     }
 
     skDequeUnblock(pd->queue);
@@ -591,8 +715,7 @@ skPollDirDestroy(
     /* Empty and destoy the queue */
     if (pd->queue) {
         while (skDequePopFrontNB(pd->queue, (void **)&item) == SKDQ_SUCCESS) {
-            free(item->path);
-            free(item);
+            pd_qentry_free(item);
         }
 
         skDequeDestroy(pd->queue);
@@ -663,42 +786,30 @@ skPollDirCreate(
 }
 
 
-/* Puts a file back on the queue */
+/* Puts a file back on the queue. 'filename' is the basename */
 skPollDirErr_t
 skPollDirPutBackFile(
     sk_polldir_t       *pd,
     const char         *filename)
 {
     pd_qentry_t *item;
-    char path[PATH_MAX];
     skDQErr_t err;
-    int rv;
 
     assert(pd);
     assert(filename);
 
-    rv = snprintf(path, sizeof(path), "%s/%s", pd->directory, filename);
-    if ((size_t)rv >= sizeof(path)) {
+    if (pd->filename_offset + strlen(filename) >= PATH_MAX) {
         return PDERR_MEMORY;
     }
 
-    item = (pd_qentry_t *)malloc(sizeof(*item));
+    item = pd_qentry_new(pd, filename);
     if (NULL == item) {
         return PDERR_MEMORY;
     }
 
-    item->path = strdup(path);
-    if (NULL == item->path) {
-        free(item);
-        return PDERR_MEMORY;
-    }
-
-    item->name = item->path + pd->filename_offset;
-
     err = skDequePushFront(pd->queue, item);
     if (err != SKDQ_SUCCESS) {
-        free(item->path);
-        free(item);
+        pd_qentry_free(item);
         return PDERR_MEMORY;
     }
 
@@ -713,12 +824,26 @@ skPollDirGetNextFile(
     char               *path,
     char              **filename)
 {
+    char pathname[PATH_MAX];
+    ssize_t sz;
     pd_qentry_t *item = NULL;
     skDQErr_t err;
+#ifdef SKPOLLDIR_FILE_COUNT
+    unsigned int deleted = 0;
+#endif
 
     assert(pd);
     assert(path);
 
+    if (pd->stopped) {
+        return PDERR_STOPPED;
+    }
+
+    /* NOTE: For a timed-wait, if the deque contains the names of files that
+     * have been removed, the total time this function waits may be longer
+     * than pd->wait_next_file. */
+
+    /* exit from this 'for' by returning */
     for (;;) {
         item = NULL;
         if (pd->wait_next_file) {
@@ -727,11 +852,16 @@ skPollDirGetNextFile(
         } else {
             err = skDequePopBack(pd->queue, (void **)&item);
         }
-        TRACEMSG(2, ("polldir %p: Deque return value is %d", pd, (int)err));
+        TRACEMSG(5, ("polldir %p: Deque return value is %d", pd, (int)err));
         if (SKDQ_SUCCESS != err) {
-            if (pd->error == PDERR_NONE) {
+            /* error code from Deque */
+            if (PDERR_NONE == pd->error) {
                 if (err == SKDQ_TIMEDOUT) {
                     return PDERR_TIMEDOUT;
+                }
+                if (err == SKDQ_UNBLOCKED) {
+                    DEBUGMSG("Deque was UNBLOCKED but polldir not stopped");
+                    return PDERR_STOPPED;
                 }
                 /* This should not happen */
                 CRITMSG(("%s:%d Invalid error condition in polldir;"
@@ -740,43 +870,62 @@ skPollDirGetNextFile(
                 skAbort();
             }
             if (item) {
-                free(item->path);
-                free(item);
+                pd_qentry_free(item);
             }
-            if (pd->error == PDERR_SYSTEM) {
+            if (PDERR_SYSTEM == pd->error) {
                 errno = pd->sys_errno;
             }
             return pd->error;
         }
 
-        assert(item->path);
-
-        if (skFileExists(item->path)) {
-            /* File exists, so return it. */
-            assert(strlen(item->path) < PATH_MAX);
-            strcpy(path, item->path);
-            if (filename) {
-                *filename = path + (item->name - item->path);
-            }
-
-            free(item->path);
-            free(item);
-            break;
+        pathname[sizeof(pathname) - 1] = '\0';
+        sz = snprintf(pathname, sizeof(pathname), "%s/%s",
+                      pd->directory, item->qe_name);
+        if ((size_t)sz >= sizeof(pathname)) {
+            INFOMSG(
+                "Complete pathname for file '%s' is too long. Ignoring entry",
+                item->qe_name);
+            pd_qentry_free(item);
+            item = NULL;
+            continue;
+        }
+        if (!skFileExists(pathname)) {
+#ifdef SKPOLLDIR_FILE_COUNT
+            ++deleted;
+#endif
+            TRACEMSG(3, ("polldir %p: File '%s' was deleted before it"
+                         " could be delivered",
+                         pd, item->qe_name));
+            pd_qentry_free(item);
+            item = NULL;
+            continue;
         }
 
-        TRACEMSG(2, ("polldir %p: File '%s' was deleted before it"
-                     " could be delivered",
-                     pd, item->name));
+        /* check for stopped */
+        if (pd->stopped) {
+            pd_qentry_free(item);
+            return PDERR_STOPPED;
+        }
 
-        free(item->path);
-        free(item);
-        item = NULL;
+        /* File exists; return it. */
+        strcpy(path, pathname);
+        if (filename) {
+            *filename = path + pd->filename_offset;
+        }
+
+#ifdef SKPOLLDIR_FILE_COUNT
+        if (deleted) {
+            TRACEMSG(2, (("polldir %p: Noticed %u deleted files"
+                          " before finding existing file"),
+                         pd, deleted));
+        }
+#endif
+        TRACEMSG(4, ("polldir %p: File '%s' was delivered",
+                     pd, item->qe_name));
+
+        pd_qentry_free(item);
+        return PDERR_NONE;
     }
-
-    TRACEMSG(2, ("polldir %p: File '%s' was delivered",
-                 pd, (filename ? *filename : path)));
-
-    return PDERR_NONE;
 }
 
 

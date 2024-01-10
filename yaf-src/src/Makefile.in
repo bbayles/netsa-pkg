@@ -15,7 +15,6 @@
 @SET_MAKE@
 
 
-
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -93,25 +92,27 @@ host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = yaf$(EXEEXT) yafscii$(EXEEXT) yafcollect$(EXEEXT)
 @PLUGINENABLE_TRUE@am__append_1 = yafhooks.c
-@P0FENABLE_TRUE@am__append_2 = applabel/p0f/crc32.c applabel/p0f/yfp0f.c
+@P0FENABLE_TRUE@am__append_2 = applabel/p0f/crc32.c applabel/p0f/p0ftcp.h \
+@P0FENABLE_TRUE@	applabel/p0f/yfp0f.c applabel/p0f/yfp0f.h
+
 @CYGWIN_TRUE@am__append_3 = yafcygwin.c
-@P0FENABLE_TRUE@am__append_4 = applabel/p0f/p0ftcp.h applabel/p0f/yfp0f.h
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps =  \
 	$(top_srcdir)/m4/ax_check_aligned_access_required.m4 \
 	$(top_srcdir)/m4/ax_check_libz.m4 \
+	$(top_srcdir)/m4/ax_enable_warnings.m4 \
+	$(top_srcdir)/m4/ax_lib_openssl.m4 \
 	$(top_srcdir)/m4/ax_prog_doxygen.m4 \
 	$(top_srcdir)/m4/infomodel.m4 $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltargz.m4 $(top_srcdir)/m4/ltdl.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
 	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/m4/spread.m4 $(top_srcdir)/m4/yafsummary.m4 \
-	$(top_srcdir)/acinclude.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/yafutil.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(am__noinst_HEADERS_DIST) \
-	$(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/include/yaf/config.h \
 	$(top_builddir)/airframe/include/airframe/config.h
@@ -151,10 +152,12 @@ am__uninstall_files_from_dir = { \
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libyaf_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__libyaf_la_SOURCES_DIST = yafcore.c yaftab.c yafrag.c decode.c \
-	picq.c ring.c yafapplabel.c applabel/payloadScanner.c \
-	applabel/portHash.c yafhooks.c applabel/p0f/crc32.c \
-	applabel/p0f/yfp0f.c yafcygwin.c
+am__libyaf_la_SOURCES_DIST = yafcore.c yafctx.h yaftab.c yafrag.c \
+	decode.c picq.c ring.c yafapplabel.c yafapplabel.h \
+	applabel/payloadScanner.c applabel/payloadScanner.h \
+	applabel/portHash.c applabel/portHash.h yafhooks.c \
+	applabel/p0f/crc32.c applabel/p0f/p0ftcp.h \
+	applabel/p0f/yfp0f.c applabel/p0f/yfp0f.h yafcygwin.c
 am__dirstamp = $(am__leading_dot)dirstamp
 @PLUGINENABLE_TRUE@am__objects_1 = libyaf_la-yafhooks.lo
 @P0FENABLE_TRUE@am__objects_2 = applabel/p0f/libyaf_la-crc32.lo \
@@ -174,30 +177,33 @@ am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 libyaf_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libyaf_la_CFLAGS) \
-	$(CFLAGS) $(libyaf_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(libyaf_la_LDFLAGS) $(LDFLAGS) -o $@
 am_yaf_OBJECTS = yaf-yaf.$(OBJEXT) yaf-yafstat.$(OBJEXT) \
 	yaf-yafdag.$(OBJEXT) yaf-yafcap.$(OBJEXT) yaf-yafout.$(OBJEXT) \
 	yaf-yaflush.$(OBJEXT) yaf-yafpcapx.$(OBJEXT) \
 	yaf-yafnfe.$(OBJEXT) yaf-yafpfring.$(OBJEXT)
 yaf_OBJECTS = $(am_yaf_OBJECTS)
-yaf_DEPENDENCIES = libyaf.la $(am__DEPENDENCIES_1) \
-	../lua/src/liblua.la
+am__DEPENDENCIES_2 = libyaf.la \
+	$(top_builddir)/airframe/src/libairframe.la \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+yaf_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(top_builddir)/lua/src/liblua.la
 yaf_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(yaf_CFLAGS) $(CFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(yaf_LDFLAGS) $(LDFLAGS) -o $@
-am_yafcollect_OBJECTS = yafcollect-yafcollect.$(OBJEXT)
+am_yafcollect_OBJECTS = yafcollect.$(OBJEXT)
 yafcollect_OBJECTS = $(am_yafcollect_OBJECTS)
-yafcollect_DEPENDENCIES = libyaf.la $(am__DEPENDENCIES_1)
-yafcollect_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(yafcollect_CFLAGS) \
-	$(CFLAGS) $(yafcollect_LDFLAGS) $(LDFLAGS) -o $@
-am_yafscii_OBJECTS = yafscii-yafscii.$(OBJEXT)
+yafcollect_LDADD = $(LDADD)
+yafcollect_DEPENDENCIES = libyaf.la \
+	$(top_builddir)/airframe/src/libairframe.la \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_yafscii_OBJECTS = yafscii.$(OBJEXT)
 yafscii_OBJECTS = $(am_yafscii_OBJECTS)
-yafscii_DEPENDENCIES = libyaf.la $(am__DEPENDENCIES_1)
-yafscii_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(yafscii_CFLAGS) \
-	$(CFLAGS) $(yafscii_LDFLAGS) $(LDFLAGS) -o $@
+yafscii_LDADD = $(LDADD)
+yafscii_DEPENDENCIES = libyaf.la \
+	$(top_builddir)/airframe/src/libairframe.la \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -226,8 +232,7 @@ am__depfiles_remade = ./$(DEPDIR)/libyaf_la-decode.Plo \
 	./$(DEPDIR)/yaf-yaflush.Po ./$(DEPDIR)/yaf-yafnfe.Po \
 	./$(DEPDIR)/yaf-yafout.Po ./$(DEPDIR)/yaf-yafpcapx.Po \
 	./$(DEPDIR)/yaf-yafpfring.Po ./$(DEPDIR)/yaf-yafstat.Po \
-	./$(DEPDIR)/yafcollect-yafcollect.Po \
-	./$(DEPDIR)/yafscii-yafscii.Po \
+	./$(DEPDIR)/yafcollect.Po ./$(DEPDIR)/yafscii.Po \
 	applabel/$(DEPDIR)/libyaf_la-payloadScanner.Plo \
 	applabel/$(DEPDIR)/libyaf_la-portHash.Plo \
 	applabel/p0f/$(DEPDIR)/libyaf_la-crc32.Plo \
@@ -271,12 +276,6 @@ am__can_run_installinfo = \
 man1dir = $(mandir)/man1
 NROFF = nroff
 MANS = $(man1_MANS)
-am__noinst_HEADERS_DIST = yafdag.h yafcap.h yafpcapx.h yafstat.h \
-	yafout.h yaflush.h yafctx.h yafapplabel.h \
-	applabel/payloadScanner.h applabel/portHash.h yafnfe.h \
-	yafpfring.h infomodel.h applabel/p0f/p0ftcp.h \
-	applabel/p0f/yfp0f.h
-HEADERS = $(noinst_HEADERS)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 am__recursive_targets = \
@@ -383,7 +382,6 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-ENABLE_ZLIB = @ENABLE_ZLIB@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
@@ -416,7 +414,7 @@ LIBADD_SHL_LOAD = @LIBADD_SHL_LOAD@
 LIBCOMPAT = @LIBCOMPAT@
 LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
-LIBS = @LIBS@ $(LIBLTDL)
+LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
@@ -436,6 +434,8 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OPENSSL_CPPFLAGS = @OPENSSL_CPPFLAGS@
+OPENSSL_LDFLAGS = @OPENSSL_LDFLAGS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -462,8 +462,11 @@ SPREAD_CFLAGS = @SPREAD_CFLAGS@
 SPREAD_LDFLAGS = @SPREAD_LDFLAGS@
 SPREAD_LIBS = @SPREAD_LIBS@
 STRIP = @STRIP@
+UPDATE_MARKINGS = @UPDATE_MARKINGS@
 VERSION = @VERSION@
+WARN_CFLAGS = @WARN_CFLAGS@
 XSLTPROC = @XSLTPROC@
+YAF_CPPFLAGS = @YAF_CPPFLAGS@
 YAF_HAS_DAG = @YAF_HAS_DAG@
 YAF_HAS_NAPATECH = @YAF_HAS_NAPATECH@
 YAF_HAS_NETRONOME = @YAF_HAS_NETRONOME@
@@ -549,36 +552,56 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 version_info = @version_info@
 SUBDIRS = applabel
-PODFILES = yaf.pod yafscii.pod applabel.pod yafdpi.pod yafdhcp.pod yaf.init.pod
+AM_CFLAGS = $(WARN_CFLAGS) $(DEBUG_CFLAGS)
+AM_CPPFLAGS = $(YAF_CPPFLAGS) $(LTDLINCL) $(GLIB_CFLAGS) \
+	$(OPENSSL_CPPFLAGS) $(libfixbuf_CFLAGS)
+
+AM_LDFLAGS = $(libfixbuf_LIBS) $(GLIB_LIBS)
+LDADD = libyaf.la $(top_builddir)/airframe/src/libairframe.la \
+    $(GLIB_LDADD) $(LIBLTDL)
+
+CPPFLAGS_YAF_COMMON = \
+	$(AM_CPPFLAGS) \
+	$(libp0f_CFLAGS) $(libndpi_CFLAGS) $(SPREAD_CFLAGS) \
+	-DYAF_CONF_DIR='"$(sysconfdir)"' -DYAF_APPLABEL_PATH=\"${libdir}/yaf\"
+
+LDFLAGS_YAF_COMMON = \
+	$(AM_LDFLAGS) \
+	$(libp0f_LIBS) $(libndpi_LIBS) $(SPREAD_LDFLAGS) $(SPREAD_LIBS)
+
+
+# Do not include yaf.pod in PODFILES; is generated by configure
+PODFILES = yafscii.pod applabel.pod yafdpi.pod yafdhcp.pod yaf.init.pod
 man1_MANS = yaf.1 yafscii.1 applabel.1 yafdpi.1 yafdhcp.1 yaf.init.1
-HTMLFILES = yaf.html yafscii.html applabel.html yafdpi.html yafdhcp.html yaf.init.html
-WARN_CFLAGS = -g -DDEBUG -Wall -W -Wmissing-prototypes -Wformat=2 -Wdeclaration-after-statement -Wpointer-arith -Wshadow
-CLEANFILES = $(man1_MANS) $(HTMLFILES) infomodel.c infomodel.h
+HTMLFILES = yaf.html yafscii.html applabel.html yafdpi.html \
+    yafdhcp.html yaf.init.html
+
 EXTRA_DIST = $(PODFILES)
+CLEANFILES = $(man1_MANS) $(HTMLFILES) infomodel.c infomodel.h
 lib_LTLIBRARIES = libyaf.la
-AM_CPPFLAGS = $(LTDLINCL)
-libyaf_la_SOURCES = yafcore.c yaftab.c yafrag.c decode.c picq.c ring.c \
-	yafapplabel.c applabel/payloadScanner.c applabel/portHash.c \
-	$(am__append_1) $(am__append_2) $(am__append_3)
-libyaf_la_LIBADD = $(GLIB_LDADD)
-libyaf_la_LDFLAGS = $(GLIB_LIBS) $(libfixbuf_LIBS) $(libp0f_LIBS) $(libndpi_LIBS) $(SPREAD_LDFLAGS) $(SPREAD_LIBS) -version-info $(LIBCOMPAT) -release ${VERSION}
-libyaf_la_CFLAGS = $(GLIB_CFLAGS) $(libfixbuf_CFLAGS) $(libp0f_CFLAGS) $(libndpi_CFLAGS) $(SPREAD_CFLAGS) -DYAF_CONF_DIR='"$(sysconfdir)"' -DYAF_APPLABEL_PATH=\"${libdir}/yaf\"
-yaf_SOURCES = yaf.c yafstat.c yafdag.c yafcap.c yafout.c yaflush.c yafpcapx.c yafnfe.c yafpfring.c
-yaf_LDADD = libyaf.la $(GLIB_LDADD) ../lua/src/liblua.la
-yaf_LDFLAGS = -L../airframe/src -lairframe $(GLIB_LIBS) $(libfixbuf_LIBS) $(libp0f_LIBS) $(libndpi_LIBS) $(SPREAD_LDFLAGS) $(SPREAD_LIBS) -export-dynamic
-yaf_CFLAGS = $(GLIB_CFLAGS) $(libfixbuf_CFLAGS) $(libp0f_CFLAGS) $(libndpi_CFLAGS) $(SPREAD_CFLAGS) -DYAF_CONF_DIR='"$(sysconfdir)"'
+libyaf_la_SOURCES = yafcore.c yafctx.h yaftab.c yafrag.c decode.c \
+	picq.c ring.c yafapplabel.c yafapplabel.h \
+	applabel/payloadScanner.c applabel/payloadScanner.h \
+	applabel/portHash.c applabel/portHash.h $(am__append_1) \
+	$(am__append_2) $(am__append_3)
+libyaf_la_LIBADD = $(LIBLTDL)
+libyaf_la_LDFLAGS = \
+	$(LDFLAGS_YAF_COMMON) \
+	-version-info $(LIBCOMPAT) -release $(VERSION)
+
+libyaf_la_CPPFLAGS = \
+	$(CPPFLAGS_YAF_COMMON)
+
+yaf_SOURCES = \
+	yaf.c yafstat.c yafstat.h yafdag.c yafdag.h yafcap.c yafcap.h \
+	yafout.c yafout.h yaflush.c yaflush.h yafpcapx.c yafpcapx.h \
+	yafnfe.c yafnfe.h yafpfring.c yafpfring.h
+
+yaf_LDADD = $(LDADD) $(top_builddir)/lua/src/liblua.la
+yaf_LDFLAGS = $(LDFLAGS_YAF_COMMON) -export-dynamic
+yaf_CPPFLAGS = $(CPPFLAGS_YAF_COMMON)
 yafscii_SOURCES = yafscii.c
-yafscii_LDADD = libyaf.la $(GLIB_LDADD)
-yafscii_LDFLAGS = -L../airframe/src -lairframe $(GLIB_LIBS) $(libfixbuf_LIBS)
-yafscii_CFLAGS = $(GLIB_CFLAGS) $(libfixbuf_CFLAGS)
 yafcollect_SOURCES = yafcollect.c
-yafcollect_LDADD = libyaf.la $(GLIB_LDADD)
-yafcollect_LDFLAGS = -L../airframe/src -lairframe $(GLIB_LIBS) $(libfixbuf_LIBS)
-yafcollect_CFLAGS = $(GLIB_CFLAGS) $(libfixbuf_CFLAGS)
-noinst_HEADERS = yafdag.h yafcap.h yafpcapx.h yafstat.h yafout.h \
-	yaflush.h yafctx.h yafapplabel.h applabel/payloadScanner.h \
-	applabel/portHash.h yafnfe.h yafpfring.h infomodel.h \
-	$(am__append_4)
 BUILT_SOURCES = infomodel.c infomodel.h
 nodist_libyaf_la_SOURCES = infomodel.c infomodel.h
 RUN_MAKE_INFOMODEL = $(AM_V_GEN) \
@@ -740,11 +763,11 @@ yaf$(EXEEXT): $(yaf_OBJECTS) $(yaf_DEPENDENCIES) $(EXTRA_yaf_DEPENDENCIES)
 
 yafcollect$(EXEEXT): $(yafcollect_OBJECTS) $(yafcollect_DEPENDENCIES) $(EXTRA_yafcollect_DEPENDENCIES) 
 	@rm -f yafcollect$(EXEEXT)
-	$(AM_V_CCLD)$(yafcollect_LINK) $(yafcollect_OBJECTS) $(yafcollect_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK) $(yafcollect_OBJECTS) $(yafcollect_LDADD) $(LIBS)
 
 yafscii$(EXEEXT): $(yafscii_OBJECTS) $(yafscii_DEPENDENCIES) $(EXTRA_yafscii_DEPENDENCIES) 
 	@rm -f yafscii$(EXEEXT)
-	$(AM_V_CCLD)$(yafscii_LINK) $(yafscii_OBJECTS) $(yafscii_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK) $(yafscii_OBJECTS) $(yafscii_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -775,8 +798,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yaf-yafpcapx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yaf-yafpfring.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yaf-yafstat.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yafcollect-yafcollect.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yafscii-yafscii.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yafcollect.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yafscii.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@applabel/$(DEPDIR)/libyaf_la-payloadScanner.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@applabel/$(DEPDIR)/libyaf_la-portHash.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@applabel/p0f/$(DEPDIR)/libyaf_la-crc32.Plo@am__quote@ # am--include-marker
@@ -813,256 +836,228 @@ am--depfiles: $(am__depfiles_remade)
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
 libyaf_la-yafcore.lo: yafcore.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT libyaf_la-yafcore.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yafcore.Tpo -c -o libyaf_la-yafcore.lo `test -f 'yafcore.c' || echo '$(srcdir)/'`yafcore.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libyaf_la-yafcore.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yafcore.Tpo -c -o libyaf_la-yafcore.lo `test -f 'yafcore.c' || echo '$(srcdir)/'`yafcore.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libyaf_la-yafcore.Tpo $(DEPDIR)/libyaf_la-yafcore.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafcore.c' object='libyaf_la-yafcore.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-yafcore.lo `test -f 'yafcore.c' || echo '$(srcdir)/'`yafcore.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libyaf_la-yafcore.lo `test -f 'yafcore.c' || echo '$(srcdir)/'`yafcore.c
 
 libyaf_la-yaftab.lo: yaftab.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT libyaf_la-yaftab.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yaftab.Tpo -c -o libyaf_la-yaftab.lo `test -f 'yaftab.c' || echo '$(srcdir)/'`yaftab.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libyaf_la-yaftab.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yaftab.Tpo -c -o libyaf_la-yaftab.lo `test -f 'yaftab.c' || echo '$(srcdir)/'`yaftab.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libyaf_la-yaftab.Tpo $(DEPDIR)/libyaf_la-yaftab.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yaftab.c' object='libyaf_la-yaftab.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-yaftab.lo `test -f 'yaftab.c' || echo '$(srcdir)/'`yaftab.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libyaf_la-yaftab.lo `test -f 'yaftab.c' || echo '$(srcdir)/'`yaftab.c
 
 libyaf_la-yafrag.lo: yafrag.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT libyaf_la-yafrag.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yafrag.Tpo -c -o libyaf_la-yafrag.lo `test -f 'yafrag.c' || echo '$(srcdir)/'`yafrag.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libyaf_la-yafrag.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yafrag.Tpo -c -o libyaf_la-yafrag.lo `test -f 'yafrag.c' || echo '$(srcdir)/'`yafrag.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libyaf_la-yafrag.Tpo $(DEPDIR)/libyaf_la-yafrag.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafrag.c' object='libyaf_la-yafrag.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-yafrag.lo `test -f 'yafrag.c' || echo '$(srcdir)/'`yafrag.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libyaf_la-yafrag.lo `test -f 'yafrag.c' || echo '$(srcdir)/'`yafrag.c
 
 libyaf_la-decode.lo: decode.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT libyaf_la-decode.lo -MD -MP -MF $(DEPDIR)/libyaf_la-decode.Tpo -c -o libyaf_la-decode.lo `test -f 'decode.c' || echo '$(srcdir)/'`decode.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libyaf_la-decode.lo -MD -MP -MF $(DEPDIR)/libyaf_la-decode.Tpo -c -o libyaf_la-decode.lo `test -f 'decode.c' || echo '$(srcdir)/'`decode.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libyaf_la-decode.Tpo $(DEPDIR)/libyaf_la-decode.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='decode.c' object='libyaf_la-decode.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-decode.lo `test -f 'decode.c' || echo '$(srcdir)/'`decode.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libyaf_la-decode.lo `test -f 'decode.c' || echo '$(srcdir)/'`decode.c
 
 libyaf_la-picq.lo: picq.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT libyaf_la-picq.lo -MD -MP -MF $(DEPDIR)/libyaf_la-picq.Tpo -c -o libyaf_la-picq.lo `test -f 'picq.c' || echo '$(srcdir)/'`picq.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libyaf_la-picq.lo -MD -MP -MF $(DEPDIR)/libyaf_la-picq.Tpo -c -o libyaf_la-picq.lo `test -f 'picq.c' || echo '$(srcdir)/'`picq.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libyaf_la-picq.Tpo $(DEPDIR)/libyaf_la-picq.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='picq.c' object='libyaf_la-picq.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-picq.lo `test -f 'picq.c' || echo '$(srcdir)/'`picq.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libyaf_la-picq.lo `test -f 'picq.c' || echo '$(srcdir)/'`picq.c
 
 libyaf_la-ring.lo: ring.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT libyaf_la-ring.lo -MD -MP -MF $(DEPDIR)/libyaf_la-ring.Tpo -c -o libyaf_la-ring.lo `test -f 'ring.c' || echo '$(srcdir)/'`ring.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libyaf_la-ring.lo -MD -MP -MF $(DEPDIR)/libyaf_la-ring.Tpo -c -o libyaf_la-ring.lo `test -f 'ring.c' || echo '$(srcdir)/'`ring.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libyaf_la-ring.Tpo $(DEPDIR)/libyaf_la-ring.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ring.c' object='libyaf_la-ring.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-ring.lo `test -f 'ring.c' || echo '$(srcdir)/'`ring.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libyaf_la-ring.lo `test -f 'ring.c' || echo '$(srcdir)/'`ring.c
 
 libyaf_la-yafapplabel.lo: yafapplabel.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT libyaf_la-yafapplabel.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yafapplabel.Tpo -c -o libyaf_la-yafapplabel.lo `test -f 'yafapplabel.c' || echo '$(srcdir)/'`yafapplabel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libyaf_la-yafapplabel.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yafapplabel.Tpo -c -o libyaf_la-yafapplabel.lo `test -f 'yafapplabel.c' || echo '$(srcdir)/'`yafapplabel.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libyaf_la-yafapplabel.Tpo $(DEPDIR)/libyaf_la-yafapplabel.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafapplabel.c' object='libyaf_la-yafapplabel.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-yafapplabel.lo `test -f 'yafapplabel.c' || echo '$(srcdir)/'`yafapplabel.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libyaf_la-yafapplabel.lo `test -f 'yafapplabel.c' || echo '$(srcdir)/'`yafapplabel.c
 
 applabel/libyaf_la-payloadScanner.lo: applabel/payloadScanner.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT applabel/libyaf_la-payloadScanner.lo -MD -MP -MF applabel/$(DEPDIR)/libyaf_la-payloadScanner.Tpo -c -o applabel/libyaf_la-payloadScanner.lo `test -f 'applabel/payloadScanner.c' || echo '$(srcdir)/'`applabel/payloadScanner.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT applabel/libyaf_la-payloadScanner.lo -MD -MP -MF applabel/$(DEPDIR)/libyaf_la-payloadScanner.Tpo -c -o applabel/libyaf_la-payloadScanner.lo `test -f 'applabel/payloadScanner.c' || echo '$(srcdir)/'`applabel/payloadScanner.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) applabel/$(DEPDIR)/libyaf_la-payloadScanner.Tpo applabel/$(DEPDIR)/libyaf_la-payloadScanner.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='applabel/payloadScanner.c' object='applabel/libyaf_la-payloadScanner.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o applabel/libyaf_la-payloadScanner.lo `test -f 'applabel/payloadScanner.c' || echo '$(srcdir)/'`applabel/payloadScanner.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o applabel/libyaf_la-payloadScanner.lo `test -f 'applabel/payloadScanner.c' || echo '$(srcdir)/'`applabel/payloadScanner.c
 
 applabel/libyaf_la-portHash.lo: applabel/portHash.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT applabel/libyaf_la-portHash.lo -MD -MP -MF applabel/$(DEPDIR)/libyaf_la-portHash.Tpo -c -o applabel/libyaf_la-portHash.lo `test -f 'applabel/portHash.c' || echo '$(srcdir)/'`applabel/portHash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT applabel/libyaf_la-portHash.lo -MD -MP -MF applabel/$(DEPDIR)/libyaf_la-portHash.Tpo -c -o applabel/libyaf_la-portHash.lo `test -f 'applabel/portHash.c' || echo '$(srcdir)/'`applabel/portHash.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) applabel/$(DEPDIR)/libyaf_la-portHash.Tpo applabel/$(DEPDIR)/libyaf_la-portHash.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='applabel/portHash.c' object='applabel/libyaf_la-portHash.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o applabel/libyaf_la-portHash.lo `test -f 'applabel/portHash.c' || echo '$(srcdir)/'`applabel/portHash.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o applabel/libyaf_la-portHash.lo `test -f 'applabel/portHash.c' || echo '$(srcdir)/'`applabel/portHash.c
 
 libyaf_la-yafhooks.lo: yafhooks.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT libyaf_la-yafhooks.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yafhooks.Tpo -c -o libyaf_la-yafhooks.lo `test -f 'yafhooks.c' || echo '$(srcdir)/'`yafhooks.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libyaf_la-yafhooks.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yafhooks.Tpo -c -o libyaf_la-yafhooks.lo `test -f 'yafhooks.c' || echo '$(srcdir)/'`yafhooks.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libyaf_la-yafhooks.Tpo $(DEPDIR)/libyaf_la-yafhooks.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafhooks.c' object='libyaf_la-yafhooks.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-yafhooks.lo `test -f 'yafhooks.c' || echo '$(srcdir)/'`yafhooks.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libyaf_la-yafhooks.lo `test -f 'yafhooks.c' || echo '$(srcdir)/'`yafhooks.c
 
 applabel/p0f/libyaf_la-crc32.lo: applabel/p0f/crc32.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT applabel/p0f/libyaf_la-crc32.lo -MD -MP -MF applabel/p0f/$(DEPDIR)/libyaf_la-crc32.Tpo -c -o applabel/p0f/libyaf_la-crc32.lo `test -f 'applabel/p0f/crc32.c' || echo '$(srcdir)/'`applabel/p0f/crc32.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT applabel/p0f/libyaf_la-crc32.lo -MD -MP -MF applabel/p0f/$(DEPDIR)/libyaf_la-crc32.Tpo -c -o applabel/p0f/libyaf_la-crc32.lo `test -f 'applabel/p0f/crc32.c' || echo '$(srcdir)/'`applabel/p0f/crc32.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) applabel/p0f/$(DEPDIR)/libyaf_la-crc32.Tpo applabel/p0f/$(DEPDIR)/libyaf_la-crc32.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='applabel/p0f/crc32.c' object='applabel/p0f/libyaf_la-crc32.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o applabel/p0f/libyaf_la-crc32.lo `test -f 'applabel/p0f/crc32.c' || echo '$(srcdir)/'`applabel/p0f/crc32.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o applabel/p0f/libyaf_la-crc32.lo `test -f 'applabel/p0f/crc32.c' || echo '$(srcdir)/'`applabel/p0f/crc32.c
 
 applabel/p0f/libyaf_la-yfp0f.lo: applabel/p0f/yfp0f.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT applabel/p0f/libyaf_la-yfp0f.lo -MD -MP -MF applabel/p0f/$(DEPDIR)/libyaf_la-yfp0f.Tpo -c -o applabel/p0f/libyaf_la-yfp0f.lo `test -f 'applabel/p0f/yfp0f.c' || echo '$(srcdir)/'`applabel/p0f/yfp0f.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT applabel/p0f/libyaf_la-yfp0f.lo -MD -MP -MF applabel/p0f/$(DEPDIR)/libyaf_la-yfp0f.Tpo -c -o applabel/p0f/libyaf_la-yfp0f.lo `test -f 'applabel/p0f/yfp0f.c' || echo '$(srcdir)/'`applabel/p0f/yfp0f.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) applabel/p0f/$(DEPDIR)/libyaf_la-yfp0f.Tpo applabel/p0f/$(DEPDIR)/libyaf_la-yfp0f.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='applabel/p0f/yfp0f.c' object='applabel/p0f/libyaf_la-yfp0f.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o applabel/p0f/libyaf_la-yfp0f.lo `test -f 'applabel/p0f/yfp0f.c' || echo '$(srcdir)/'`applabel/p0f/yfp0f.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o applabel/p0f/libyaf_la-yfp0f.lo `test -f 'applabel/p0f/yfp0f.c' || echo '$(srcdir)/'`applabel/p0f/yfp0f.c
 
 libyaf_la-yafcygwin.lo: yafcygwin.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT libyaf_la-yafcygwin.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yafcygwin.Tpo -c -o libyaf_la-yafcygwin.lo `test -f 'yafcygwin.c' || echo '$(srcdir)/'`yafcygwin.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libyaf_la-yafcygwin.lo -MD -MP -MF $(DEPDIR)/libyaf_la-yafcygwin.Tpo -c -o libyaf_la-yafcygwin.lo `test -f 'yafcygwin.c' || echo '$(srcdir)/'`yafcygwin.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libyaf_la-yafcygwin.Tpo $(DEPDIR)/libyaf_la-yafcygwin.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafcygwin.c' object='libyaf_la-yafcygwin.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-yafcygwin.lo `test -f 'yafcygwin.c' || echo '$(srcdir)/'`yafcygwin.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libyaf_la-yafcygwin.lo `test -f 'yafcygwin.c' || echo '$(srcdir)/'`yafcygwin.c
 
 libyaf_la-infomodel.lo: infomodel.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -MT libyaf_la-infomodel.lo -MD -MP -MF $(DEPDIR)/libyaf_la-infomodel.Tpo -c -o libyaf_la-infomodel.lo `test -f 'infomodel.c' || echo '$(srcdir)/'`infomodel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libyaf_la-infomodel.lo -MD -MP -MF $(DEPDIR)/libyaf_la-infomodel.Tpo -c -o libyaf_la-infomodel.lo `test -f 'infomodel.c' || echo '$(srcdir)/'`infomodel.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libyaf_la-infomodel.Tpo $(DEPDIR)/libyaf_la-infomodel.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='infomodel.c' object='libyaf_la-infomodel.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libyaf_la_CFLAGS) $(CFLAGS) -c -o libyaf_la-infomodel.lo `test -f 'infomodel.c' || echo '$(srcdir)/'`infomodel.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libyaf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libyaf_la-infomodel.lo `test -f 'infomodel.c' || echo '$(srcdir)/'`infomodel.c
 
 yaf-yaf.o: yaf.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yaf.o -MD -MP -MF $(DEPDIR)/yaf-yaf.Tpo -c -o yaf-yaf.o `test -f 'yaf.c' || echo '$(srcdir)/'`yaf.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yaf.o -MD -MP -MF $(DEPDIR)/yaf-yaf.Tpo -c -o yaf-yaf.o `test -f 'yaf.c' || echo '$(srcdir)/'`yaf.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yaf.Tpo $(DEPDIR)/yaf-yaf.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yaf.c' object='yaf-yaf.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yaf.o `test -f 'yaf.c' || echo '$(srcdir)/'`yaf.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yaf.o `test -f 'yaf.c' || echo '$(srcdir)/'`yaf.c
 
 yaf-yaf.obj: yaf.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yaf.obj -MD -MP -MF $(DEPDIR)/yaf-yaf.Tpo -c -o yaf-yaf.obj `if test -f 'yaf.c'; then $(CYGPATH_W) 'yaf.c'; else $(CYGPATH_W) '$(srcdir)/yaf.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yaf.obj -MD -MP -MF $(DEPDIR)/yaf-yaf.Tpo -c -o yaf-yaf.obj `if test -f 'yaf.c'; then $(CYGPATH_W) 'yaf.c'; else $(CYGPATH_W) '$(srcdir)/yaf.c'; fi`
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yaf.Tpo $(DEPDIR)/yaf-yaf.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yaf.c' object='yaf-yaf.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yaf.obj `if test -f 'yaf.c'; then $(CYGPATH_W) 'yaf.c'; else $(CYGPATH_W) '$(srcdir)/yaf.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yaf.obj `if test -f 'yaf.c'; then $(CYGPATH_W) 'yaf.c'; else $(CYGPATH_W) '$(srcdir)/yaf.c'; fi`
 
 yaf-yafstat.o: yafstat.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafstat.o -MD -MP -MF $(DEPDIR)/yaf-yafstat.Tpo -c -o yaf-yafstat.o `test -f 'yafstat.c' || echo '$(srcdir)/'`yafstat.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafstat.o -MD -MP -MF $(DEPDIR)/yaf-yafstat.Tpo -c -o yaf-yafstat.o `test -f 'yafstat.c' || echo '$(srcdir)/'`yafstat.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafstat.Tpo $(DEPDIR)/yaf-yafstat.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafstat.c' object='yaf-yafstat.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafstat.o `test -f 'yafstat.c' || echo '$(srcdir)/'`yafstat.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafstat.o `test -f 'yafstat.c' || echo '$(srcdir)/'`yafstat.c
 
 yaf-yafstat.obj: yafstat.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafstat.obj -MD -MP -MF $(DEPDIR)/yaf-yafstat.Tpo -c -o yaf-yafstat.obj `if test -f 'yafstat.c'; then $(CYGPATH_W) 'yafstat.c'; else $(CYGPATH_W) '$(srcdir)/yafstat.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafstat.obj -MD -MP -MF $(DEPDIR)/yaf-yafstat.Tpo -c -o yaf-yafstat.obj `if test -f 'yafstat.c'; then $(CYGPATH_W) 'yafstat.c'; else $(CYGPATH_W) '$(srcdir)/yafstat.c'; fi`
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafstat.Tpo $(DEPDIR)/yaf-yafstat.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafstat.c' object='yaf-yafstat.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafstat.obj `if test -f 'yafstat.c'; then $(CYGPATH_W) 'yafstat.c'; else $(CYGPATH_W) '$(srcdir)/yafstat.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafstat.obj `if test -f 'yafstat.c'; then $(CYGPATH_W) 'yafstat.c'; else $(CYGPATH_W) '$(srcdir)/yafstat.c'; fi`
 
 yaf-yafdag.o: yafdag.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafdag.o -MD -MP -MF $(DEPDIR)/yaf-yafdag.Tpo -c -o yaf-yafdag.o `test -f 'yafdag.c' || echo '$(srcdir)/'`yafdag.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafdag.o -MD -MP -MF $(DEPDIR)/yaf-yafdag.Tpo -c -o yaf-yafdag.o `test -f 'yafdag.c' || echo '$(srcdir)/'`yafdag.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafdag.Tpo $(DEPDIR)/yaf-yafdag.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafdag.c' object='yaf-yafdag.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafdag.o `test -f 'yafdag.c' || echo '$(srcdir)/'`yafdag.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafdag.o `test -f 'yafdag.c' || echo '$(srcdir)/'`yafdag.c
 
 yaf-yafdag.obj: yafdag.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafdag.obj -MD -MP -MF $(DEPDIR)/yaf-yafdag.Tpo -c -o yaf-yafdag.obj `if test -f 'yafdag.c'; then $(CYGPATH_W) 'yafdag.c'; else $(CYGPATH_W) '$(srcdir)/yafdag.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafdag.obj -MD -MP -MF $(DEPDIR)/yaf-yafdag.Tpo -c -o yaf-yafdag.obj `if test -f 'yafdag.c'; then $(CYGPATH_W) 'yafdag.c'; else $(CYGPATH_W) '$(srcdir)/yafdag.c'; fi`
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafdag.Tpo $(DEPDIR)/yaf-yafdag.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafdag.c' object='yaf-yafdag.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafdag.obj `if test -f 'yafdag.c'; then $(CYGPATH_W) 'yafdag.c'; else $(CYGPATH_W) '$(srcdir)/yafdag.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafdag.obj `if test -f 'yafdag.c'; then $(CYGPATH_W) 'yafdag.c'; else $(CYGPATH_W) '$(srcdir)/yafdag.c'; fi`
 
 yaf-yafcap.o: yafcap.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafcap.o -MD -MP -MF $(DEPDIR)/yaf-yafcap.Tpo -c -o yaf-yafcap.o `test -f 'yafcap.c' || echo '$(srcdir)/'`yafcap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafcap.o -MD -MP -MF $(DEPDIR)/yaf-yafcap.Tpo -c -o yaf-yafcap.o `test -f 'yafcap.c' || echo '$(srcdir)/'`yafcap.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafcap.Tpo $(DEPDIR)/yaf-yafcap.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafcap.c' object='yaf-yafcap.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafcap.o `test -f 'yafcap.c' || echo '$(srcdir)/'`yafcap.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafcap.o `test -f 'yafcap.c' || echo '$(srcdir)/'`yafcap.c
 
 yaf-yafcap.obj: yafcap.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafcap.obj -MD -MP -MF $(DEPDIR)/yaf-yafcap.Tpo -c -o yaf-yafcap.obj `if test -f 'yafcap.c'; then $(CYGPATH_W) 'yafcap.c'; else $(CYGPATH_W) '$(srcdir)/yafcap.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafcap.obj -MD -MP -MF $(DEPDIR)/yaf-yafcap.Tpo -c -o yaf-yafcap.obj `if test -f 'yafcap.c'; then $(CYGPATH_W) 'yafcap.c'; else $(CYGPATH_W) '$(srcdir)/yafcap.c'; fi`
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafcap.Tpo $(DEPDIR)/yaf-yafcap.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafcap.c' object='yaf-yafcap.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafcap.obj `if test -f 'yafcap.c'; then $(CYGPATH_W) 'yafcap.c'; else $(CYGPATH_W) '$(srcdir)/yafcap.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafcap.obj `if test -f 'yafcap.c'; then $(CYGPATH_W) 'yafcap.c'; else $(CYGPATH_W) '$(srcdir)/yafcap.c'; fi`
 
 yaf-yafout.o: yafout.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafout.o -MD -MP -MF $(DEPDIR)/yaf-yafout.Tpo -c -o yaf-yafout.o `test -f 'yafout.c' || echo '$(srcdir)/'`yafout.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafout.o -MD -MP -MF $(DEPDIR)/yaf-yafout.Tpo -c -o yaf-yafout.o `test -f 'yafout.c' || echo '$(srcdir)/'`yafout.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafout.Tpo $(DEPDIR)/yaf-yafout.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafout.c' object='yaf-yafout.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafout.o `test -f 'yafout.c' || echo '$(srcdir)/'`yafout.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafout.o `test -f 'yafout.c' || echo '$(srcdir)/'`yafout.c
 
 yaf-yafout.obj: yafout.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafout.obj -MD -MP -MF $(DEPDIR)/yaf-yafout.Tpo -c -o yaf-yafout.obj `if test -f 'yafout.c'; then $(CYGPATH_W) 'yafout.c'; else $(CYGPATH_W) '$(srcdir)/yafout.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafout.obj -MD -MP -MF $(DEPDIR)/yaf-yafout.Tpo -c -o yaf-yafout.obj `if test -f 'yafout.c'; then $(CYGPATH_W) 'yafout.c'; else $(CYGPATH_W) '$(srcdir)/yafout.c'; fi`
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafout.Tpo $(DEPDIR)/yaf-yafout.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafout.c' object='yaf-yafout.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafout.obj `if test -f 'yafout.c'; then $(CYGPATH_W) 'yafout.c'; else $(CYGPATH_W) '$(srcdir)/yafout.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafout.obj `if test -f 'yafout.c'; then $(CYGPATH_W) 'yafout.c'; else $(CYGPATH_W) '$(srcdir)/yafout.c'; fi`
 
 yaf-yaflush.o: yaflush.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yaflush.o -MD -MP -MF $(DEPDIR)/yaf-yaflush.Tpo -c -o yaf-yaflush.o `test -f 'yaflush.c' || echo '$(srcdir)/'`yaflush.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yaflush.o -MD -MP -MF $(DEPDIR)/yaf-yaflush.Tpo -c -o yaf-yaflush.o `test -f 'yaflush.c' || echo '$(srcdir)/'`yaflush.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yaflush.Tpo $(DEPDIR)/yaf-yaflush.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yaflush.c' object='yaf-yaflush.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yaflush.o `test -f 'yaflush.c' || echo '$(srcdir)/'`yaflush.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yaflush.o `test -f 'yaflush.c' || echo '$(srcdir)/'`yaflush.c
 
 yaf-yaflush.obj: yaflush.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yaflush.obj -MD -MP -MF $(DEPDIR)/yaf-yaflush.Tpo -c -o yaf-yaflush.obj `if test -f 'yaflush.c'; then $(CYGPATH_W) 'yaflush.c'; else $(CYGPATH_W) '$(srcdir)/yaflush.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yaflush.obj -MD -MP -MF $(DEPDIR)/yaf-yaflush.Tpo -c -o yaf-yaflush.obj `if test -f 'yaflush.c'; then $(CYGPATH_W) 'yaflush.c'; else $(CYGPATH_W) '$(srcdir)/yaflush.c'; fi`
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yaflush.Tpo $(DEPDIR)/yaf-yaflush.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yaflush.c' object='yaf-yaflush.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yaflush.obj `if test -f 'yaflush.c'; then $(CYGPATH_W) 'yaflush.c'; else $(CYGPATH_W) '$(srcdir)/yaflush.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yaflush.obj `if test -f 'yaflush.c'; then $(CYGPATH_W) 'yaflush.c'; else $(CYGPATH_W) '$(srcdir)/yaflush.c'; fi`
 
 yaf-yafpcapx.o: yafpcapx.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafpcapx.o -MD -MP -MF $(DEPDIR)/yaf-yafpcapx.Tpo -c -o yaf-yafpcapx.o `test -f 'yafpcapx.c' || echo '$(srcdir)/'`yafpcapx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafpcapx.o -MD -MP -MF $(DEPDIR)/yaf-yafpcapx.Tpo -c -o yaf-yafpcapx.o `test -f 'yafpcapx.c' || echo '$(srcdir)/'`yafpcapx.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafpcapx.Tpo $(DEPDIR)/yaf-yafpcapx.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafpcapx.c' object='yaf-yafpcapx.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafpcapx.o `test -f 'yafpcapx.c' || echo '$(srcdir)/'`yafpcapx.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafpcapx.o `test -f 'yafpcapx.c' || echo '$(srcdir)/'`yafpcapx.c
 
 yaf-yafpcapx.obj: yafpcapx.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafpcapx.obj -MD -MP -MF $(DEPDIR)/yaf-yafpcapx.Tpo -c -o yaf-yafpcapx.obj `if test -f 'yafpcapx.c'; then $(CYGPATH_W) 'yafpcapx.c'; else $(CYGPATH_W) '$(srcdir)/yafpcapx.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafpcapx.obj -MD -MP -MF $(DEPDIR)/yaf-yafpcapx.Tpo -c -o yaf-yafpcapx.obj `if test -f 'yafpcapx.c'; then $(CYGPATH_W) 'yafpcapx.c'; else $(CYGPATH_W) '$(srcdir)/yafpcapx.c'; fi`
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafpcapx.Tpo $(DEPDIR)/yaf-yafpcapx.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafpcapx.c' object='yaf-yafpcapx.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafpcapx.obj `if test -f 'yafpcapx.c'; then $(CYGPATH_W) 'yafpcapx.c'; else $(CYGPATH_W) '$(srcdir)/yafpcapx.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafpcapx.obj `if test -f 'yafpcapx.c'; then $(CYGPATH_W) 'yafpcapx.c'; else $(CYGPATH_W) '$(srcdir)/yafpcapx.c'; fi`
 
 yaf-yafnfe.o: yafnfe.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafnfe.o -MD -MP -MF $(DEPDIR)/yaf-yafnfe.Tpo -c -o yaf-yafnfe.o `test -f 'yafnfe.c' || echo '$(srcdir)/'`yafnfe.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafnfe.o -MD -MP -MF $(DEPDIR)/yaf-yafnfe.Tpo -c -o yaf-yafnfe.o `test -f 'yafnfe.c' || echo '$(srcdir)/'`yafnfe.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafnfe.Tpo $(DEPDIR)/yaf-yafnfe.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafnfe.c' object='yaf-yafnfe.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafnfe.o `test -f 'yafnfe.c' || echo '$(srcdir)/'`yafnfe.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafnfe.o `test -f 'yafnfe.c' || echo '$(srcdir)/'`yafnfe.c
 
 yaf-yafnfe.obj: yafnfe.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafnfe.obj -MD -MP -MF $(DEPDIR)/yaf-yafnfe.Tpo -c -o yaf-yafnfe.obj `if test -f 'yafnfe.c'; then $(CYGPATH_W) 'yafnfe.c'; else $(CYGPATH_W) '$(srcdir)/yafnfe.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafnfe.obj -MD -MP -MF $(DEPDIR)/yaf-yafnfe.Tpo -c -o yaf-yafnfe.obj `if test -f 'yafnfe.c'; then $(CYGPATH_W) 'yafnfe.c'; else $(CYGPATH_W) '$(srcdir)/yafnfe.c'; fi`
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafnfe.Tpo $(DEPDIR)/yaf-yafnfe.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafnfe.c' object='yaf-yafnfe.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafnfe.obj `if test -f 'yafnfe.c'; then $(CYGPATH_W) 'yafnfe.c'; else $(CYGPATH_W) '$(srcdir)/yafnfe.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafnfe.obj `if test -f 'yafnfe.c'; then $(CYGPATH_W) 'yafnfe.c'; else $(CYGPATH_W) '$(srcdir)/yafnfe.c'; fi`
 
 yaf-yafpfring.o: yafpfring.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafpfring.o -MD -MP -MF $(DEPDIR)/yaf-yafpfring.Tpo -c -o yaf-yafpfring.o `test -f 'yafpfring.c' || echo '$(srcdir)/'`yafpfring.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafpfring.o -MD -MP -MF $(DEPDIR)/yaf-yafpfring.Tpo -c -o yaf-yafpfring.o `test -f 'yafpfring.c' || echo '$(srcdir)/'`yafpfring.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafpfring.Tpo $(DEPDIR)/yaf-yafpfring.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafpfring.c' object='yaf-yafpfring.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafpfring.o `test -f 'yafpfring.c' || echo '$(srcdir)/'`yafpfring.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafpfring.o `test -f 'yafpfring.c' || echo '$(srcdir)/'`yafpfring.c
 
 yaf-yafpfring.obj: yafpfring.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -MT yaf-yafpfring.obj -MD -MP -MF $(DEPDIR)/yaf-yafpfring.Tpo -c -o yaf-yafpfring.obj `if test -f 'yafpfring.c'; then $(CYGPATH_W) 'yafpfring.c'; else $(CYGPATH_W) '$(srcdir)/yafpfring.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT yaf-yafpfring.obj -MD -MP -MF $(DEPDIR)/yaf-yafpfring.Tpo -c -o yaf-yafpfring.obj `if test -f 'yafpfring.c'; then $(CYGPATH_W) 'yafpfring.c'; else $(CYGPATH_W) '$(srcdir)/yafpfring.c'; fi`
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yaf-yafpfring.Tpo $(DEPDIR)/yaf-yafpfring.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafpfring.c' object='yaf-yafpfring.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yaf_CFLAGS) $(CFLAGS) -c -o yaf-yafpfring.obj `if test -f 'yafpfring.c'; then $(CYGPATH_W) 'yafpfring.c'; else $(CYGPATH_W) '$(srcdir)/yafpfring.c'; fi`
-
-yafcollect-yafcollect.o: yafcollect.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yafcollect_CFLAGS) $(CFLAGS) -MT yafcollect-yafcollect.o -MD -MP -MF $(DEPDIR)/yafcollect-yafcollect.Tpo -c -o yafcollect-yafcollect.o `test -f 'yafcollect.c' || echo '$(srcdir)/'`yafcollect.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yafcollect-yafcollect.Tpo $(DEPDIR)/yafcollect-yafcollect.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafcollect.c' object='yafcollect-yafcollect.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yafcollect_CFLAGS) $(CFLAGS) -c -o yafcollect-yafcollect.o `test -f 'yafcollect.c' || echo '$(srcdir)/'`yafcollect.c
-
-yafcollect-yafcollect.obj: yafcollect.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yafcollect_CFLAGS) $(CFLAGS) -MT yafcollect-yafcollect.obj -MD -MP -MF $(DEPDIR)/yafcollect-yafcollect.Tpo -c -o yafcollect-yafcollect.obj `if test -f 'yafcollect.c'; then $(CYGPATH_W) 'yafcollect.c'; else $(CYGPATH_W) '$(srcdir)/yafcollect.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yafcollect-yafcollect.Tpo $(DEPDIR)/yafcollect-yafcollect.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafcollect.c' object='yafcollect-yafcollect.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yafcollect_CFLAGS) $(CFLAGS) -c -o yafcollect-yafcollect.obj `if test -f 'yafcollect.c'; then $(CYGPATH_W) 'yafcollect.c'; else $(CYGPATH_W) '$(srcdir)/yafcollect.c'; fi`
-
-yafscii-yafscii.o: yafscii.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yafscii_CFLAGS) $(CFLAGS) -MT yafscii-yafscii.o -MD -MP -MF $(DEPDIR)/yafscii-yafscii.Tpo -c -o yafscii-yafscii.o `test -f 'yafscii.c' || echo '$(srcdir)/'`yafscii.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yafscii-yafscii.Tpo $(DEPDIR)/yafscii-yafscii.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafscii.c' object='yafscii-yafscii.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yafscii_CFLAGS) $(CFLAGS) -c -o yafscii-yafscii.o `test -f 'yafscii.c' || echo '$(srcdir)/'`yafscii.c
-
-yafscii-yafscii.obj: yafscii.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yafscii_CFLAGS) $(CFLAGS) -MT yafscii-yafscii.obj -MD -MP -MF $(DEPDIR)/yafscii-yafscii.Tpo -c -o yafscii-yafscii.obj `if test -f 'yafscii.c'; then $(CYGPATH_W) 'yafscii.c'; else $(CYGPATH_W) '$(srcdir)/yafscii.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/yafscii-yafscii.Tpo $(DEPDIR)/yafscii-yafscii.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yafscii.c' object='yafscii-yafscii.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(yafscii_CFLAGS) $(CFLAGS) -c -o yafscii-yafscii.obj `if test -f 'yafscii.c'; then $(CYGPATH_W) 'yafscii.c'; else $(CYGPATH_W) '$(srcdir)/yafscii.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(yaf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o yaf-yafpfring.obj `if test -f 'yafpfring.c'; then $(CYGPATH_W) 'yafpfring.c'; else $(CYGPATH_W) '$(srcdir)/yafpfring.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1269,10 +1264,13 @@ distdir-am: $(DISTFILES)
 	      || exit 1; \
 	  fi; \
 	done
+	$(MAKE) $(AM_MAKEFLAGS) \
+	  top_distdir="$(top_distdir)" distdir="$(distdir)" \
+	  dist-hook
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-recursive
-all-am: Makefile $(PROGRAMS) $(LTLIBRARIES) $(MANS) $(HEADERS)
+all-am: Makefile $(PROGRAMS) $(LTLIBRARIES) $(MANS)
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs: installdirs-recursive
@@ -1343,8 +1341,8 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/yaf-yafpcapx.Po
 	-rm -f ./$(DEPDIR)/yaf-yafpfring.Po
 	-rm -f ./$(DEPDIR)/yaf-yafstat.Po
-	-rm -f ./$(DEPDIR)/yafcollect-yafcollect.Po
-	-rm -f ./$(DEPDIR)/yafscii-yafscii.Po
+	-rm -f ./$(DEPDIR)/yafcollect.Po
+	-rm -f ./$(DEPDIR)/yafscii.Po
 	-rm -f applabel/$(DEPDIR)/libyaf_la-payloadScanner.Plo
 	-rm -f applabel/$(DEPDIR)/libyaf_la-portHash.Plo
 	-rm -f applabel/p0f/$(DEPDIR)/libyaf_la-crc32.Plo
@@ -1413,8 +1411,8 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/yaf-yafpcapx.Po
 	-rm -f ./$(DEPDIR)/yaf-yafpfring.Po
 	-rm -f ./$(DEPDIR)/yaf-yafstat.Po
-	-rm -f ./$(DEPDIR)/yafcollect-yafcollect.Po
-	-rm -f ./$(DEPDIR)/yafscii-yafscii.Po
+	-rm -f ./$(DEPDIR)/yafcollect.Po
+	-rm -f ./$(DEPDIR)/yafscii.Po
 	-rm -f applabel/$(DEPDIR)/libyaf_la-payloadScanner.Plo
 	-rm -f applabel/$(DEPDIR)/libyaf_la-portHash.Plo
 	-rm -f applabel/p0f/$(DEPDIR)/libyaf_la-crc32.Plo
@@ -1446,26 +1444,26 @@ uninstall-man: uninstall-man1
 .PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am \
 	am--depfiles check check-am clean clean-binPROGRAMS \
 	clean-generic clean-libLTLIBRARIES clean-libtool clean-local \
-	cscopelist-am ctags ctags-am distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-binPROGRAMS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am \
-	install-libLTLIBRARIES install-man install-man1 install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs installdirs-am \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
-	uninstall-binPROGRAMS uninstall-libLTLIBRARIES uninstall-man \
-	uninstall-man1
+	cscopelist-am ctags ctags-am dist-hook distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-binPROGRAMS install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-libLTLIBRARIES install-man \
+	install-man1 install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-libLTLIBRARIES uninstall-man uninstall-man1
 
 .PRECIOUS: Makefile
 
 
 .pod.1:
-	$(POD2MAN) $(YAF_POD2MAN_ARGS) --section=1 $< $@
+	$(AM_V_GEN) $(POD2MAN) $(YAF_POD2MAN_ARGS) --section=1 $< $@
 
 .pod.html:
 	$(POD2HTML) --noindex --infile="$<" --outfile="$@"
@@ -1474,6 +1472,10 @@ uninstall-man: uninstall-man1
 copy-man-pages: $(HTMLFILES)
 	mkdir -p $(top_builddir)/doc/html
 	cp $(HTMLFILES) $(top_builddir)/doc/html
+
+dist-hook: $(HTMLFILES)
+	mkdir -p $(top_distdir)/doc/html
+	cp $(HTMLFILES) $(top_distdir)/doc/html
 
 docs: $(man1_MANS) copy-man-pages
 

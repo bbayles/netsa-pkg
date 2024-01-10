@@ -1,10 +1,52 @@
-dnl Copyright (C) 2004-2020 by Carnegie Mellon University.
+dnl Copyright (C) 2004-2023 by Carnegie Mellon University.
 dnl
 dnl @OPENSOURCE_LICENSE_START@
-dnl See license information in ../LICENSE.txt
+dnl
+dnl SiLK 3.22.0
+dnl
+dnl Copyright 2023 Carnegie Mellon University.
+dnl
+dnl NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+dnl INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+dnl UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+dnl AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+dnl PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+dnl THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+dnl ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+dnl INFRINGEMENT.
+dnl
+dnl Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+dnl contact permission@sei.cmu.edu for full terms.
+dnl
+dnl [DISTRIBUTION STATEMENT A] This material has been approved for public
+dnl release and unlimited distribution.  Please see Copyright notice for
+dnl non-US Government use and distribution.
+dnl
+dnl GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+dnl
+dnl Contract No.: FA8702-15-D-0002
+dnl Contractor Name: Carnegie Mellon University
+dnl Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+dnl
+dnl The Government's rights to use, modify, reproduce, release, perform,
+dnl display, or disclose this software are restricted by paragraph (b)(2) of
+dnl the Rights in Noncommercial Computer Software and Noncommercial Computer
+dnl Software Documentation clause contained in the above identified
+dnl contract. No restrictions apply after the expiration date shown
+dnl above. Any reproduction of the software or portions thereof marked with
+dnl this legend must also reproduce the markings.
+dnl
+dnl Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+dnl Trademark Office by Carnegie Mellon University.
+dnl
+dnl This Software includes and/or makes use of Third-Party Software each
+dnl subject to its own license.
+dnl
+dnl DM23-0973
+dnl
 dnl @OPENSOURCE_LICENSE_END@
 
-dnl RCSIDENT("$SiLK: ax_check_libz.m4 ef14e54179be 2020-04-14 21:57:45Z mthomas $")
+dnl RCSIDENT("$SiLK: ax_check_libz.m4 b2b562f1ea39 2023-02-20 17:50:25Z mthomas $")
 
 # ---------------------------------------------------------------------------
 # AX_CHECK_LIBZ

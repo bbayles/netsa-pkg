@@ -1,65 +1,56 @@
-/**
- * @internal
+/*
+ *  Copyright 2006-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+/*
+ *  dpacketplugin.c
  *
- * @file dpacketplugin.c
+ *  Provides a plugin to inspect payloads and export the data
+ *  in ipfix template format.  See yafdpi(1)
  *
- * Provides a plugin to inspect payloads and export the data
- * in ipfix template format.  See yafdpi(1)
+ *  ------------------------------------------------------------------------
+ *  Authors: Emily Sarneso
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
  *
- ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
- ** ------------------------------------------------------------------------
- ** Authors: Emily Sarneso
- ** ------------------------------------------------------------------------
+ *  Copyright 2023 Carnegie Mellon University.
  *
- ** @OPENSOURCE_HEADER_START@
- ** Use of the YAF system and related source code is subject to the terms
- ** of the following licenses:
- **
- ** GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
- ** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
- **
- ** NO WARRANTY
- **
- ** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
- ** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
- ** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
- ** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
- ** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
- ** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
- ** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
- ** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
- ** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
- ** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
- ** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
- ** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
- ** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
- ** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
- ** DELIVERABLES UNDER THIS LICENSE.
- **
- ** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
- ** Mellon University, its trustees, officers, employees, and agents from
- ** all claims or demands made against them (and any related losses,
- ** expenses, or attorney's fees) arising out of, or relating to Licensee's
- ** and/or its sub licensees' negligent use or willful misuse of or
- ** negligent conduct or willful misconduct regarding the Software,
- ** facilities, or other rights or assistance granted by Carnegie Mellon
- ** University under this License, including, but not limited to, any
- ** claims of product liability, personal injury, death, damage to
- ** property, or violation of any laws or regulations.
- **
- ** Carnegie Mellon University Software Engineering Institute authored
- ** documents are sponsored by the U.S. Department of Defense under
- ** Contract FA8721-05-C-0003. Carnegie Mellon University retains
- ** copyrights in all material produced under this contract. The U.S.
- ** Government retains a non-exclusive, royalty-free license to publish or
- ** reproduce these documents, or allow others to do so, for U.S.
- ** Government purposes only pursuant to the copyright license under the
- ** contract clause at 252.227.7013.
- **
- ** @OPENSOURCE_HEADER_END@
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
  *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
  *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ *  ------------------------------------------------------------------------
  */
 
 #define _YAF_SOURCE_
@@ -95,15 +86,19 @@
 #define YAF_IMAP_STANDARD       7
 #define YAF_RTSP_STANDARD       12
 #define YAF_SIP_STANDARD        7
-#define YAF_SSH_STANDARD        1
+//#define YAF_SSH_STANDARD        1
 #define YAF_SMTP_STANDARD       11
 
 /* incremement below to add a new protocol - 0 needs to be first */
 /*#define DPI_TOTAL_PROTOCOLS 22*/
 
-#define DPI_REGEX_PROTOCOLS 9
+/**
+ * SSL and SSH Declarations are refreced from paylloadScanner.h
+*/
 
-static const uint16_t   regexDPIProtos[] = {21, 80, 143, 554, 5060, 22,
+#define DPI_REGEX_PROTOCOLS 8
+
+static const uint16_t   regexDPIProtos[] = {21, 80, 143, 554, 5060,
                                             20000, 502, 44818};
 static const uint16_t   DPIProtocols[] = {0, 21, 22, 25, 53, 69, 80, 110, 119,
                                           143, 194, 427, 443, 554, 873,
@@ -144,7 +139,11 @@ static struct yfHookMetaData metaData = {
     1
 };
 
-
+/* For DNS binary octet escaping */
+static const uint8_t hex_digits[] = {
+    '0', '1', '2', '3', '4', '5', '6', '7',
+    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+};
 
 /* to support protocols that support expandable lists---lists with
  * user-defined elements */
@@ -162,7 +161,7 @@ static ypExtraElements_t http_extra = { YAF_HTTP_STANDARD, 0, NULL };
 static ypExtraElements_t imap_extra = { YAF_IMAP_STANDARD, 0, NULL };
 static ypExtraElements_t rtsp_extra = { YAF_RTSP_STANDARD, 0, NULL };
 static ypExtraElements_t sip_extra  = { YAF_SIP_STANDARD,  0, NULL };
-static ypExtraElements_t ssh_extra  = { YAF_SSH_STANDARD,  0, NULL };
+
 
 static fbTemplate_t     *ircTemplate;
 static fbTemplate_t     *pop3Template;
@@ -207,7 +206,6 @@ static fbTemplate_t     *enipTemplate;
 static fbTemplate_t     *rtpTemplate;
 
 
-
 static void
 yfAlignmentCheck1(
     void)
@@ -247,9 +245,13 @@ yfAlignmentCheck1(
     RUN_CHECKS(yfSSLFlow_t, sslServerCipher, 1);
     RUN_CHECKS(yfSSLFlow_t, sslClientVersion, 1);
     RUN_CHECKS(yfSSLFlow_t, sslCompressionMethod, 1);
-    RUN_CHECKS(yfSSLFlow_t, sslVersion, 1);
+    RUN_CHECKS(yfSSLFlow_t, sslRecordVersion, 1);
     RUN_CHECKS(yfSSLFlow_t, sslCertList, 0);
     RUN_CHECKS(yfSSLFlow_t, sslServerName, 1);
+    RUN_CHECKS(yfSSLFlow_t, sslClientJA3, 1);
+    RUN_CHECKS(yfSSLFlow_t, sslServerJA3S, 1);
+    RUN_CHECKS(yfSSLFlow_t, sslClientJA3Fingerprint, 1);
+    RUN_CHECKS(yfSSLFlow_t, sslServerJA3SFingerprint, 1);
 
     prevOffset = 0;
     prevSize = 0;
@@ -278,15 +280,15 @@ yfAlignmentCheck1(
     RUN_CHECKS(yfSSLCertFlow_t, issuer, 1);
     RUN_CHECKS(yfSSLCertFlow_t, subject, 1);
     RUN_CHECKS(yfSSLCertFlow_t, extension, 1);
-    RUN_CHECKS(yfSSLCertFlow_t, sig, 1);
-    RUN_CHECKS(yfSSLCertFlow_t, serial, 1);
-    RUN_CHECKS(yfSSLCertFlow_t, not_before, 1);
-    RUN_CHECKS(yfSSLCertFlow_t, not_after, 1);
-    RUN_CHECKS(yfSSLCertFlow_t, pkalg, 1);
-    RUN_CHECKS(yfSSLCertFlow_t, pklen, 1);
-    RUN_CHECKS(yfSSLCertFlow_t, version, 1);
+    RUN_CHECKS(yfSSLCertFlow_t, sslCertSignature, 1);
+    RUN_CHECKS(yfSSLCertFlow_t, sslCertSerialNumber, 1);
+    RUN_CHECKS(yfSSLCertFlow_t, sslCertValidityNotBefore, 1);
+    RUN_CHECKS(yfSSLCertFlow_t, sslCertValidityNotAfter, 1);
+    RUN_CHECKS(yfSSLCertFlow_t, sslPublicKeyAlgorithm, 1);
+    RUN_CHECKS(yfSSLCertFlow_t, sslPublicKeyLength, 1);
+    RUN_CHECKS(yfSSLCertFlow_t, sslCertVersion, 1);
     RUN_CHECKS(yfSSLCertFlow_t, padding, 0);
-    RUN_CHECKS(yfSSLCertFlow_t, hash, 0);
+    RUN_CHECKS(yfSSLCertFlow_t, sslCertificateHash, 0);
 
     prevOffset = 0;
     prevSize = 0;
@@ -374,6 +376,24 @@ yfAlignmentCheck1(
     RUN_CHECKS(yfMySQLTxtFlow_t, mysqlCommandCode, 1);
     RUN_CHECKS(yfMySQLTxtFlow_t, padding, 0);
 
+    prevOffset = 0;
+    prevSize = 0;
+
+    RUN_CHECKS(yfSSHFlow_t, sshVersion, 1);
+    RUN_CHECKS(yfSSHFlow_t, sshServerVersion, 1);
+    RUN_CHECKS(yfSSHFlow_t, sshKeyExchangeAlgorithm, 1);
+    RUN_CHECKS(yfSSHFlow_t, sshHostKeyAlgorithm, 1);
+    RUN_CHECKS(yfSSHFlow_t, sshServerHostKey, 1);
+    RUN_CHECKS(yfSSHFlow_t, sshCipher, 1);
+    RUN_CHECKS(yfSSHFlow_t, sshMacAlgorithm, 1);
+    RUN_CHECKS(yfSSHFlow_t, sshCompressionMethod, 1);
+    RUN_CHECKS(yfSSHFlow_t, sshHassh, 1);
+    RUN_CHECKS(yfSSHFlow_t, sshServerHassh, 1);
+    RUN_CHECKS(yfSSHFlow_t, sshHasshAlgorithms, 1);
+    RUN_CHECKS(yfSSHFlow_t, sshServerHasshAlgorithms, 1);
+
+
+
 #undef DO_SIZE
 #undef EA_STRING
 #undef EG_STRING
@@ -391,7 +411,7 @@ yfAlignmentCheck1(
 static gboolean
 ypHookInitialize(
     yfDPIContext_t  *ctx,
-    char            *dpiFQFileName,
+    const char      *dpiFQFileName,
     GError         **err)
 {
     FILE *dpiRuleFile = NULL;
@@ -678,9 +698,6 @@ ypAddSpec(
       case 21:
         extra = &ftp_extra;
         break;
-      case 22:
-        extra = &ssh_extra;
-        break;
       case 554:
         extra = &rtsp_extra;
         break;
@@ -768,16 +785,11 @@ ypInitializeProtocolRules(
     uint16_t     applabel, elem_id;
     int          limit;
     const fbInfoElement_t *elem = NULL;
-    fbInfoElementSpec_t    spec;
+    fbInfoElementSpec_t    spec = {C("basicList"), 0, 0};
     fbInfoElement_t        add_element;
     size_t struct_offset;
     fbInfoModel_t         *model = ypGetDPIInfoModel();
     protocolRegexRules_t  *ruleSet;
-
-    /* standard for any element we're adding */
-    spec.len_override = 0;
-    spec.name = "basicList";
-    spec.flags = 0;
 
     for (rc = 0; rc < DPI_TOTAL_PROTOCOLS + 1; rc++) {
         ctx->ruleSet[rc].numRules = 0;
@@ -1365,7 +1377,7 @@ ypInitializeBLs(
  *
  *  this function gets called when the flow data is getting serialized to be
  *  written into ipfix format.  This function must put its data into the
- *  output stream (rec) in the order that it allocated the data according to
+ *  export stream (rec) in the order that it allocated the data according to
  *  its template model - For DPI it uses IPFIX lists to allocate new
  *  subTemplates in YAF's main subTemplateMultiList
  *
@@ -1424,7 +1436,6 @@ ypFlowWrite(
     if (!rc) {
         return TRUE;
     }
-
     switch (flow->appLabel) {
       case 21:
         stml = fbSubTemplateMultiListGetNextEntry(rec, stml);
@@ -1436,11 +1447,9 @@ ypFlowWrite(
         break;
       case 22:
         stml = fbSubTemplateMultiListGetNextEntry(rec, stml);
-        flowContext->rec = ypProcessGenericRegex(flowContext, stml, flow,
+        flowContext->rec = ypProcessSSH(flowContext, stml, flow,
                                                  flowContext->captureFwd,
-                                                 flowContext->dpinum, rc,
-                                                 YAF_SSH_FLOW_TID, sshTemplate,
-                                                 YAF_SSH_STANDARD);
+                                                 flowContext->dpinum, rc);
         break;
       case 25:
         stml = fbSubTemplateMultiListGetNextEntry(rec, stml);
@@ -1731,7 +1740,7 @@ ypGetTemplate(
 
     if (ypSearchPlugOpts(global_active_protos, 22)) {
         if (!(sshTemplate = ypInitTemplate(
-                  session, yaf_singleBL_spec,
+                  session, yaf_ssh_spec,
                   YAF_SSH_FLOW_TID, "yaf_ssh", NULL,
                   0xffffffff, &err)))
         {
@@ -2562,8 +2571,7 @@ ypFreeLists(
             break;
           case 22:
             {
-                yfSSHFlow_t *rec = (yfSSHFlow_t *)flowContext->rec;
-                ypFreeBLRec(ctx, &(rec->sshVersion), YAF_SSH_STANDARD, rc);
+                ypFreeSSHRec(flowContext);
                 break;
             }
           case 143:
@@ -2749,9 +2757,6 @@ ypInitTemplate(
       case YAF_RTSP_FLOW_TID:
         extra = &rtsp_extra;
         break;
-      case YAF_SSH_FLOW_TID:
-        extra = &ssh_extra;
-        break;
       case YAF_SIP_FLOW_TID:
         extra = &sip_extra;
         break;
@@ -2859,7 +2864,7 @@ ypProcessGenericPlugin(
     uint16_t                        rulePos,
     uint16_t                        stmlTID,
     fbTemplate_t                   *stmlTemplate,
-    char                           *blIEName)
+    const char                     *blIEName)
 {
     yfDPIData_t   *dpi   = flowContext->dpi;
     fbVarfield_t  *varField;
@@ -3375,17 +3380,23 @@ ypProcessSSL(
     fbVarfield_t    *sslfull = NULL;
     const fbInfoElement_t *sslCipherIE;
     const fbInfoElement_t *sslCertificateIE;
+    uint16_t        version = 0;
+    uint16_t        sversion = 0;
+    uint16_t       *elliptic_curve = NULL;
+    char           *elliptic_format = NULL;
+    char           *extension = NULL;
+    char           *ser_extension = NULL;
+    int             ellip_curve_len = 0;
 
     rec = (yfSSLFlow_t *)fbSubTemplateMultiListEntryInit(
         stml, YAF_SSL_FLOW_TID, sslTemplate, 1);
     sslCipherIE = fbInfoModelGetElementByName(model, "sslCipher");
     sslCertificateIE = fbInfoModelGetElementByName(model, "sslCertificate");
-
     if (!flow->rval.payload) {
         totalcap = fwdcap;
     }
 
-    while (count < totalcap) {
+    for ( ; count < totalcap; ++count) {
         if (count < fwdcap) {
             payload = flow->val.payload;
             paySize = flow->val.paylen;
@@ -3393,64 +3404,126 @@ ypProcessSSL(
             payload = flow->rval.payload;
             paySize = flow->rval.paylen;
         } else {
-            count++;
             continue;
         }
 
-        if (dpi[count].dpacketID == 91) {
+         switch (dpi[count].dpacketID) {
+          case YF_SSL_CIPHER_LIST:
+            /* uses 2 bytes for each cipher */
             sslCiphers = (uint32_t *)fbBasicListInit(
-                &(rec->sslCipherList), 3, sslCipherIE,
+                &rec->sslCipherList, 3, sslCipherIE,
                 dpi[count].dpacketCaptLen / 2);
-            for (i = 0; i < (dpi[count].dpacketCaptLen / 2); i++) {
+            for (i = 0; i < dpi[count].dpacketCaptLen && sslCiphers; i += 2) {
                 *sslCiphers = (uint32_t)ntohs(
-                    *(uint16_t *)(payload + dpi[count].dpacketCapt + (i * 2)));
-                if (!(sslCiphers = fbBasicListGetNextPtr(&(rec->sslCipherList),
-                                                         sslCiphers)))
-                {
-                    break;
-                }
+                    *(uint16_t *)(payload + dpi[count].dpacketCapt + i));
+                sslCiphers = fbBasicListGetNextPtr(&rec->sslCipherList,
+                                                   sslCiphers);
             }
             ciphertrue = TRUE;
-        } else if (dpi[count].dpacketID == 90) {
+            break;
+
+          case YF_SSL_COMPRESSION:
             rec->sslCompressionMethod = *(payload + dpi[count].dpacketCapt);
-        } else if (dpi[count].dpacketID == 88) {
+            break;
+
+          case YF_SSL_CLIENT_VERSION:
             /* major version */
             if (!rec->sslClientVersion) {
                 rec->sslClientVersion = dpi[count].dpacketCapt;
             }
-        } else if (dpi[count].dpacketID == 94) {
+            break;
+
+          case YF_SSL_RECORD_VERSION:
             /* record version */
-            rec->sslVersion = dpi[count].dpacketCapt;
-        } else if (dpi[count].dpacketID == 89) {
-            rec->sslServerCipher = ntohs(*(uint16_t *)(payload +
-                                                       dpi[count].dpacketCapt));
-        } else if (dpi[count].dpacketID == 92) {
+            rec->sslRecordVersion = dpi[count].dpacketCapt;
+            break;
+
+          case YF_SSL_SERVER_CIPHER:
+            rec->sslServerCipher =
+                ntohs(*(uint16_t *)(payload + dpi[count].dpacketCapt));
+            break;
+
+          case YF_SSL_V2_CIPHER_LIST:
+            /* uses 3 bytes for each cipher */
             sslCiphers = (uint32_t *)fbBasicListInit(
-                &(rec->sslCipherList), 3, sslCipherIE,
+                &rec->sslCipherList, 3, sslCipherIE,
                 dpi[count].dpacketCaptLen / 3);
-            for (i = 0; i < (dpi[count].dpacketCaptLen / 3); i++) {
-                *sslCiphers = (ntohl(*(uint32_t *)(payload +
-                                                   dpi[count].dpacketCapt +
-                                                   (i * 3))) & 0xFFFFFF00) >> 8;
-                if (!(sslCiphers = fbBasicListGetNextPtr(&(rec->sslCipherList),
-                                                         sslCiphers)))
-                {
-                    break;
-                }
+            for (i = 0; i < dpi[count].dpacketCaptLen && sslCiphers; i += 3) {
+                *sslCiphers =
+                    (ntohl(*(uint32_t *)(payload + dpi[count].dpacketCapt + i))
+                     & 0xFFFFFF00) >> 8;
+                sslCiphers = fbBasicListGetNextPtr(&rec->sslCipherList,
+                                                   sslCiphers);
             }
             ciphertrue = TRUE;
-        } else if (dpi[count].dpacketID == 93) {
+            break;
+
+          case YF_SSL_CERT_START:
+            /* cache location to examine the certificates below */
             totalIndex[total_certs] = count;
             total_certs++;
-        } else if (dpi[count].dpacketID == 95) {
+            break;
+
+          case YF_SSL_SERVER_NAME:
             /* server Name */
             rec->sslServerName.buf =
                 (uint8_t *)payload + dpi[count].dpacketCapt;
             rec->sslServerName.len = dpi[count].dpacketCaptLen;
-        }
+            break;
 
-        count++;
+          case YF_SSL_VERSION:
+            version = ntohs(*(uint16_t *)(payload + dpi[count].dpacketCapt));
+            break;
+
+          case YF_SSL_ELIPTIC_CURVE:
+            ellip_curve_len = dpi[count].dpacketCaptLen / 2;
+            elliptic_curve = g_new0(uint16_t, ellip_curve_len);
+            for (i = 0; i < ellip_curve_len; i++) {
+                elliptic_curve[i] = ntohs(
+                    *(uint16_t *)(payload + dpi[count].dpacketCapt + (i * 2)));
+            }
+            break;
+
+          case YF_SSL_ELIPTIC_FORMAT:
+            {
+                /* join elliptic curve formats with hyphens */
+                GString *str =
+                    g_string_sized_new(1 + 4 * dpi[count].dpacketCaptLen);
+                for (i = 0; i < dpi[count].dpacketCaptLen; i++) {
+                    g_string_append_printf(
+                        str, "%u-", *(payload + dpi[count].dpacketCapt + i));
+                }
+                if (str->len > 1 && '-' == str->str[str->len - 1]) {
+                    g_string_truncate(str, str->len - 1);
+                }
+                elliptic_format = g_string_free(str, FALSE);
+            }
+            break;
+
+          case YF_SSL_CLIENT_EXTENSION:
+            extension = ypSslStoreExtension(payload + dpi[count].dpacketCapt);
+            break;
+
+          case YF_SSL_SERVER_EXTENSION:
+            ser_extension = ypSslStoreExtension(payload + dpi[count].dpacketCapt);
+            break;
+
+          case YF_SSL_SERVER_VERSION:
+            sversion = ntohs(*(uint16_t *)(payload + dpi[count].dpacketCapt));
+            break;
+
+          default:
+            g_debug("TLS DPI capture position %u has unexpected value %u"
+                    " (len = %u)",
+                    count, dpi[count].dpacketID, dpi[count].dpacketCapt);
+            break;
+        }
     }
+    ypSslClientJA3( &rec->sslCipherList, extension, elliptic_curve,
+                  elliptic_format, version, ellip_curve_len, rec->sslClientJA3,
+                  &rec->sslClientJA3Fingerprint);
+    ypSslServerJA3S(rec->sslServerCipher, sversion, ser_extension,
+                  rec->sslServerJA3S, &rec->sslServerJA3SFingerprint);
 
     if (!ciphertrue) {
         fbBasicListInit(&(rec->sslCipherList), 3, sslCipherIE, 0);
@@ -3460,7 +3533,9 @@ ypProcessSSL(
         /* NULL since we're doing full cert export */
         sslcert = (yfSSLCertFlow_t *)fbSubTemplateListInit(
             &(rec->sslCertList), 3, YAF_SSL_CERT_FLOW_TID, sslCertTemplate, 0);
-    } else {
+   } else {
+        /* use the cached locations of YF_SSL_CERT_START and parse the
+         * certificates */
         sslcert = ((yfSSLCertFlow_t *)fbSubTemplateListInit(
                        &(rec->sslCertList), 3,
                        YAF_SSL_CERT_FLOW_TID, sslCertTemplate, total_certs));
@@ -3557,6 +3632,215 @@ ypProcessSSL(
     return (void *)rec;
 }
 
+static void *
+ypProcessSSH(
+    ypDPIFlowCtx_t                 *flowContext,
+    fbSubTemplateMultiListEntry_t  *stml,
+    yfFlow_t                       *flow,
+    uint8_t                         fwdcap,
+    uint8_t                         totalcap,
+    uint16_t                        rulePos)
+{
+    yfDPIData_t    *dpi = flowContext->dpi;
+    yfSSHFlow_t    *rec = NULL;
+    int            count = flowContext->startOffset;
+    uint8_t        client_kex_request = 0;
+    uint8_t        server_kex_reply = 0;
+    uint32_t       server_kex_offset = 0;
+    const uint8_t *payload = NULL;
+
+    /* True if it is a client response */
+    gboolean       client;
+    GString       *kex_algo =                g_string_sized_new(500);
+    GString       *server_host =             g_string_sized_new(500);
+    GString       *encryptio_algo =          g_string_sized_new(500);
+    GString       *mac_algo =                g_string_sized_new(500);
+    GString       *compression_algo =        g_string_sized_new(500);
+    GString       *kex_algo_server =         g_string_sized_new(500);
+    GString       *encryptio_algo_server =   g_string_sized_new(500);
+    GString       *mac_algo_server =         g_string_sized_new(500);
+    GString       *compression_algo_server = g_string_sized_new(500);
+    GString       *server_host_server =      g_string_sized_new(500);
+    GString       *server_host_key    =      g_string_sized_new(500);
+
+    rec = (yfSSHFlow_t *)fbSubTemplateMultiListEntryInit(
+        stml, YAF_SSH_FLOW_TID, sshTemplate, 1);
+
+    if (!flow->rval.payload) {
+        totalcap = fwdcap;
+    }
+
+    payload = flow->val.payload;
+    client = TRUE;
+
+    for (count = flowContext->startOffset; count < totalcap; ++count) {
+        if (count == fwdcap) {
+            payload = flow->rval.payload;
+            client = FALSE;
+        }
+
+        switch (dpi[count].dpacketID) {
+          case YF_SSH_KEX_ALGO:
+            if (client) {
+                g_string_append_len(
+                    kex_algo,
+                    (const char *)(payload + dpi[count].dpacketCapt + 4),
+                    ntohl(*(uint32_t *)(payload + dpi[count].dpacketCapt)));
+            } else {
+                g_string_append_len(
+                    kex_algo_server,
+                    (const char *)(payload + dpi[count].dpacketCapt + 4),
+                    ntohl(*(uint32_t *)(payload + dpi[count].dpacketCapt)));
+            }
+            break;
+
+          case YF_SSH_SERVER_HOST_KEY_ALGO:
+            if (client) {
+                g_string_append_len(
+                    server_host,
+                    (const char *)(payload + dpi[count].dpacketCapt + 4),
+                    ntohl(*(uint32_t *)(payload + dpi[count].dpacketCapt)));
+            } else {
+                g_string_append_len(
+                    server_host_server,
+                    (const char *)(payload + dpi[count].dpacketCapt + 4),
+                    ntohl(*(uint32_t *)(payload + dpi[count].dpacketCapt)));
+            }
+            break;
+
+          case YF_SSH_ENCRYPTION_ALGO_CLI_SRV:
+            if (client) {
+                g_string_append_len(
+                    encryptio_algo,
+                    (const char *)(payload + dpi[count].dpacketCapt + 4),
+                    ntohl(*(uint32_t *)(payload + dpi[count].dpacketCapt)));
+            }
+            break;
+
+          case YF_SSH_MAC_ALGO_CLI_SRV:
+            if (client) {
+                g_string_append_len(
+                    mac_algo,
+                    (const char *)(payload + dpi[count].dpacketCapt + 4),
+                    ntohl(*(uint32_t *)(payload + dpi[count].dpacketCapt)));
+            }
+            break;
+
+          case YF_SSH_COMPRESS_ALGO_CLI_SRV:
+            if (client) {
+                g_string_append_len(
+                    compression_algo,
+                    (const char *)(payload + dpi[count].dpacketCapt + 4),
+                    ntohl(*(uint32_t *)(payload + dpi[count].dpacketCapt)));
+            }
+            break;
+
+          case YF_SSH_ENCRYPTION_ALGO_SRV_CLI:
+            if (!client) {
+                g_string_append_len(
+                    encryptio_algo_server,
+                    (const char *)(payload + dpi[count].dpacketCapt + 4),
+                    ntohl(*(uint32_t *)(payload + dpi[count].dpacketCapt)));
+            }
+            break;
+
+          case YF_SSH_MAC_ALGO_SRV_CLI:
+            if (!client) {
+                g_string_append_len(
+                    mac_algo_server,
+                    (const char *)(payload + dpi[count].dpacketCapt + 4),
+                    ntohl(*(uint32_t *)(payload + dpi[count].dpacketCapt)));
+            }
+            break;
+
+          case YF_SSH_COMPRESS_ALGO_SRV_CLI:
+            if (!client) {
+                g_string_append_len(
+                    compression_algo_server,
+                    (const char *)(payload + dpi[count].dpacketCapt + 4),
+                    ntohl(*(uint32_t *)(payload + dpi[count].dpacketCapt)));
+            }
+            break;
+
+          case YF_SSH_CLIENT_KEX_REQUEST:
+            if (client) {
+                client_kex_request = dpi[count].dpacketCapt;
+            }
+            break;
+
+          case YF_SSH_HOST_KEY:
+            if (server_host_server->len > 0) {
+                server_kex_reply = *(payload + dpi[count].dpacketCapt);
+                server_kex_offset = dpi[count].dpacketCapt + 1;
+            }
+            break;
+
+          case YF_SSH_VERSION:
+            if (client) {
+                rec->sshVersion.buf =
+                    (uint8_t *)payload + dpi[count].dpacketCapt;
+                rec->sshVersion.len = dpi[count].dpacketCaptLen;
+            } else {
+                rec->sshServerVersion.buf =
+                    (uint8_t *)payload + dpi[count].dpacketCapt;
+                rec->sshServerVersion.len = dpi[count].dpacketCaptLen;
+            }
+            break;
+        }
+    }
+
+    if ((client_kex_request == SSH_MSG_KEXDH_INIT &&
+         server_kex_reply == SSH_MSG_KEXDH_REPLY) ||
+        (client_kex_request == SSH_MSG_KEX_DH_GEX_REQUEST &&
+         server_kex_reply == SSH_MSG_KEX_DH_GEX_REPLY))
+    {
+        g_string_append_len(
+            server_host_key,
+            (const char *)(payload + server_kex_offset + 4),
+            ntohl(*(uint32_t *)(payload + server_kex_offset)));
+        ypComputeMD5(server_host_key->str, server_host_key->len,
+                    rec->sshServerHostKey);
+    }
+
+    ypSshAlgoCompare(kex_algo, kex_algo_server, &rec->sshKeyExchangeAlgorithm);
+    ypSshAlgoCompare(server_host, server_host_server, &rec->sshHostKeyAlgorithm);
+    ypSshAlgoCompare(encryptio_algo, encryptio_algo_server, &rec->sshCipher);
+    /* Implicit is declared for the mac address when ever a cipher is used
+     * that has a domain */
+    if ((rec->sshCipher.buf != NULL) &&
+        strchr((const char *)rec->sshCipher.buf, '@') != NULL)
+    {
+        rec->sshMacAlgorithm.len = strlen("implicit");
+        rec->sshMacAlgorithm.buf = (uint8_t *)g_strdup("implicit");
+    } else {
+        ypSshAlgoCompare(mac_algo, mac_algo_server, &rec->sshMacAlgorithm);
+    }
+    ypSshAlgoCompare(compression_algo, compression_algo_server,
+                 &rec->sshCompressionMethod);
+
+    if (kex_algo->len > 0) {
+        ypSshHASSH(kex_algo, encryptio_algo->str, mac_algo->str,
+                  compression_algo->str, rec->sshHassh,
+                  &rec->sshHasshAlgorithms);
+    }
+    if (kex_algo_server->len > 0) {
+        ypSshHASSH(kex_algo_server, encryptio_algo_server->str,
+                  mac_algo_server->str, compression_algo_server->str,
+                  rec->sshServerHassh, &rec->sshServerHasshAlgorithms);
+    }
+
+    g_string_free(encryptio_algo, TRUE);
+    g_string_free(server_host, TRUE);
+    g_string_free(server_host_server, TRUE);
+    g_string_free(encryptio_algo_server, TRUE);
+    g_string_free(mac_algo, TRUE);
+    g_string_free(mac_algo_server, TRUE);
+    g_string_free(compression_algo, TRUE);
+    g_string_free(compression_algo_server, TRUE);
+    g_string_free(server_host_key, TRUE);
+
+    return (void *)rec;
+}
 
 static void *
 ypProcessDNS(
@@ -3602,7 +3886,7 @@ ypProcessDNS(
     }
 
     if (flow->val.payload && recCountFwd) {
-        ypDNSParser(&dnsQRecord, flow, &(flow->val),
+        ypDnsParser(&dnsQRecord, flow, &(flow->val),
                     flowContext->exbuf, &buflen, recCountFwd,
                     flowContext->yfctx->dpi_total_limit,
                     flowContext->yfctx->dnssec);
@@ -3618,12 +3902,12 @@ ypProcessDNS(
         }
         if (!flow->rval.payload) {
             /* Uniflow */
-            ypDNSParser(&dnsQRecord, flow, &(flow->val),
+            ypDnsParser(&dnsQRecord, flow, &(flow->val),
                         flowContext->exbuf, &buflen, recCountRev,
                         flowContext->yfctx->dpi_total_limit,
                         flowContext->yfctx->dnssec);
         } else {
-            ypDNSParser(&dnsQRecord, flow, &(flow->rval),
+            ypDnsParser(&dnsQRecord, flow, &(flow->rval),
                         flowContext->exbuf, &buflen, recCountRev,
                         flowContext->yfctx->dpi_total_limit,
                         flowContext->yfctx->dnssec);
@@ -3988,9 +4272,29 @@ ypFreeSSLRec(
 
     fbBasicListClear(&(rec->sslCipherList));
 
+    g_free(rec->sslClientJA3Fingerprint.buf);
+    g_free(rec->sslServerJA3SFingerprint.buf);
+
     if (fullrec) {
         fbBasicListClear(&(fullrec->cert));
     }
+}
+
+static void
+ypFreeSSHRec(
+    ypDPIFlowCtx_t  *flowContext)
+{
+    yfSSHFlow_t *rec = (yfSSHFlow_t *)flowContext->rec;
+
+    g_free(rec->sshKeyExchangeAlgorithm.buf);
+    g_free(rec->sshHasshAlgorithms.buf);
+    g_free(rec->sshServerHasshAlgorithms.buf);
+    g_free(rec->sshHostKeyAlgorithm.buf);
+    g_free(rec->sshCipher.buf);
+    g_free(rec->sshMacAlgorithm.buf);
+    g_free(rec->sshCompressionMethod.buf);
+
+    (void)rec;
 }
 
 
@@ -4024,109 +4328,226 @@ ypFreeEnIPRec(
     fbBasicListClear(&(rec->enipmsg));
 }
 
-
-/**
- * ypGetDNSQName
- *
- * Does the DNS Name Compression Pointer Follow Game - returns the
- * length of the name
- *
+/*
+ * Decodes a DNS name, including uncompressing compressed names by
+ * following pointers and escaping non-ASCII characters. Returns the
+ * length of the escaped name added to the export buffer. Updates
+ * payload_offset to increase it by the amount consumed (or to
+ * payload_size in the case of an error.)
  */
-static uint8_t
-ypGetDNSQName(
-    uint8_t        *buf,
-    uint16_t        bufoffset,
+static unsigned int
+ypDnsGetName(
+    uint8_t        *export_buffer,
+    unsigned int    export_offset,
     const uint8_t  *payload,
-    unsigned int    payloadSize,
-    uint16_t       *offset,
+    unsigned int    payload_size,
+    uint16_t       *payload_offset,
     uint16_t        export_limit)
 {
-    uint16_t     nameSize;
-    uint16_t     toffset = *(offset);
-    gboolean     pointer_flag = FALSE;
-    unsigned int pointer_depth = 0;
-    uint8_t      temp_buf[DNS_MAX_NAME_LENGTH + 1];
-    unsigned int temp_buf_size = 0;
+    /*
+     * Pointer to the offset currently being updated. Starts as the
+     * offset that was passed in, then switches to "nested_offset" when
+     * name compression is encountered.
+     */
+    uint16_t    *working_offset = payload_offset;
+    /*
+     * The payload size limit currently in effect. Starts as the
+     * passed-in payload size, then switches to just before the current
+     * label when name compression is encountered. Prevents loops.
+     */
+    unsigned int working_size = payload_size;
+    /* Local offset once we've followed a pointer to previous labels. */
+    uint16_t     nested_offset = *payload_offset;
 
-    while (toffset < payloadSize) {
-        if (0 == *(payload + toffset) ) {
-            if (!pointer_flag) {
-                *offset += 1;
-            }
-            temp_buf[temp_buf_size] = '\0';
-            toffset = 0;
-            break;
-        } else if (DNS_NAME_COMPRESSION ==
-                   (*(payload + toffset) & DNS_NAME_COMPRESSION))
-        {
-            if ( ((size_t)toffset + 1) >= payloadSize) {
-                /*Incomplete Name Pointer */
-                return 0;
-            }
-            toffset = ntohs(*((uint16_t *)(payload + toffset)));
-            toffset = DNS_NAME_OFFSET & toffset;
-            pointer_depth += 1;
+    /* How much written directly to the export_buffer. */
+    unsigned int escaped_size = 0;
+    /* And how much unescaped, to check DNS protocol limits. */
+    unsigned int unescaped_size = 0;
 
-            if (pointer_depth > DNS_MAX_NAME_LENGTH) {
-                /* Too many pointers in DNS name */
-                return 0;
-            }
+    uint16_t     label_size;
+    unsigned int escaped_copy_size;
 
-            if (!pointer_flag) {
-                *offset += sizeof(uint16_t);
-                pointer_flag = TRUE;
-            }
+    while (*working_offset < working_size) {
+        label_size = payload[*working_offset];
+        *working_offset += 1;
+        switch (label_size & DNS_LABEL_TYPE_MASK) {
 
+          case DNS_LABEL_TYPE_STANDARD:
+            if (0 == label_size) {
+                /* Empty label, end of name or root domain. */
+                /*
+                 * For compatibility, leave this blank for the root
+                 * domain rather than using "." (for now).
+                 */
+                return escaped_size;
+            } else {
+                if (label_size + unescaped_size + 1 > DNS_MAX_NAME_LENGTH) {
+                    /* Unescaped DNS name is longer than spec allows. */
+                    goto err;
+                }
+                if (*working_offset + label_size >= working_size) {
+                    /* Label text passes end of allowed payload */
+                    goto err;
+                }
+
+                escaped_copy_size = ypDnsEscapeValue(
+                    &export_buffer[export_offset + escaped_size],
+                    export_limit - export_offset - escaped_size,
+                    &payload[*working_offset], label_size,
+                    TRUE);
+                if ((export_offset + escaped_size + escaped_copy_size + 1)
+                      > export_limit)
+                {
+                    goto err;
+                }
+                escaped_size += escaped_copy_size;
+                export_buffer[export_offset + escaped_size] = '.';
+                escaped_size += 1;
+
+                *working_offset += label_size;
+                unescaped_size += label_size + 1;
+            }
             continue;
-        } else if (0 == (*(payload + toffset) & DNS_NAME_COMPRESSION)) {
-            nameSize = *(payload + toffset);
-            if ( (nameSize + temp_buf_size + 1) > DNS_MAX_NAME_LENGTH) {
-                /* DNS Name Too Long */
-                return 0;
-            }
-            memcpy(temp_buf + temp_buf_size, (payload + toffset + 1),
-                   nameSize);
-            temp_buf[temp_buf_size + nameSize] = '.';
-            temp_buf_size += nameSize + 1;
-            if (!pointer_flag) {
-                *offset += *(payload + toffset) + 1;
-            }
 
-            toffset += nameSize + 1;
-        } else if (0x40 == (*(payload + toffset) & DNS_NAME_COMPRESSION)) {
-            /* See RFC6891, Extension Mechanisms for DNS (EDNS(0)),
-             * which obsoletes RFC2671, RFC2673 */
+          case DNS_LABEL_TYPE_COMPRESSED:
+            if (*working_offset >= working_size) {
+                /* Encoded offset passes end of allowed payload */
+                goto err;
+            }
+            /* Combine parts of compressed name offset and mask */
+            label_size = (label_size << 8) | payload[*working_offset];
+            label_size &= DNS_LABEL_OFFSET_MASK;
+            *working_offset += 1;
+            /*
+             * Payload from the start of this compressed name offset is
+             * no longer allowed, to prevent cycles or forward pointing
+             * compressed names. Forward pointers will be caught by the
+             * next loop iteration.
+             */
+            working_size = *working_offset - 2;
+            nested_offset = label_size;
+            working_offset = &nested_offset;
+            continue;
+
+          case DNS_LABEL_TYPE_EXTENDED:
+            /*
+             * See RFC6891, Extension Mechanisms for DNS (EDNS(0)),
+             * which obsoletes RFC2671, RFC2673
+             */
             /* YAF does not support this */
+#if 0
             g_debug("Extended label types (%#04x) are not supported",
-                    *(payload + toffset));
-            return 0;
-        } else {
-            g_assert(0x80 == (*(payload + toffset) & DNS_NAME_COMPRESSION));
-            g_debug("Unknown DNS label type %#04x", *(payload + toffset));
-            return 0;
+                    label_size);
+#endif
+            goto err;
+
+          default:
+            g_assert(0x80 == (label_size & DNS_LABEL_TYPE_MASK));
+#if 0
+            g_debug("Unknown DNS label type %#04x", label_size);
+#endif
+            goto err;
+
         }
     }
 
-    if (toffset >= payloadSize) {
-        /*DNS Name outside payload */
-        return 0;
-    }
-
-    if (bufoffset + temp_buf_size > export_limit) {
-        /* Name too large to export in allowed buffer size*/
-        return 0;
-    }
-
-    /* skip trailing '.' */
-    memcpy(buf + bufoffset, temp_buf, temp_buf_size);
-    bufoffset += temp_buf_size;
-
-    return temp_buf_size;
+  err:
+    /*
+     * Set payload_offset to payload_size to "consume" everything and
+     * prevent further processing.
+     */
+    *payload_offset = payload_size;
+    return 0;
 }
 
+/*
+ * Processes a DNS text value (either a name label or a TXT record
+ * value) which may contain binary data and escapes the content.
+ * Backslashes are escaped as "\\", newlines as "\n", and byte values
+ * outside of 32-126 as "\xHH" where HH is a pair of hexadecimal digits.
+ *
+ * In addition, if escape_dots is true, then dots are encoded as "\.",
+ * for internal dots in DNS name labels.
+ *
+ * Returns the length encoded into the destination buffer. Returns zero
+ * and zeroes out the written the destination if the result did not
+ * fit in the buffer.
+ */
+static unsigned int
+ypDnsEscapeValue(
+    uint8_t        *dst,
+    unsigned int    dst_size,
+    const uint8_t  *src,
+    unsigned int    src_size,
+    gboolean        escape_dots)
+{
+    unsigned int escaped_size = 0;
+    unsigned int i;
+    uint8_t b;
 
+    for (i = 0; i < src_size; i++) {
+        b = src[i];
+        switch (b) {
+          case '\\':
+            if (escaped_size + 2 > dst_size) goto err;
+            dst[escaped_size] = '\\';
+            dst[escaped_size + 1] = '\\';
+            escaped_size += 2;
+            continue;
+          case '\n':
+            if (escaped_size + 2 > dst_size) goto err;
+            dst[escaped_size] = '\\';
+            dst[escaped_size + 1] = 'n';
+            escaped_size += 2;
+            continue;
+          case '.':
+            if (escape_dots) {
+                if (escaped_size + 2 > dst_size) goto err;
+                dst[escaped_size] = '\\';
+                dst[escaped_size + 1] = '.';
+                escaped_size += 2;
+                continue;
+            }
+            /* fall through to default case if not escaping dots */
+          default:
+            if (b < 32 || b > 126) {
+                /* control characters and special whitespace */
+                if (escaped_size + 4 > dst_size) goto err;
+                dst[escaped_size] = '\\';
+                dst[escaped_size + 1] = 'x';
+                dst[escaped_size + 2] = hex_digits[0x0f & (b >> 4)];
+                dst[escaped_size + 3] = hex_digits[0x0f & b];
+                escaped_size += 4;
+                continue;
+            } else {
+                /* normal ASCII characters */
+                if (escaped_size + 1 > dst_size) goto err;
+                dst[escaped_size] = b;
+                escaped_size += 1;
+                continue;
+            }
+        }
+    }
+
+    /* success, return the escaped length of the value. */
+    return escaped_size;
+
+  err:
+    /* clear out anything that was written before returning. */
+    memset(dst, 0, escaped_size);
+    return 0;
+}
+
+/*
+ * Parses a DNS message from a flow's payload, encoding any
+ * variable-length values into buf at position bufSize, avoiding writing
+ * further than export_limit. Attempts to produce recordCount output
+ * records, between various record types described in the DNS header.
+ *
+ * Ignores EDNS option pseudo-records (41).
+ */
 static void
-ypDNSParser(
+ypDnsParser(
     yfDNSQRFlow_t **dnsQRecord,
     yfFlow_t       *flow,
     yfFlowVal_t    *val,
@@ -4137,7 +4558,7 @@ ypDNSParser(
     gboolean        dnssec)
 {
     ycDnsScanMessageHeader_t header;
-    uint16_t       payloadOffset = sizeof(ycDnsScanMessageHeader_t);
+    uint16_t       offset = sizeof(ycDnsScanMessageHeader_t);
     uint16_t       firstpkt = val->paylen;
     uint16_t       msglen;
     size_t         nameLen;
@@ -4177,9 +4598,10 @@ ypDNSParser(
         nxdomain = 1;
     }
 #endif /* if defined(YAF_ENABLE_DNSAUTH) */
-    for (loop = 0; loop < header.qdcount; loop++) {
-        nameLen = ypGetDNSQName(buf, bufSize, payload, payloadSize,
-                                &payloadOffset, export_limit);
+
+    for (loop = 0; loop < header.qdcount && offset < payloadSize; loop++) {
+        nameLen = ypDnsGetName(buf, bufSize, payload, payloadSize,
+                               &offset, export_limit);
         if ((!header.qr || nxdomain)) {
             fbSubTemplateListInit(
                 &((*dnsQRecord)->dnsRRList), 3,
@@ -4192,130 +4614,145 @@ ypDNSParser(
             (*dnsQRecord)->dnsRRSection = 0;
             (*dnsQRecord)->dnsQueryResponse = header.qr;
             (*dnsQRecord)->dnsID = header.id;
-            if (((size_t)payloadOffset + 2) < payloadSize) {
-                (*dnsQRecord)->dnsQRType = ntohs(*((uint16_t *)(payload +
-                                                                payloadOffset)));
+            if (((size_t)offset + 2) < payloadSize) {
+                (*dnsQRecord)->dnsQRType =
+                    ntohs(*((uint16_t *)(payload + offset)));
             }
 
             recordCount--;
             if (recordCount) {
                 (*dnsQRecord)++;
             } else {
-                *bufLen = bufSize;
-                return;
+                goto cleanup;
             }
         }
 
-        payloadOffset += (sizeof(uint16_t) * 2);
+        offset += (sizeof(uint16_t) * 2);
         /* skip over class */
-        if (payloadOffset > payloadSize) {
-            goto err;
+        if (offset > payloadSize) {
+            goto cleanup;
         }
     }
+    if (loop < header.qdcount) {
+        /* Not all questions processed. */
+        goto cleanup;
+    }
 
-    for (loop = 0; loop < header.ancount; loop++) {
+    for (loop = 0; loop < header.ancount && offset < payloadSize; loop++) {
         (*dnsQRecord)->dnsRRSection = 1;
         (*dnsQRecord)->dnsAuthoritative = header.aa;
         (*dnsQRecord)->dnsNXDomain = header.rcode;
         (*dnsQRecord)->dnsQueryResponse = 1;
         (*dnsQRecord)->dnsID = header.id;
         rrType = ypDnsScanResourceRecord(dnsQRecord, payload, payloadSize,
-                                         &payloadOffset, buf, &bufSize,
+                                         &offset, buf, &bufSize,
                                          export_limit, dnssec);
 
-        if (rrType != 41) {
+        if (rrType != 41) { /* not EDNS option pseudo-record */
             recordCount--;
             if (recordCount) {
                 (*dnsQRecord)++;
             } else {
-                *bufLen = bufSize;
-                return;
+                goto cleanup;
             }
         }
 
-        if (payloadOffset > payloadSize) {
-            goto err;
+        if (offset > payloadSize) {
+            goto cleanup;
         }
 
         if (bufSize > export_limit) {
             bufSize = export_limit;
-            goto err;
+            goto cleanup;
         }
     }
+    if (loop < header.ancount) {
+        /* Not all answer records processed. */
+        goto cleanup;
+    }
 
-    for (loop = 0; loop < header.nscount; loop++) {
+    for (loop = 0; loop < header.nscount && offset < payloadSize; loop++) {
         (*dnsQRecord)->dnsRRSection = 2;
         (*dnsQRecord)->dnsAuthoritative = header.aa;
         (*dnsQRecord)->dnsNXDomain = header.rcode;
         (*dnsQRecord)->dnsQueryResponse = 1;
         (*dnsQRecord)->dnsID = header.id;
         rrType = ypDnsScanResourceRecord(dnsQRecord, payload, payloadSize,
-                                         &payloadOffset, buf, &bufSize,
+                                         &offset, buf, &bufSize,
                                          export_limit, dnssec);
 
-        if (rrType != 41) {
+        if (rrType != 41) { /* not EDNS option pseudo-record */
             recordCount--;
             if (recordCount) {
                 (*dnsQRecord)++;
             } else {
-                *bufLen = bufSize;
-                return;
+                goto cleanup;
             }
         }
 
-        if (payloadOffset > payloadSize) {
-            goto err;
+        if (offset > payloadSize) {
+            goto cleanup;
         }
 
         if (bufSize > export_limit) {
             bufSize = export_limit;
-            goto err;
+            goto cleanup;
         }
     }
+    if (loop < header.nscount) {
+        /* Not all authority records processed. */
+        goto cleanup;
+    }
 
-    for (loop = 0; loop < header.arcount; loop++) {
+    for (loop = 0; loop < header.arcount && offset < payloadSize; loop++) {
         (*dnsQRecord)->dnsRRSection = 3;
         (*dnsQRecord)->dnsAuthoritative = header.aa;
         (*dnsQRecord)->dnsNXDomain = header.rcode;
         (*dnsQRecord)->dnsQueryResponse = 1;
         (*dnsQRecord)->dnsID = header.id;
         rrType = ypDnsScanResourceRecord(dnsQRecord, payload, payloadSize,
-                                         &payloadOffset, buf, &bufSize,
+                                         &offset, buf, &bufSize,
                                          export_limit, dnssec);
 
-        if (rrType != 41) {
+        if (rrType != 41) { /* not EDNS option pseudo-record */
             recordCount--;
             if (recordCount) {
                 (*dnsQRecord)++;
             } else {
-                *bufLen = bufSize;
-                return;
+                goto cleanup;
             }
         }
 
-        if (payloadOffset > payloadSize) {
-            goto err;
+        if (offset > payloadSize) {
+            goto cleanup;
         }
 
         if (bufSize > export_limit) {
             bufSize = export_limit;
-            goto err;
+            goto cleanup;
         }
     }
+    if (loop < header.arcount) {
+        /* Not all additional records processed. */
+        goto cleanup;
+    }
 
+  cleanup:
+    /* Make sure to pass export buffer usage back up to the caller */
     *bufLen = bufSize;
 
-    return;
-
-  err:
-    *bufLen = bufSize;
-    /* something went wrong so we need to pad the rest of the STL with NULLs */
-    /* Most likely we ran out of space in the DNS Export Buffer */
+    /*
+     * If something went wrong we need to pad the rest of the STL with
+     * NULLs. This would most likely mean we ran out of space in the DNS
+     * Export Buffer.
+     */
     while (recordCount) {
-        fbSubTemplateListInit(&((*dnsQRecord)->dnsRRList), 3, YAF_DNSA_FLOW_TID,
-                              dnsATemplate, 0);
+        fbSubTemplateListInit(&((*dnsQRecord)->dnsRRList), 3,
+                              YAF_DNSA_FLOW_TID, dnsATemplate, 0);
         recordCount--;
-        if (recordCount) {(*dnsQRecord)++;}
+        if (recordCount) {
+            (*dnsQRecord)++;
+        }
     }
 }
 
@@ -4332,182 +4769,201 @@ ypDnsScanResourceRecord(
     gboolean        dnssec)
 {
     uint16_t nameLen;
-    uint16_t rrLen;
-    uint16_t rrType;
+    uint16_t rrLen = 0;
+    uint16_t rrType = 0;
+    uint32_t temp_size;
     uint16_t temp_offset;
     uint16_t bufSize = (*bufLen);
 
-    nameLen = ypGetDNSQName(buf, bufSize, payload, payloadSize, offset,
-                            export_limit);
+    nameLen = ypDnsGetName(buf, bufSize, payload, payloadSize, offset,
+                           export_limit);
     (*dnsQRecord)->dnsQName.len = nameLen;
     (*dnsQRecord)->dnsQName.buf = buf + bufSize;
     bufSize += (*dnsQRecord)->dnsQName.len;
 
+    /*
+     * Check early to make sure there's room for the rest of the RR
+     * header items and abort, because we need to init this RR list item
+     * on failure, and we don't want to check and do it every single
+     * time.
+     */
+    if (*offset + sizeof(uint16_t) * 3 + sizeof(uint32_t) > payloadSize) {
+        *offset = payloadSize;
+        fbSubTemplateListInit(&((*dnsQRecord)->dnsRRList), 3,
+                              YAF_DNSA_FLOW_TID, dnsATemplate, 0);
+        goto cleanup;
+    }
+
+    /* RR type. Class is ignored. */
     rrType = ntohs(*((uint16_t *)(payload + (*offset))));
     (*dnsQRecord)->dnsQRType = rrType;
-
-    /* skip class */
-    *offset += (sizeof(uint16_t) * 2);
+    *offset += sizeof(uint16_t) * 2;
 
     /* time to live */
     (*dnsQRecord)->dnsTTL = ntohl(*((uint32_t *)(payload + (*offset))));
     *offset += sizeof(uint32_t);
 
-    if (*offset >= payloadSize) {
-        fbSubTemplateListInit(&((*dnsQRecord)->dnsRRList), 3,
-                              YAF_DNSA_FLOW_TID, dnsATemplate, 0);
-        return rrType;
-    }
-
     rrLen = ntohs(*(uint16_t *)(payload + (*offset)));
-    /* past length field */
     *offset += sizeof(uint16_t);
 
-    if (*offset >= payloadSize) {
+    /*
+     * Another chance to abort, if the RR length extends past the end of
+     * the captured payload.
+     */
+    if (*offset + rrLen > payloadSize) {
         fbSubTemplateListInit(&((*dnsQRecord)->dnsRRList), 3,
                               YAF_DNSA_FLOW_TID, dnsATemplate, 0);
-        return rrType;
+        goto cleanup;
     }
 
     temp_offset = (*offset);
+    temp_size = temp_offset + rrLen;
 
-    if (rrType == 1) {
+    if (rrType == 1) { /* A */
         yfDNSAFlow_t *arecord = (yfDNSAFlow_t *)fbSubTemplateListInit(
             &((*dnsQRecord)->dnsRRList), 3,
             YAF_DNSA_FLOW_TID, dnsATemplate, 1);
-        arecord->ip = ntohl(*((uint32_t *)(payload + temp_offset)));
-    } else if (rrType == 2) {
+        if (temp_offset + sizeof(uint32_t) > temp_size) {
+            arecord->ip = 0;
+        } else {
+            arecord->ip = ntohl(*((uint32_t *)(payload + temp_offset)));
+        }
+    } else if (rrType == 2) { /* NS */
         yfDNSNSFlow_t *nsrecord = (yfDNSNSFlow_t *)fbSubTemplateListInit(
             &((*dnsQRecord)->dnsRRList), 3,
             YAF_DNSNS_FLOW_TID, dnsNSTemplate, 1);
-        nsrecord->nsdname.len = ypGetDNSQName(buf, bufSize, payload,
-                                              payloadSize, &temp_offset,
-                                              export_limit);
+        nsrecord->nsdname.len = ypDnsGetName(buf, bufSize, payload,
+                                             temp_size, &temp_offset,
+                                             export_limit);
         nsrecord->nsdname.buf = buf + bufSize;
         bufSize += nsrecord->nsdname.len;
-    } else if (rrType == 5) {
+    } else if (rrType == 5) { /* CNAME */
         yfDNSCNameFlow_t *cname = (yfDNSCNameFlow_t *)fbSubTemplateListInit(
             &((*dnsQRecord)->dnsRRList), 3,
             YAF_DNSCN_FLOW_TID, dnsCNTemplate, 1);
-        cname->cname.len = ypGetDNSQName(buf, bufSize, payload, payloadSize,
-                                         &temp_offset,
-                                         export_limit);
+        cname->cname.len = ypDnsGetName(buf, bufSize, payload,
+                                        temp_size, &temp_offset,
+                                        export_limit);
         cname->cname.buf = buf + bufSize;
         bufSize += cname->cname.len;
-    } else if (rrType == 12) {
+    } else if (rrType == 12) { /* PTR */
         yfDNSPTRFlow_t *ptr = (yfDNSPTRFlow_t *)fbSubTemplateListInit(
             &((*dnsQRecord)->dnsRRList), 3,
             YAF_DNSPTR_FLOW_TID, dnsPTRTemplate, 1);
-        ptr->ptrdname.len = ypGetDNSQName(buf, bufSize, payload, payloadSize,
-                                          &temp_offset,
-                                          export_limit);
+        ptr->ptrdname.len = ypDnsGetName(buf, bufSize, payload, temp_size,
+                                         &temp_offset, export_limit);
         ptr->ptrdname.buf = buf + bufSize;
         bufSize += ptr->ptrdname.len;
-    } else if (rrType == 15) {
+    } else if (rrType == 15) { /* MX */
         yfDNSMXFlow_t *mx = (yfDNSMXFlow_t *)fbSubTemplateListInit(
             &((*dnsQRecord)->dnsRRList), 3,
             YAF_DNSMX_FLOW_TID, dnsMXTemplate, 1);
-        mx->preference = ntohs(*((uint16_t *)(payload + temp_offset)));
-        temp_offset += sizeof(uint16_t);
-        if (temp_offset > payloadSize) {
-            mx->exchange.len = 0;
-            return rrType;
+        if (temp_offset + sizeof(uint16_t) <= temp_size) {
+            mx->preference = ntohs(*((uint16_t *)(payload + temp_offset)));
         }
-        mx->exchange.len = ypGetDNSQName(buf, bufSize, payload, payloadSize,
-                                         &temp_offset, export_limit);
+        temp_offset += sizeof(uint16_t);
+        mx->exchange.len = ypDnsGetName(buf, bufSize, payload, temp_size,
+                                        &temp_offset, export_limit);
         mx->exchange.buf = buf + bufSize;
         bufSize += mx->exchange.len;
-    } else if (rrType == 16) {
+    } else if (rrType == 16) { /* TXT */
         yfDNSTXTFlow_t *txt = (yfDNSTXTFlow_t *)fbSubTemplateListInit(
             &((*dnsQRecord)->dnsRRList), 3,
             YAF_DNSTXT_FLOW_TID, dnsTXTTemplate, 1);
-        txt->txt_data.len = *(payload + temp_offset);
-        if (txt->txt_data.len + bufSize > export_limit) {
-            temp_offset += txt->txt_data.len + 1;
+        if (temp_offset + 1 > temp_size ||
+            temp_offset + 1 + payload[temp_offset] > temp_size)
+        {
             txt->txt_data.len = 0;
         } else {
-            temp_offset++;
-            txt->txt_data.buf = (uint8_t *)payload + temp_offset;
-            bufSize += txt->txt_data.len;
-            temp_offset += txt->txt_data.len;
+            txt->txt_data.len = ypDnsEscapeValue(
+                &buf[bufSize], export_limit - bufSize,
+                &payload[temp_offset + 1], payload[temp_offset],
+                FALSE);
+            if (txt->txt_data.len > 0) {
+                txt->txt_data.buf = &buf[bufSize];
+                bufSize += txt->txt_data.len;
+            }
+            temp_offset += payload[temp_offset] + 1;
         }
-    } else if (rrType == 28) {
+    } else if (rrType == 28) { /* AAAA */
         yfDNSAAAAFlow_t *aa = (yfDNSAAAAFlow_t *)fbSubTemplateListInit(
             &((*dnsQRecord)->dnsRRList), 3,
             YAF_DNSAAAA_FLOW_TID, dnsAAAATemplate, 1);
-        memcpy(aa->ip, (payload + temp_offset), sizeof(aa->ip));
-    } else if (rrType == 6) {
+        if (temp_offset + sizeof(aa->ip) > temp_size) {
+            memset(aa->ip, 0, sizeof(aa->ip));
+        } else {
+            memcpy(aa->ip, (payload + temp_offset), sizeof(aa->ip));
+        }
+    } else if (rrType == 6) { /* SOA */
         yfDNSSOAFlow_t *soa = (yfDNSSOAFlow_t *)fbSubTemplateListInit(
             &((*dnsQRecord)->dnsRRList), 3,
             YAF_DNSSOA_FLOW_TID, dnsSOATemplate, 1);
-        soa->mname.len = ypGetDNSQName(buf, bufSize, payload, payloadSize,
-                                       &temp_offset, export_limit);
+        soa->mname.len = ypDnsGetName(buf, bufSize, payload, temp_size,
+                                      &temp_offset, export_limit);
         soa->mname.buf = buf + bufSize;
         bufSize += soa->mname.len;
 
-        if (temp_offset > payloadSize) {
-            soa->rname.len = 0;
-            return rrType;
-        }
-        soa->rname.len = ypGetDNSQName(buf, bufSize, payload, payloadSize,
-                                       &temp_offset, export_limit);
+        soa->rname.len = ypDnsGetName(buf, bufSize, payload, temp_size,
+                                      &temp_offset, export_limit);
         soa->rname.buf = buf + bufSize;
         bufSize += soa->rname.len;
-        if (temp_offset >= payloadSize) {
-            return rrType;
+
+        if (temp_offset + sizeof(uint32_t) > temp_size) {
+            goto cleanup;
         }
         soa->serial = ntohl(*((uint32_t *)(payload + temp_offset)));
         temp_offset += sizeof(uint32_t);
-        if (temp_offset >= payloadSize) {
-            return rrType;
+
+        if (temp_offset + sizeof(uint32_t) > temp_size) {
+            goto cleanup;
         }
         soa->refresh = ntohl(*((uint32_t *)(payload + temp_offset)));
         temp_offset += sizeof(uint32_t);
-        if (temp_offset >= payloadSize) {
-            return rrType;
+
+        if (temp_offset + sizeof(uint32_t) > temp_size) {
+            goto cleanup;
         }
         soa->retry = ntohl(*((uint32_t *)(payload + temp_offset)));
         temp_offset += sizeof(uint32_t);
-        if (temp_offset >= payloadSize) {
-            return rrType;
+
+        if (temp_offset + sizeof(uint32_t) > temp_size) {
+            goto cleanup;
         }
         soa->expire = ntohl(*((uint32_t *)(payload + temp_offset)));
         temp_offset += sizeof(uint32_t);
-        if (temp_offset >= payloadSize) {
-            return rrType;
+
+        if (temp_offset + sizeof(uint32_t) > temp_size) {
+            goto cleanup;
         }
         soa->minimum = ntohl(*((uint32_t *)(payload + temp_offset)));
         temp_offset += sizeof(uint32_t);
-        if (temp_offset >= payloadSize) {
-            return rrType;
-        }
-    } else if (rrType == 33) {
+    } else if (rrType == 33) { /* SRV */
         yfDNSSRVFlow_t *srv = (yfDNSSRVFlow_t *)fbSubTemplateListInit(
             &((*dnsQRecord)->dnsRRList), 3,
             YAF_DNSSRV_FLOW_TID, dnsSRVTemplate, 1);
+        if (temp_offset + sizeof(uint16_t) > temp_size) {
+            goto cleanup;
+        }
         srv->dnsPriority = ntohs(*((uint16_t *)(payload + temp_offset)));
         temp_offset += sizeof(uint16_t);
-        if (temp_offset >= payloadSize) {
-            return rrType;
+
+        if (temp_offset + sizeof(uint16_t) > temp_size) {
+            goto cleanup;
         }
         srv->dnsWeight = ntohs(*((uint16_t *)(payload + temp_offset)));
         temp_offset += sizeof(uint16_t);
-        if (temp_offset >= payloadSize) {
-            return rrType;
+
+        if (temp_offset + sizeof(uint16_t) > temp_size) {
+            goto cleanup;
         }
         srv->dnsPort = ntohs(*((uint16_t *)(payload + temp_offset)));
         temp_offset += sizeof(uint16_t);
-        if (temp_offset >= payloadSize) {
-            return rrType;
-        }
-        srv->dnsTarget.len = ypGetDNSQName(buf, bufSize, payload, payloadSize,
-                                           &temp_offset, export_limit);
+
+        srv->dnsTarget.len = ypDnsGetName(buf, bufSize, payload, temp_size,
+                                          &temp_offset, export_limit);
         srv->dnsTarget.buf = buf + bufSize;
         bufSize += srv->dnsTarget.len;
-        if (temp_offset >= payloadSize) {
-            return rrType;
-        }
-    } else if (rrType == 43) {
+    } else if (rrType == 43) { /* DS */
         if (!dnssec) {
             fbSubTemplateListInit(&((*dnsQRecord)->dnsRRList), 3,
                                   YAF_DNSA_FLOW_TID, dnsATemplate, 0);
@@ -4516,32 +4972,33 @@ ypDnsScanResourceRecord(
             ds = (yfDNSDSFlow_t *)fbSubTemplateListInit(
                 &((*dnsQRecord)->dnsRRList), 3,
                 YAF_DNSDS_FLOW_TID, dnsDSTemplate, 1);
+
+            if (temp_offset + sizeof(uint16_t) > temp_size) {
+                goto cleanup;
+            }
             ds->dnsKeyTag = ntohs(*((uint16_t *)(payload + temp_offset)));
             temp_offset += sizeof(uint16_t);
-            if (temp_offset >= payloadSize) {
-                return rrType;
-            }
 
+            if (temp_offset + sizeof(uint8_t) > temp_size) {
+                goto cleanup;
+            }
             ds->dnsAlgorithm = *(payload + temp_offset);
-            temp_offset++;
-            if (temp_offset >= payloadSize) {
-                return rrType;
+            temp_offset += sizeof(uint8_t);
+
+            if (temp_offset + sizeof(uint8_t) > temp_size) {
+                goto cleanup;
             }
             ds->dnsDigestType = *(payload + temp_offset);
-            temp_offset++;
-            if (temp_offset >= payloadSize) {
-                return rrType;
-            }
-            /* length of rrdata is rrLen - we know these 3 fields */
-            /* should add up to 4 - so rest is digest */
-            if (((size_t)temp_offset + (rrLen - 4)) >= payloadSize) {
-                return rrType;
-            }
+            temp_offset += sizeof(uint8_t);
 
+            /* Digest is the remainder of the RR */
+            if (temp_size > temp_offset) {
+                goto cleanup;
+            }
             ds->dnsDigest.buf = (uint8_t *)payload + temp_offset;
-            ds->dnsDigest.len = rrLen - 4;
+            ds->dnsDigest.len = temp_size - temp_offset;
         }
-    } else if (rrType == 46) {
+    } else if (rrType == 46) { /* RRSIG */
         if (!dnssec) {
             fbSubTemplateListInit(&((*dnsQRecord)->dnsRRList), 3,
                                   YAF_DNSA_FLOW_TID, dnsATemplate, 0);
@@ -4551,67 +5008,64 @@ ypDnsScanResourceRecord(
                 &((*dnsQRecord)->dnsRRList), 3,
                 YAF_DNSRRSIG_FLOW_TID, dnsRRSigTemplate, 1);
 
+            if (temp_offset + sizeof(uint16_t) > temp_size) {
+                goto cleanup;
+            }
             rrsig->dnsTypeCovered = ntohs(*((uint16_t *)(payload +
                                                          temp_offset)));
             temp_offset += sizeof(uint16_t);
-            if (temp_offset >= payloadSize) {
-                return rrType;
-            }
 
+            if (temp_offset + sizeof(uint8_t) > temp_size) {
+                goto cleanup;
+            }
             rrsig->dnsAlgorithm = *(payload + temp_offset);
-            temp_offset++;
-            if (temp_offset >= payloadSize) {
-                return rrType;
-            }
+            temp_offset += sizeof(uint8_t);
 
+            if (temp_offset + sizeof(uint8_t) > temp_size) {
+                goto cleanup;
+            }
             rrsig->dnsLabels = *(payload + temp_offset);
-            temp_offset++;
-            if (temp_offset >= payloadSize) {
-                return rrType;
-            }
+            temp_offset += sizeof(uint8_t);
 
+            if (temp_offset + sizeof(uint32_t) > temp_size) {
+                goto cleanup;
+            }
             rrsig->dnsTTL = ntohl(*((uint32_t *)(payload + temp_offset)));
-
             temp_offset += sizeof(uint32_t);
-            if (temp_offset >= payloadSize) {
-                return rrType;
-            }
 
+            if (temp_offset + sizeof(uint32_t) > temp_size) {
+                goto cleanup;
+            }
             rrsig->dnsSigExp = ntohl(*((uint32_t *)(payload + temp_offset)));
             temp_offset += sizeof(uint32_t);
-            if (temp_offset >= payloadSize) {
-                return rrType;
-            }
 
+            if (temp_offset + sizeof(uint32_t) > temp_size) {
+                goto cleanup;
+            }
             rrsig->dnsSigInception = ntohl(*((uint32_t *)(payload +
                                                           temp_offset)));
             temp_offset += sizeof(uint32_t);
-            if (temp_offset >= payloadSize) {
-                return rrType;
-            }
 
+            if (temp_offset + sizeof(uint16_t) > temp_size) {
+                goto cleanup;
+            }
             rrsig->dnsKeyTag = ntohs(*((uint16_t *)(payload + temp_offset)));
             temp_offset += sizeof(uint16_t);
-            if (temp_offset >= payloadSize) {
-                return rrType;
-            }
 
-            rrsig->dnsSigner.len = ypGetDNSQName(buf, bufSize, payload,
-                                                 payloadSize, &temp_offset,
-                                                 export_limit);
+            rrsig->dnsSigner.len = ypDnsGetName(buf, bufSize, payload,
+                                                temp_size, &temp_offset,
+                                                export_limit);
             rrsig->dnsSigner.buf = buf + bufSize;
             bufSize += rrsig->dnsSigner.len;
 
-            /* signature is at offset 18 + signer's name len */
-            if ((temp_offset + (rrLen - 18 + rrsig->dnsSigner.len)) >=
-                payloadSize)
-            {
-                return rrType;
+            /* Signature is the remainder of the RR */
+            if (temp_offset > temp_size) {
+                goto cleanup;
             }
             rrsig->dnsSignature.buf = (uint8_t *)payload + temp_offset;
-            rrsig->dnsSignature.len = (rrLen - 18 - rrsig->dnsSigner.len);
+            rrsig->dnsSignature.len = temp_size - temp_offset;
         }
-    } else if (rrType == 47) {
+    } else if (rrType == 47) { /* NSEC */
         /* NSEC */
         if (!dnssec) {
             fbSubTemplateListInit(&((*dnsQRecord)->dnsRRList), 3,
@@ -4621,13 +5075,12 @@ ypDnsScanResourceRecord(
             nsec = (yfDNSNSECFlow_t *)fbSubTemplateListInit(
                 &((*dnsQRecord)->dnsRRList), 3,
                 YAF_DNSNSEC_FLOW_TID, dnsNSECTemplate, 1);
-            nsec->dnsHashData.len = ypGetDNSQName(buf, bufSize, payload,
-                                                  payloadSize, &temp_offset,
-                                                  export_limit);
+            nsec->dnsHashData.len = ypDnsGetName(buf, bufSize, payload,
+                                                 temp_size, &temp_offset,
+                                                 export_limit);
             nsec->dnsHashData.buf = buf + bufSize;
             bufSize += nsec->dnsHashData.len;
-            /* subtract next domain name and add record len. forget bitmaps. */
-            temp_offset = temp_offset - nsec->dnsHashData.len + rrLen;
+            /* forget bitmaps. */
         }
     } else if (rrType == 48) {
         /* DNSKEY RR */
@@ -4639,73 +5092,84 @@ ypDnsScanResourceRecord(
             dnskey = (yfDNSKeyFlow_t *)fbSubTemplateListInit(
                 &((*dnsQRecord)->dnsRRList), 3,
                 YAF_DNSKEY_FLOW_TID, dnsKeyTemplate, 1);
+            if (temp_offset + sizeof(uint16_t) > temp_size) {
+                goto cleanup;
+            }
             dnskey->dnsFlags = ntohs(*((uint16_t *)(payload + temp_offset)));
             temp_offset += sizeof(uint16_t);
 
-            if (temp_offset >= payloadSize) {
-                return rrType;
+            if (temp_offset + sizeof(uint8_t) >= temp_size) {
+                goto cleanup;
             }
             dnskey->protocol = *(payload + temp_offset);
-            temp_offset++;
-            if (temp_offset >= payloadSize) {
-                return rrType;
+            temp_offset += sizeof(uint8_t);
+
+            if (temp_offset + sizeof(uint8_t) > temp_size) {
+                goto cleanup;
             }
             dnskey->dnsAlgorithm = *(payload + temp_offset);
-            temp_offset++;
+            temp_offset += sizeof(uint8_t);
 
-            if (((size_t)temp_offset - 4 + rrLen) >= payloadSize) {
-                return rrType;
-            } else {
-                dnskey->dnsPublicKey.buf = (uint8_t *)payload + temp_offset;
-                dnskey->dnsPublicKey.len = rrLen - 4;
+            /* Key is the remainder of the RR */
+            if (temp_size > temp_offset) {
+                goto cleanup;
             }
+            dnskey->dnsPublicKey.buf = (uint8_t *)payload + temp_offset;
+            dnskey->dnsPublicKey.len = temp_size - temp_offset;
         }
-    } else if (rrType == 50 || rrType == 51) {
-        /* NSEC3(PARAM)? */
+    } else if (rrType == 50 || rrType == 51) { /* NSEC3 + NSEC3PARAM */
         if (!dnssec) {
             fbSubTemplateListInit(&((*dnsQRecord)->dnsRRList), 0,
                                   YAF_DNSA_FLOW_TID, dnsATemplate, 0);
         } else {
-            uint16_t          off_hold = temp_offset;
             yfDNSNSEC3Flow_t *nsec3 = NULL;
             nsec3 = (yfDNSNSEC3Flow_t *)fbSubTemplateListInit(
                 &((*dnsQRecord)->dnsRRList), 3,
                 YAF_DNSNSEC3_FLOW_TID, dnsNSEC3Template, 1);
+
+            if (temp_offset + sizeof(uint8_t) > temp_size) {
+                goto cleanup;
+            }
             nsec3->dnsAlgorithm = *(payload + temp_offset);
+            temp_offset += sizeof(uint8_t);
 
             /* skip over flags */
-            temp_offset += sizeof(uint16_t);
-
-            if (temp_offset >= payloadSize) {
-                return rrType;
+            if (temp_offset + sizeof(uint8_t) > temp_size) {
+                goto cleanup;
             }
+            temp_offset += sizeof(uint8_t);
 
+            if (temp_offset + sizeof(uint16_t) > temp_size) {
+                goto cleanup;
+            }
             nsec3->iterations = ntohs(*((uint16_t *)(payload + temp_offset)));
-
             temp_offset += sizeof(uint16_t);
 
-            if (temp_offset >= payloadSize) {
-                return rrType;
+            if (temp_offset + sizeof(uint8_t) > temp_size) {
+                goto cleanup;
             }
-
             nsec3->dnsSalt.len = *(payload + temp_offset);
-            temp_offset++;
-            if (temp_offset + nsec3->dnsSalt.len >= payloadSize) {
+            temp_offset += sizeof(uint8_t);
+
+            if (temp_offset + nsec3->dnsSalt.len > temp_size) {
                 nsec3->dnsSalt.len = 0;
-                return rrType;
+                goto cleanup;
             }
             nsec3->dnsSalt.buf = (uint8_t *)payload + temp_offset;
             temp_offset += nsec3->dnsSalt.len;
 
             if (rrType == 50) {
-                nsec3->dnsNextDomainName.len = *(payload + temp_offset);
-                temp_offset++;
-                if (temp_offset + nsec3->dnsNextDomainName.len >= payloadSize) {
-                    nsec3->dnsNextDomainName.len = 0;
-                    return rrType;
+                if (temp_offset + sizeof(uint8_t) > temp_size) {
+                    goto cleanup;
                 }
-                nsec3->dnsNextDomainName.buf = (uint8_t *)payload + temp_offset;
-                temp_offset = off_hold + rrLen;
+                nsec3->dnsNextDomainName.len = *(payload + temp_offset);
+                temp_offset += sizeof(uint8_t);
+                if (temp_offset + nsec3->dnsNextDomainName.len > temp_size) {
+                    nsec3->dnsNextDomainName.len = 0;
+                    goto cleanup;
+                }
+                nsec3->dnsNextDomainName.buf =
+                    (uint8_t *)payload + temp_offset;
             }
         }
     } else {
@@ -4713,171 +5177,401 @@ ypDnsScanResourceRecord(
                               YAF_DNSA_FLOW_TID, dnsATemplate, 0);
     }
 
+  cleanup:
     *offset += rrLen;
-
+    if (*offset > payloadSize) {
+        *offset = payloadSize;
+    }
     *bufLen = bufSize;
     return rrType;
 }
 
 
+/*
+ *  Decodes the length in `payload` at the current `offset`, sets the referent
+ *  of `offset` to the octet AFTER the length, and returns the length.
+ *  `payload_size` is the maximum number of octets to read.
+ *
+ *  If there are too few bytes to read the length, sets the referent of
+ *  `offset` to one more than `payload_size` and returns UINT16_MAX.
+ */
 static uint16_t
 ypDecodeLength(
     const uint8_t  *payload,
-    uint16_t       *offset)
+    uint32_t        payload_size,
+    uint32_t       *offset)
 {
     uint16_t obj_len;
 
-    obj_len = *(payload + *offset);
-    if (obj_len == CERT_1BYTE) {
-        (*offset)++;
+    /*
+     *  When the high bit of the byte at `offset` is not set, that single byte
+     *  is the length (0--127).  When the high bit is set, the remaining bits
+     *  are the length of length (either 1 byte (0x81) (128--255) or 2 bytes
+     *  (0x82) (256--65535) in practice).
+     */
+
+    if (*offset + 4 <= payload_size) {
+        /* there is enough payload */
         obj_len = *(payload + *offset);
+        ++*offset;
+        if (obj_len == CERT_1BYTE) {
+            obj_len = *(payload + *offset);
+            ++*offset;
+        } else if (obj_len == CERT_2BYTE) {
+#ifdef HAVE_ALIGNED_ACCESS_REQUIRED
+            memcpy(&obj_len, (payload + offset), sizeof(uint16_t));
+            obj_len = ntohs(obj_len);
+#else
+            obj_len = ntohs(*(uint16_t *)(payload + *offset));
+#endif  /* HAVE_ALIGNED_ACCESS_REQUIRED */
+            *offset += 2;
+        }
+
+        return obj_len;
+    }
+
+    /* Handle each step individually to avoid reading too much */
+    if (*offset >= payload_size) {
+        goto err;
+    }
+    obj_len = *(payload + *offset);
+    ++*offset;
+    if (obj_len == CERT_1BYTE) {
+        if (*offset >= payload_size) {
+            goto err;
+        }
+        obj_len = *(payload + *offset);
+        ++*offset;
     } else if (obj_len == CERT_2BYTE) {
-        (*offset)++;
+        if (*offset + 2 > payload_size) {
+            goto err;
+        }
+#ifdef HAVE_ALIGNED_ACCESS_REQUIRED
+        memcpy(&obj_len, (payload + offset), sizeof(uint16_t));
+        obj_len = ntohs(obj_len);
+#else
         obj_len = ntohs(*(uint16_t *)(payload + *offset));
-        (*offset)++;
+#endif  /* HAVE_ALIGNED_ACCESS_REQUIRED */
+        *offset += 2;
     }
 
     return obj_len;
+
+  err:
+    *offset = payload_size + 1;
+    return UINT16_MAX;
 }
 
 
+/*
+ *  Decodes the type of value in `payload` at `offset`, fills `tlv` with the
+ *  type, moves `offset` to the first octet AFTER the length (that is, to the
+ *  first octet of the item the tag describes), and returns the length.
+ *  `payload_size` is the maximum number of octets to read.
+ *
+ *  If the tag is an ASN.1 NULL value (CERT_NULL), continues reading tags
+ *  until a non-NULL tag is found or `payload_size` is reached.
+ *
+ *  If `payload_size` is reached, sets the referent of `offset` to
+ *  `payload_size` and returns UINT16_MAX.
+ */
 static uint16_t
 ypDecodeTLV(
     yf_asn_tlv_t   *tlv,
     const uint8_t  *payload,
-    uint16_t       *offset)
+    uint32_t        payload_size,
+    uint32_t       *offset)
 {
-    uint8_t  val = *(payload + *offset);
-    uint16_t len = 0;
+    uint8_t  val;
+    uint16_t obj_len;
 
-    tlv->class = (val & 0xD0) >> 6;
-    tlv->p_c = (val & 0x20) >> 5;
-    tlv->tag = (val & 0x1F);
+    while (*offset < payload_size) {
+        val = *(payload + *offset);
 
-    (*offset)++;
+        tlv->class = (val & 0xD0) >> 6;
+        tlv->p_c = (val & 0x20) >> 5;
+        tlv->tag = (val & 0x1F);
+        ++*offset;
 
-    len = ypDecodeLength(payload, offset);
-    (*offset)++;
+        obj_len = ypDecodeLength(payload, payload_size, offset);
+        if (UINT16_MAX == obj_len || *offset > payload_size) {
+            break;
+        }
+        if (tlv->tag != CERT_NULL) {
+            return obj_len;
+        }
 
-    if (tlv->tag == CERT_NULL) {
-        *offset += len;
-        return ypDecodeTLV(tlv, payload, offset);
+        *offset += obj_len;
     }
 
-    return len;
+    /* We have run out of bytes */
+    *offset = payload_size;
+    return UINT16_MAX;
 }
 
-
+/**
+ *    Check whether the OID having length `obj_len` and starting at position
+ *    *`offset` in `payload` is one that we want to capture.  If so, position
+ *    `offset` on the final octet of the OID and return TRUE.  Otherwise leave
+ *    `offset` unchanged and return FALSE.
+ */
 static gboolean
 ypDecodeOID(
     const uint8_t  *payload,
-    uint16_t       *offset,
+    uint32_t       *offset,
     uint8_t         obj_len)
 {
-    uint32_t tobjid;
+    uint16_t id_at;
 
-    if (obj_len == 9) {
-        /* pkcs-9 */
-        tobjid = ntohl(*(uint32_t *)(payload + *offset));
-        if (tobjid != CERT_PKCS) {
-            return FALSE;
+    /*
+     * To check for a child OID (having a value <= 127) one level below id-at
+     * or pkcs-9, check that the obj_len is one more than the BER encoding of
+     * the parent and move the offset to the child.
+     *
+     * To check exactly for ldap-domainComponent, check that the length
+     * matches exactly, but return an offset one less for consistency with the
+     * others.
+     */
+    switch (obj_len) {
+      case 3:
+        /* Check for OID under id-at */
+#ifdef HAVE_ALIGNED_ACCESS_REQUIRED
+        memcpy(&id_at, (payload + *offset), sizeof(uint16_t));
+#else
+        id_at = *(uint16_t *)(payload + *offset);
+#endif
+        if (CERT_IDAT == ntohs(id_at)) {
+            *offset += 2;
+            return TRUE;
         }
-        *offset += 8;
-    } else if (obj_len == 10) {
-        /* LDAP Domain Component */
-        tobjid = ntohl(*(uint32_t *)(payload + *offset));
-        if (tobjid != CERT_DC) {
-            return FALSE;
+        break;
+      case 9:
+        /* Check for OID under pkcs-9 */
+        if (0 == memcmp(payload + *offset, CERT_PKCS, sizeof(CERT_PKCS))) {
+            *offset += sizeof(CERT_PKCS);
+            return TRUE;
         }
-        *offset += 9;
-    } else if (obj_len == 3) {
-        *offset += 2;
-    } else {
-        /* this isn't the usual id-at, pkcs, or dc - so lets ignore it */
-        return FALSE;
+        break;
+      case 10:
+        /* Check for exactly ldap-domainComponent */
+        if (0 == memcmp(payload + *offset, CERT_DC, sizeof(CERT_DC))) {
+            *offset += sizeof(CERT_DC) - 1;
+            return TRUE;
+        }
+        break;
     }
 
-    return TRUE;
+    /* this is not the usual id-at, pkcs, or dc - so ignore it */
+    return FALSE;
 }
 
 
+/**
+ *    Returns the number of sequential CERT_SET objects found in the first
+ *    `seq_len` octets of `payload`.  Includes only SETs that are entirely
+ *    within `seq_len`.
+ */
 static uint8_t
 ypGetSequenceCount(
     const uint8_t  *payload,
     uint16_t        seq_len)
 {
-    uint16_t     offsetptr = 0;
-    uint16_t     len = 0;
+    uint32_t     offset = 0;
     uint16_t     obj_len;
     uint8_t      count = 0;
     yf_asn_tlv_t tlv;
 
-    obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    while (tlv.tag == CERT_SET && len < seq_len) {
-        len += obj_len + 2;
-        count++;
-        offsetptr += obj_len;
-        obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
+    for (;;) {
+        obj_len = ypDecodeTLV(&tlv, payload, seq_len, &offset);
+        if (UINT16_MAX == obj_len || offset >= seq_len) {
+            return count;
+        }
+        offset += obj_len;
+        if (tlv.tag != CERT_SET || offset > seq_len) {
+            return count;
+        }
+        ++count;
     }
-
-    return count;
 }
 
 
+/**
+ *    Loops over the first `ext_len` octets of `payload` which is expected to
+ *    contain sequences (CERT_SEQ).  For each sequence, checks whether the
+ *    first item is an OID where the OID is 3 octets long, its first two
+ *    octets are certificateExtension (CERT_IDCE), and its final octet is a
+ *    particular value of interest.
+ *
+ *    Returns the number of items found.  Includes only items that are
+ *    entirely contained within ext_len.
+ */
 static uint8_t
 ypGetExtensionCount(
     const uint8_t  *payload,
     uint16_t        ext_len)
 {
-    uint16_t     offsetptr = 0;
-    yf_asn_tlv_t tlv;
-    uint16_t     len = 2;
-    uint16_t     obj_len = 0;
-    uint16_t     id_ce;
-    uint8_t      obj_type = 0;
-    uint8_t      count = 0;
+    /* When checking whether the ObjectID is under certificateExtension, we
+     * read 4 octets into a uint32_t.  The first should be CERT_OID, the
+     * second (length) must be 3, and the lower two must those for a
+     * certificate extension, CERT_IDCE. */
+    const uint32_t  wanted = ((CERT_OID << 24) | 0x030000 | CERT_IDCE);
+    uint32_t        oid_len_id_ce;
+    uint32_t        offset = 0;
+    uint32_t        next_item;
+    yf_asn_tlv_t    tlv;
+    uint16_t        obj_len = 0;
+    uint8_t         count = 0;
 
-    obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    while (tlv.tag == CERT_SEQ && len < ext_len) {
-        len += obj_len + 2;
-        if (*(payload + offsetptr) == CERT_OID) {
-            id_ce = ntohs(*(uint16_t *)(payload + offsetptr + 2));
-            if (id_ce == CERT_IDCE) {
-                obj_type = *(payload + offsetptr + 4);
-                switch (obj_type) {
-                  case 14:
-                  /* subject key identifier */
-                  case 15:
-                  /* key usage */
-                  case 16:
-                  /* private key usage period */
-                  case 17:
-                  /* alternative name */
-                  case 18:
-                  /* alternative name */
-                  case 29:
-                  /* authority key identifier */
-                  case 31:
-                  /* CRL dist points */
-                  case 32:
-                  /* Cert Policy ID */
-                  case 35:
-                  /* Authority Key ID */
-                  case 37:
-                    count++;
-                  default:
-                    break;
-                }
+    for (;;) {
+        obj_len = ypDecodeTLV(&tlv, payload, ext_len, &offset);
+        next_item = offset + obj_len;
+        if (tlv.tag != CERT_SEQ || next_item > ext_len || obj_len < 5) {
+            return count;
+        }
+
+#ifdef HAVE_ALIGNED_ACCESS_REQUIRED
+        memcpy(&oid_len_id_ce, payload + offset, sizeof(oid_len_id_ce));
+#else
+        oid_len_id_ce = *(uint32_t *)(payload + offset);
+#endif
+        if (ntohl(oid_len_id_ce) == wanted) {
+            /* the +4 because `offset` is still at the CERT_OID */
+            switch (*(payload + offset + 4)) {
+              case 14:
+                /* subject key identifier */
+              case 15:
+                /* key usage */
+              case 16:
+                /* private key usage period */
+              case 17:
+                /* alternative name */
+              case 18:
+                /* alternative name */
+              case 29:
+                /* authority key identifier */
+              case 31:
+                /* CRL dist points */
+              case 32:
+                /* Cert Policy ID */
+              case 35:
+                /* Authority Key ID */
+              case 37:
+                count++;
+                break;
             }
         }
-        offsetptr += obj_len;
-        obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    }
 
-    return count;
+        offset = next_item;
+    }
 }
 
 
+/**
+ *    Processes the Issuer or Subject data at `seq_payload`, having length
+ *    `seq_len`, initializes the subTemplateList `subCertSTL`, and adds
+ *    `yaf_ssl_subcert_tmpl` records containing sslObjectType and
+ *    sslObjectValue pairs to the `subCertSTL`.
+ *
+ *    Returns FALSE on error.
+ */
+static gboolean
+ypDecodeIssuerSubject(
+    fbSubTemplateList_t  *subCertSTL,
+    const uint8_t        *seq_payload,
+    unsigned int          seq_len)
+{
+    yfSSLObjValue_t   *sslObject = NULL;
+    yf_asn_tlv_t       tlv = {0, 0, 0};
+    uint32_t           offset = 0;
+    uint8_t            seq_count;
+    uint16_t           obj_len = 0;
+    uint32_t           set_end;
+
+    /* Each item is CERT_SET containing a CERT_SEQ which contains a CERT_OID
+     * to label the data and the data itself (typically one of the string
+     * types) */
+
+    seq_count = ypGetSequenceCount(seq_payload, seq_len);
+    sslObject = (yfSSLObjValue_t *)fbSubTemplateListInit(
+        subCertSTL, 3, YAF_SSL_SUBCERT_FLOW_TID, sslSubTemplate, seq_count);
+
+    for ( ; seq_count && sslObject; --seq_count, ++sslObject) {
+        obj_len = ypDecodeTLV(&tlv, seq_payload, seq_len, &offset);
+        /* note offset for the end of this set */
+        set_end = offset + obj_len;
+        if (set_end > seq_len) {
+            return FALSE;
+        }
+        if (tlv.tag != CERT_SET) {
+            break;
+        }
+
+        obj_len = ypDecodeTLV(&tlv, seq_payload, seq_len, &offset);
+        if (offset + obj_len > seq_len) {
+            return FALSE;
+        }
+        if (tlv.tag != CERT_SEQ) {
+            break;
+        }
+
+        obj_len = ypDecodeTLV(&tlv, seq_payload, seq_len, &offset);
+        if (offset + obj_len > seq_len) {
+            return FALSE;
+        }
+        if (tlv.tag != CERT_OID) {
+            break;
+        }
+
+        if (!ypDecodeOID(seq_payload, &offset, obj_len)) {
+            offset = set_end;
+            continue;
+        }
+
+        /*
+         *  ypDecodeOID() leaves `offset` on final octet of the OID which we
+         *  use as the type.  The +2 moves us to the length of the data (we
+         *  skip the ASN.1 type octet since we don't care about it).
+         */
+
+        sslObject->obj_id = *(seq_payload + offset);
+        offset += 2;
+        obj_len = ypDecodeLength(seq_payload, seq_len, &offset);
+        if (offset + obj_len > seq_len) {
+            sslObject->obj_id = 0;
+            return FALSE;
+        }
+
+        /* OBJ VALUE */
+        sslObject->obj_value.buf = (uint8_t *)seq_payload + offset;
+        sslObject->obj_value.len = obj_len;
+        offset += obj_len;
+    }
+
+#if 0
+    /* The while() should take us the the end of the sequence, but we could
+     * "break" out early for an unexpected case. */
+    if (offset != seq_len) {
+        g_debug("Issuer/Subject: offset is %u but expected to be at %u."
+                "  Most recent tag was %#04x having length %u",
+                offset, seq_len, tlv.tag, obj_len);
+    }
+#endif  /* 0 */
+
+    return TRUE;
+}
+
+
+/**
+ *  Called to parse one certificate whose starting-offset was captured while
+ *  scanning the payload (YF_SSL_CERT_START).
+ *
+ *  @param ctx          DPI Context (unused)
+ *  @param sslCert      the record within an STL to fill
+ *  @param payload      all of the captured payload (either forward/reverse)
+ *  @param payloadSize  the size of the payload
+ *  @param flow         the current (top-level) flow record (unused)
+ *  @param offset       the offset of the certificate's start within `paylaod`
+ */
 static gboolean
 ypDecodeSSLCertificate(
     yfDPIContext_t   *ctx,
@@ -4885,155 +5579,150 @@ ypDecodeSSLCertificate(
     const uint8_t    *payload,
     unsigned int      payloadSize,
     yfFlow_t         *flow,
-    uint16_t          offsetptr)
+    uint32_t          offset)
 {
-    uint32_t         sub_cert_len;
-    uint16_t         tot_ext_len = 0;
-    uint16_t         ext_hold = 0;
-    uint8_t          seq_count;
-    uint8_t          obj_type = 0;
-    yf_asn_tlv_t     tlv;
     yfSSLObjValue_t *sslObject = NULL;
+    yf_asn_tlv_t     tlv;
+    uint32_t         sub_cert_len;
+    uint32_t         ext_end_offset;
+    uint8_t          seq_count;
     uint16_t         obj_len;
-    uint16_t         set_len;
-    uint16_t         off_hold;
-    uint16_t         id_ce;
+    uint16_t         tmp16;
 
-    /* we should start with the length of inner cert */
-    if ((size_t)offsetptr + 5 > payloadSize) {
+    (*sslCert)->sslCertificateHash.len = 0;
+
+    /*
+     *  Notes:
+     *
+     *  The certificate is represented as sequence containing two objects:
+     *  Another sequence for the certificate's details and a sequence for the
+     *  signature.
+     *
+     *  The ASN.1 sequences (0x10) in the certificate have the contructed bit
+     *  set (bit-6, 0x20), resulting in 0x30 when examining the raw octets.
+     *  Similarly, a raw octet for an ASN.1 set (0x11) appears as 0x31.
+     *
+     *  In much of the following, it would be more correct to use the length
+     *  of the inner-most containing sequence as the upper limit instead of
+     *  `sub_cert_len`.
+     */
+
+    /*
+     * ensure there are 3 bytes for the length, 4 for outer CERT_SEQ ID and
+     * the bytes holding its length, and 4 bytes for the inner CERT_SEQ and
+     * its length
+     */
+    if ((size_t)offset + 3 + 4 + 4 > payloadSize) {
         return FALSE;
     }
 
-    sub_cert_len = (ntohl(*(uint32_t *)(payload + offsetptr)) & 0xFFFFFF00) >>
-        8;
+    /* we read the length; `sub_cert_len` does not include the bytes that hold
+     * the length */
+#ifdef HAVE_ALIGNED_ACCESS_REQUIRED
+    memcpy(&sub_cert_len, payload + offset, sizeof(sub_cert_len));
+    sub_cert_len = (ntohl(sub_cert_len) & 0xFFFFFF00) >> 8;
+#else
+    sub_cert_len = (ntohl(*(uint32_t *)(payload + offset)) & 0xFFFFFF00) >> 8;
+#endif
+    offset += 3;
 
-    /* only continue if we have enough payload for the whole cert */
-    if (offsetptr + sub_cert_len > payloadSize) {
+    /* only continue if we have enough payload for the whole cert and the
+     * certificate's size is not ridiculously small */
+    if (offset + sub_cert_len > payloadSize || sub_cert_len < 8) {
         return FALSE;
     }
 
-    offsetptr += 3;
-    /* this is a CERT which is a sequence with length > 0x7F [0x30 0x82]*/
+    /* use local values for the payload and offset so we can ensure `cert_off`
+     * never exceeds `sub_cert_len` */
+    const uint8_t *cert_pay = payload + offset;
+    uint32_t cert_off = 0;
 
-    (*sslCert)->hash.len = 0;
-
-    if (ntohs(*(uint16_t *)(payload + offsetptr)) != 0x3082) {
+    /* We expect a sequence (0x30) where the length is specified in two bytes
+     * (CERT_2BYTE) [0x30 0x82] */
+#ifdef HAVE_ALIGNED_ACCESS_REQUIRED
+    memcpy(&tmp16, cert_pay + cert_off, &tmp16);
+#else
+    tmp16 = *(uint16_t *)(cert_pay + cert_off);
+#endif
+    if (ntohs(tmp16) != 0x3082) {
         return FALSE;
     }
 
-    /* 2 bytes for above, 2 for length of CERT */
-    /* Next we have a signed CERT so 0x3082 + length */
+    /* The following moves forward over the 2 bytes we just read, the 2
+     * bytes holding the sequence's length, over the tag for the inner
+     * sequence (0x3082 again (+2)), and over its length (+2). */
+    cert_off += 8;
+    if (cert_off >= sub_cert_len) {
+        return FALSE;
+    }
 
-    offsetptr += 8;
-
-    /* A0 is for explicit tagging of Version Number */
-    /* 03 is an Integer - 02 is length, 01 is for tagging */
-    if (*(payload + offsetptr) == CERT_EXPLICIT) {
-        offsetptr += 4;
-        (*sslCert)->version = *(payload + offsetptr);
-        offsetptr++;
+    /* the version is next unless this is version 1 certificate (1988).  The
+     * version is denoted by CERT_EXPLICIT (0xA0), where the following octet
+     * is its length (expected to be 0x03), followed by an object type
+     * (CERT_INT == 0x02), the length of the integer (expected to be 0x01),
+     * and finally the version number. */
+    if (*(cert_pay + cert_off) == CERT_EXPLICIT) {
+        cert_off += 4;
+        if (cert_off >= sub_cert_len) {
+            return FALSE;
+        }
+        (*sslCert)->sslCertVersion = *(cert_pay + cert_off);
+        cert_off++;
     } else {
         /* default version is version 1 [0] */
-        (*sslCert)->version = 0;
+        (*sslCert)->sslCertVersion = 0;
     }
 
     /* serial number */
-    obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    if (obj_len > sub_cert_len) {
+    obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+    if (cert_off + obj_len > sub_cert_len) {
         return FALSE;
     }
     if (tlv.tag == CERT_INT) {
-        (*sslCert)->serial.buf = (uint8_t *)payload + offsetptr;
-        (*sslCert)->serial.len = obj_len;
+        (*sslCert)->sslCertSerialNumber.buf = (uint8_t *)cert_pay + cert_off;
+        (*sslCert)->sslCertSerialNumber.len = obj_len;
     }
-    offsetptr += obj_len;
+    cert_off += obj_len;
 
-    /* signature */
-    obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    if (obj_len > sub_cert_len) {
+    /* signature algorithm */
+    obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+    if (cert_off + obj_len > sub_cert_len) {
         return FALSE;
     }
-
     if (tlv.tag != CERT_SEQ) {
-        offsetptr += obj_len;
+        cert_off += obj_len;
     } else {
-        obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
+        obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+        if (cert_off + obj_len > sub_cert_len) {
+            return FALSE;
+        }
         if (tlv.tag == CERT_OID) {
-            if (obj_len > sub_cert_len) {
-                return FALSE;
-            }
-            (*sslCert)->sig.buf = (uint8_t *)payload + offsetptr;
-            (*sslCert)->sig.len = obj_len;
+            (*sslCert)->sslCertSignature.buf = (uint8_t *)cert_pay + cert_off;
+            (*sslCert)->sslCertSignature.len = obj_len;
         }
-        offsetptr += obj_len;
+        cert_off += obj_len;
     }
 
-    /* issuer - sequence */
 
-    obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    if (obj_len > sub_cert_len) {
+    /* ISSUER - sequence */
+
+    obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+    if (cert_off + obj_len > sub_cert_len) {
         return FALSE;
     }
-
-    if (tlv.tag == CERT_SEQ) {
-        seq_count = ypGetSequenceCount((payload + offsetptr), obj_len);
-    } else {
+    if (tlv.tag != CERT_SEQ) {
         return FALSE;
     }
-
-    sslObject = (yfSSLObjValue_t *)fbSubTemplateListInit(
-        &((*sslCert)->issuer), 3,
-        YAF_SSL_SUBCERT_FLOW_TID, sslSubTemplate, seq_count);
-    while (seq_count && sslObject) {
-        set_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-        if (set_len >= sub_cert_len) {
-            return FALSE;
-        }
-        if (tlv.tag != CERT_SET) {
-            break;
-        }
-        off_hold = offsetptr;
-        obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-        if (obj_len >= sub_cert_len) {
-            return FALSE;
-        }
-        if (tlv.tag != CERT_SEQ) {
-            break;
-        }
-        obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-        if (obj_len >= sub_cert_len) {
-            return FALSE;
-        }
-
-        if (tlv.tag != CERT_OID) {
-            break;
-        }
-
-        if (!ypDecodeOID(payload, &offsetptr, obj_len)) {
-            sslObject++;
-            seq_count--;
-            offsetptr = off_hold + set_len;
-            continue;
-        }
-
-        sslObject->obj_id = *(payload + offsetptr);
-        offsetptr += 2;
-        sslObject->obj_value.len = ypDecodeLength(payload, &offsetptr);
-        if (sslObject->obj_value.len >= sub_cert_len) {
-            sslObject->obj_value.len = 0;
-            return FALSE;
-        }
-        offsetptr++;
-        /* OBJ VALUE */
-        sslObject->obj_value.buf = (uint8_t *)payload + offsetptr;
-        offsetptr += sslObject->obj_value.len;
-        seq_count--;
-        sslObject++;
+    if (!ypDecodeIssuerSubject(
+            &(*sslCert)->issuer, cert_pay + cert_off, obj_len))
+    {
+        return FALSE;
     }
+    cert_off += obj_len;
 
     /* VALIDITY is a sequence of times */
-    obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    if (obj_len >= sub_cert_len) {
+    obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+    if (cert_off + obj_len >= sub_cert_len) {
         return FALSE;
     }
     if (tlv.tag != CERT_SEQ) {
@@ -5041,283 +5730,522 @@ ypDecodeSSLCertificate(
     }
 
     /* notBefore time */
-    obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    if (obj_len >= sub_cert_len) {
+    obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+    if (cert_off + obj_len >= sub_cert_len) {
         return FALSE;
     }
     if (tlv.tag != CERT_TIME) {
         return FALSE;
     }
-    (*sslCert)->not_before.buf = (uint8_t *)payload + offsetptr;
-    (*sslCert)->not_before.len = obj_len;
+    (*sslCert)->sslCertValidityNotBefore.buf = (uint8_t *)cert_pay + cert_off;
+    (*sslCert)->sslCertValidityNotBefore.len = obj_len;
 
-    offsetptr += obj_len;
+    cert_off += obj_len;
 
     /* not After time */
-    obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    if (obj_len >= sub_cert_len) {
+    obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+    if (cert_off + obj_len >= sub_cert_len) {
         return FALSE;
     }
     if (tlv.tag != CERT_TIME) {
         return FALSE;
     }
-    (*sslCert)->not_after.buf = (uint8_t *)payload + offsetptr;
-    (*sslCert)->not_after.len = obj_len;
+    (*sslCert)->sslCertValidityNotAfter.buf = (uint8_t *)cert_pay + cert_off;
+    (*sslCert)->sslCertValidityNotAfter.len = obj_len;
 
-    offsetptr += obj_len;
+    cert_off += obj_len;
 
-    obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    if (obj_len >= sub_cert_len) {
+    /* SUBJECT - sequence */
+
+    obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+    if (cert_off + obj_len >= sub_cert_len) {
         return FALSE;
     }
-
-    /* subject - sequence */
-    if (tlv.tag == CERT_SEQ) {
-        seq_count = ypGetSequenceCount((payload + offsetptr), obj_len);
-    } else {
+    if (tlv.tag != CERT_SEQ) {
         return FALSE;
     }
-
-    sslObject = (yfSSLObjValue_t *)fbSubTemplateListInit(
-        &((*sslCert)->subject), 3,
-        YAF_SSL_SUBCERT_FLOW_TID, sslSubTemplate, seq_count);
-
-    while (seq_count && sslObject) {
-        set_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-        if (set_len >= sub_cert_len) {
-            return FALSE;
-        }
-        off_hold = offsetptr;
-        if (tlv.tag != CERT_SET) {
-            break;
-        }
-        obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-        if (obj_len >= sub_cert_len) {
-            return FALSE;
-        }
-
-        if (tlv.tag != CERT_SEQ) {
-            break;
-        }
-        obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-        if (obj_len >= sub_cert_len) {
-            return FALSE;
-        }
-        if (tlv.tag != CERT_OID) {
-            break;
-        }
-
-        if (!ypDecodeOID(payload, &offsetptr, obj_len)) {
-            sslObject++;
-            seq_count--;
-            offsetptr = off_hold + set_len;
-            continue;
-        }
-
-        sslObject->obj_id = *(payload + offsetptr);
-        offsetptr += 2;
-        sslObject->obj_value.len = ypDecodeLength(payload, &offsetptr);
-        if (sslObject->obj_value.len >= sub_cert_len) {
-            sslObject->obj_value.len = 0;
-            return FALSE;
-        }
-        offsetptr++;
-        /* OBJ VALUE */
-        sslObject->obj_value.buf = (uint8_t *)payload + offsetptr;
-        offsetptr += sslObject->obj_value.len;
-        seq_count--;
-        sslObject++;
+    if (!ypDecodeIssuerSubject(
+            &(*sslCert)->subject, cert_pay + cert_off, obj_len))
+    {
+        return FALSE;
     }
+    cert_off += obj_len;
 
     /* subject public key info */
     /* this is a sequence of a sequence of algorithms and public key */
-    obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    if (obj_len >= sub_cert_len) {
+    obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+    if (cert_off + obj_len >= sub_cert_len) {
         return FALSE;
     }
-    /* this needs to be a sequence */
     if (tlv.tag != CERT_SEQ) {
-        offsetptr += obj_len;
+        cert_off += obj_len;
     } else {
         /* this is also a seq */
-        obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-        if (obj_len >= sub_cert_len) {
+        obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+        if (cert_off + obj_len >= sub_cert_len) {
             return FALSE;
         }
         if (tlv.tag != CERT_SEQ) {
-            offsetptr += obj_len;
+            cert_off += obj_len;
         } else {
-            obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-            if (obj_len >= sub_cert_len) {
+            obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+            if (cert_off + obj_len >= sub_cert_len) {
                 return FALSE;
             }
             /* this is the algorithm id */
             if (tlv.tag == CERT_OID) {
-                (*sslCert)->pkalg.buf = (uint8_t *)payload + offsetptr;
-                (*sslCert)->pkalg.len = obj_len;
+                (*sslCert)->sslPublicKeyAlgorithm.buf =
+                    (uint8_t *)cert_pay + cert_off;
+                (*sslCert)->sslPublicKeyAlgorithm.len = obj_len;
             }
-            offsetptr += obj_len;
-            obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-            if (obj_len >= sub_cert_len) {
+            cert_off += obj_len;
+            obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+            if (cert_off + obj_len >= sub_cert_len) {
                 return FALSE;
             }
             /* this is the actual public key */
             if (tlv.tag == CERT_BITSTR) {
-                (*sslCert)->pklen = obj_len;
+                (*sslCert)->sslPublicKeyLength = obj_len;
             }
-            offsetptr += obj_len;
+            cert_off += obj_len;
         }
     }
 
     /* EXTENSIONS! - ONLY AVAILABLE FOR VERSION 3 */
     /* since it's optional - it has a tag if it's here */
-    obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-    if (obj_len >= sub_cert_len) {
+    obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+    if (cert_off + obj_len >= sub_cert_len) {
         return FALSE;
     }
 
-    if ((tlv.class != 2) || ((*sslCert)->version != 2)) {
+    if ((tlv.class != 2) || ((*sslCert)->sslCertVersion != 2)) {
         /* no extensions */
-        ext_hold = offsetptr;
+        ext_end_offset = cert_off;
         fbSubTemplateListInit(&((*sslCert)->extension), 3,
                               YAF_SSL_SUBCERT_FLOW_TID, sslSubTemplate, 0);
     } else {
-        uint16_t ext_len;
-        obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-        tot_ext_len = obj_len;
-        if (obj_len >= sub_cert_len) {
+        obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+        /* note offset after all extensions */
+        ext_end_offset = cert_off + obj_len;
+        if (ext_end_offset >= sub_cert_len) {
+            return FALSE;
+        }
+        if (tlv.tag != CERT_SEQ) {
             return FALSE;
         }
 
-        ext_hold = offsetptr;
-
-        if (tlv.tag == CERT_SEQ) {
-            seq_count = ypGetExtensionCount((payload + offsetptr), obj_len);
-        } else {
-            return FALSE;
-        }
         /* extensions */
+        seq_count = ypGetExtensionCount((cert_pay + cert_off), obj_len);
         sslObject = (yfSSLObjValue_t *)fbSubTemplateListInit(
             &((*sslCert)->extension), 3,
             YAF_SSL_SUBCERT_FLOW_TID, sslSubTemplate, seq_count);
+
         /* exts is a sequence of a sequence of {id, critical flag, value} */
         while (seq_count && sslObject) {
-            ext_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-            if (ext_len >= sub_cert_len) {
+            /* the offset at the end of the current extension */
+            uint32_t cur_ext_end;
+            obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+            cur_ext_end = cert_off + obj_len;
+            if (cur_ext_end >= sub_cert_len) {
                 return FALSE;
             }
-
             if (tlv.tag != CERT_SEQ) {
                 return FALSE;
             }
 
-            off_hold = offsetptr;
-            obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-            if (obj_len >= ext_len) {
+            /* get the object ID and see if it is one we want */
+            obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+            if (cert_off + obj_len >= cur_ext_end) {
                 return FALSE;
             }
-
             if (tlv.tag != CERT_OID) {
                 return FALSE;
             }
-
-            id_ce = ntohs(*(uint16_t *)(payload + offsetptr));
-            if (id_ce != CERT_IDCE) {
-                /* jump past this */
-                offsetptr = off_hold + ext_len;
+            if (obj_len != 3) {
+                /* ignore this object */
+                cert_off = cur_ext_end;
                 continue;
             }
-            offsetptr += 2;
-            obj_type = *(payload + offsetptr);
-            offsetptr++;
-            obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-            if (obj_len >= ext_len) {
+            if (cert_off + sizeof(tmp16) > sub_cert_len) {
+                return FALSE;
+            }
+#ifdef HAVE_ALIGNED_ACCESS_REQUIRED
+            memcpy(&tmp16, cert_pay + cert_off, sizeof(tmp16));
+#else
+            tmp16 = *(uint16_t *)(cert_pay + cert_off);
+#endif
+            cert_off += 2;
+            if (ntohs(tmp16) != CERT_IDCE) {
+                /* ignore this object */
+                cert_off = cur_ext_end;
+                continue;
+            }
+
+            /* keep this switch() in sync with ypGetExtensionCount() */
+            switch (*(cert_pay + cert_off)) {
+              case 14:
+                /* subject key identifier */
+              case 15:
+                /* key usage */
+              case 16:
+                /* private key usage period */
+              case 17:
+                /* alternative name */
+              case 18:
+                /* alternative name */
+              case 29:
+                /* authority key identifier */
+              case 31:
+                /* CRL dist points */
+              case 32:
+                /* Cert Policy ID */
+              case 35:
+                /* Authority Key ID */
+              case 37:
+                /* ext. key usage */
+                break;
+              default:
+                /* ignore it; go to the next one */
+                cert_off = cur_ext_end;
+                continue;
+            }
+
+            /* wanted; decode the rest of this extension */
+            sslObject->obj_id = *(cert_pay + cert_off);
+            ++cert_off;
+
+            /* read the next tag, which may give the type and length of the
+             * data or indicate an optional CRITICAL flag if it is a
+             * boolean */
+            obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+            if (cert_off + obj_len > cur_ext_end) {
+                sslObject->obj_id = 0;
                 return FALSE;
             }
             if (tlv.tag == CERT_BOOL) {
-                /* this is optional CRITICAL flag */
-                offsetptr += obj_len;
-                obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-                if (obj_len >= ext_len) {
+                cert_off += obj_len;
+                /* this should be the object's data type and length */
+                obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+                if (cert_off + obj_len > cur_ext_end) {
+                    sslObject->obj_id = 0;
                     return FALSE;
                 }
             }
-            switch (obj_type) {
-              case 14:
-              /* subject key identifier */
-              case 15:
-              /* key usage */
-              case 16:
-              /* private key usage period */
-              case 17:
-              /* alternative name */
-              case 18:
-              /* alternative name */
-              case 29:
-              /* authority key identifier */
-              case 31:
-              /* CRL dist points */
-              case 32:
-              /* Cert Policy ID */
-              case 35:
-              /* Authority Key ID */
-              case 37:
-                /* ext. key usage */
-                sslObject->obj_id = obj_type;
-                sslObject->obj_value.len = obj_len;
-                sslObject->obj_value.buf = (uint8_t *)payload + offsetptr;
-                offsetptr += obj_len;
-                seq_count--;
-                sslObject++;
-                break;
-              default:
-                offsetptr = off_hold + ext_len;
-                continue;
-            }
+
+            sslObject->obj_value.len = obj_len;
+            sslObject->obj_value.buf = (uint8_t *)cert_pay + cert_off;
+            cert_off += obj_len;
+            seq_count--;
+            sslObject++;
         }
     }
 
     if (ctx->cert_hash_export) {
-        /* signature again */
-        offsetptr = ext_hold + tot_ext_len;
-        if (offsetptr > payloadSize) {
+        /* The signaure is represented by a sequence containing an OID which
+         * is signing algorithm (a repeat of what we saw above) and the
+         * signature bitstring */
+
+        cert_off = ext_end_offset;
+        if (cert_off >= sub_cert_len) {
             return TRUE;
         }
-        obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-        if (obj_len > sub_cert_len) {
+
+        obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
+        if (cert_off + obj_len > sub_cert_len) {
             return TRUE;
         }
 
         if (tlv.tag == CERT_SEQ) {
-            obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
+            /* skip the OID */
+            obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
             if (tlv.tag != CERT_OID) {
                 return TRUE;
             }
+            cert_off += obj_len;
+            if (cert_off >= sub_cert_len) {
+                return TRUE;
+            }
 
-            offsetptr += obj_len;
-            if (offsetptr > payloadSize) {
-                return TRUE;
-            }
-            obj_len = ypDecodeTLV(&tlv, payload, &offsetptr);
-            /*get past padding */
-            offsetptr++;
-            if ((offsetptr + obj_len) > payloadSize) {
-                return TRUE;
-            }
+            /* read the bitstring */
+            obj_len = ypDecodeTLV(&tlv, cert_pay, sub_cert_len, &cert_off);
             if (tlv.tag != CERT_BITSTR) {
                 return TRUE;
             }
-            if ((obj_len - 1) % 16) {
+            if (cert_off + obj_len > sub_cert_len) {
                 return TRUE;
             }
-            (*sslCert)->hash.len = obj_len - 1;
-            (*sslCert)->hash.buf = (uint8_t *)payload + offsetptr;
+
+            /* there is one octet of padding; ignore it */
+            cert_off++;
+            obj_len -= 1;
+
+            /* must be a multiple of 16 */
+            if (obj_len & 0xF) {
+                return TRUE;
+            }
+            (*sslCert)->sslCertificateHash.len = obj_len;
+            (*sslCert)->sslCertificateHash.buf = (uint8_t *)cert_pay + cert_off;
         }
     }
 
     return TRUE;
 }
 
+/**
+ * sslServerJA3
+ *
+ * Processes the plugin's arguments to create a string that will be used to
+ * generate an MD5 Hash of a server response
+ */
+static void
+ypSslServerJA3S(
+    uint16_t       scipher,
+    uint16_t       sversion,
+    char          *ser_extension,
+    uint8_t       *smd5,
+    fbVarfield_t  *string)
+{
+    GString *str = g_string_sized_new(500);
 
+    if (sversion != 0) {
+        g_string_append_printf(str, "%hu,", sversion);
+        g_string_append_printf(str, "%hu,", scipher);
+    } else {
+        g_string_append(str, ",,");
+    }
+
+    if (ser_extension != NULL) {
+        g_string_append_printf(str, "%s", ser_extension);
+    }
+
+    g_free(ser_extension);
+    ypComputeMD5(str->str, str->len, smd5);
+    string->len = str->len;
+    string->buf = (uint8_t *)g_string_free(str, FALSE);
+}
+
+/**
+ * sslClientJA3
+ *
+ * Processes the plugin's arguments to create a string that will be used to
+ * generate an MD5 Hash of a client response.
+ */
+static void
+ypSslClientJA3(
+    fbBasicList_t  *ciphers,
+    char           *extension,
+    uint16_t       *elliptic_curve,
+    char           *elliptic_format,
+    uint16_t        version,
+    int             ellip_curve_len,
+    uint8_t        *md5,
+    fbVarfield_t   *string)
+{
+    GString  *str = g_string_sized_new(500);
+    int       i;
+    uint16_t *cipher;
+
+    /*The version is added to the string*/
+    if (version != 0) {
+        g_string_append_printf(str, "%hu,", version);
+    } else {
+        g_string_append(str, ",,");
+    }
+    /*The ciphers are beinf added to the string*/
+    for (i = 0; (cipher = (uint16_t *)fbBasicListGetIndexedDataPtr(ciphers, i));
+         i++)
+    {
+        if (!ypSslGreaseTableCheck(*cipher)) {
+            g_string_append_printf(str, "%hu-", *cipher);
+        }
+    }
+    if (str->str[str->len - 1] == '-') {
+        g_string_truncate(str, str->len - 1);
+        g_string_append(str, ",");
+    }
+
+    /*Extensions are added at this point*/
+    if (extension != NULL) {
+        g_string_append_printf(str, "%s,", extension);
+        /*The eliptical curve is added to string*/
+        if (elliptic_curve != NULL) {
+            for (i = 0; i < ellip_curve_len; i++) {
+                if (!ypSslGreaseTableCheck(elliptic_curve[i])) {
+                    g_string_append_printf(str, "%hu-", elliptic_curve[i]);
+                }
+            }
+            if (str->str[str->len - 1] == '-') {
+                g_string_truncate(str, str->len - 1);
+                g_string_append(str, ",");
+            }
+        } else {
+            g_string_append(str, ",");
+        }
+        /*The elliptical format is added to the string*/
+        if (elliptic_format != NULL) {
+            g_string_append_printf(str, "%s", elliptic_format);
+        }
+    } else {
+        g_string_append(str, ",,");
+    }
+
+    g_free(elliptic_curve);
+    g_free(elliptic_format);
+    g_free(extension);
+    ypComputeMD5(str->str, str->len, md5);
+    string->len = str->len;
+    string->buf = (uint8_t *)g_string_free(str, FALSE);
+}
+
+/**
+ * computeMD5
+ *
+ * Processes the plugin's arguments to generate an MD5 Hash
+ *
+ */
+#if HAVE_OPENSSL
+static void
+ypComputeMD5(
+    const char  *string,
+    int          len,
+    uint8_t     *mdbuff)
+{
+#if OPENSSL_VERSION_NUMBER < 0x30000000
+    MD5((const unsigned char *)string, len, mdbuff);
+#else
+    EVP_MD_CTX   *mdctx = EVP_MD_CTX_new();
+    const EVP_MD *md = EVP_md5();
+    unsigned char md_size[EVP_MAX_MD_SIZE];
+    unsigned int  md_len;
+    EVP_DigestInit_ex(mdctx, md, NULL);
+    EVP_DigestUpdate(mdctx, string, len);
+    EVP_DigestFinal_ex(mdctx, md_size, &md_len);
+    EVP_MD_CTX_free(mdctx);
+
+    memcpy(mdbuff, md_size, 16);
+#endif /* if OPENSSL_VERSION_NUMBER < 0x30000000 */
+}
+#endif /* ifdef HAVE_OPENSSL */
+
+/**
+ * sslClientJA3
+ *
+ * Processes the plugin's argument to verify if an extension is equal to a
+ * grease table value
+ */
+static gboolean
+ypSslGreaseTableCheck(
+    uint16_t   value)
+{
+    uint16_t greaseTable[] = {
+        2570, 6682, 10794, 14906, 19018, 23130, 27242, 31354,
+        35466, 39578, 43690, 47802, 51914, 56026, 60138, 64250
+    };
+
+    for (size_t i = 0; i < sizeof(greaseTable) / sizeof(greaseTable[0]); i++) {
+        if (greaseTable[i] == value) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+/**
+ *  Takes the position in the payload where the extension list begins
+ *  (specifically on the length of the extension list) and returns a newly
+ *  allocated string containing the extension types joined by a hyphen.
+ *
+ *  The caller must g_free() the string when no longer required.
+ */
+static char *
+ypSslStoreExtension(
+    const uint8_t  *payload)
+{
+    uint16_t total_count = ntohs(*(uint16_t *)payload);
+    uint16_t ext_type = 0;
+    uint16_t ext_len = 0;
+    uint32_t offset = 0;
+    uint32_t total_ext = 0;
+
+    GString *str = g_string_sized_new(500);
+
+    offset += 2;
+
+    while (total_ext + 4 < total_count) {
+        ext_type = ntohs(*(uint16_t *)(payload + offset));
+        offset += 2;
+        ext_len = ntohs(*(uint16_t *)(payload + offset));
+        offset += 2;
+        total_ext += sizeof(uint16_t) + sizeof(uint16_t) + ext_len;
+        if (!ypSslGreaseTableCheck(ext_type)) {
+            g_string_append_printf(str, "%hu-", ext_type);
+        }
+        offset += ext_len;
+    }
+    if (str->len > 0 && str->str[str->len - 1] == '-') {
+        g_string_truncate(str, str->len - 1);
+    }
+    return g_string_free(str, FALSE);
+}
+
+/**
+ * Concatenate algorith strings to create HASSH string.
+ * MD5 HASSH string to create HASSH hash.
+ */
+static void
+ypSshHASSH(
+    GString       *kex,
+    const gchar   *encryp,
+    const gchar   *mac,
+    const gchar   *compression,
+    uint8_t       *md5,
+    fbVarfield_t  *string)
+{
+    g_string_append_printf(kex, ";%s;%s;%s", encryp, mac, compression);
+
+    ypComputeMD5(kex->str, kex->len, md5);
+    string->buf = (unsigned char *)kex->str;
+    string->len =  kex->len;
+    g_string_free(kex, FALSE);
+}
+
+/**
+ * algo_Compare
+ *
+ * Compare the client `str1` and server `str2` algorithm strings
+ * Split the given strings into tokens and compare first token
+ * of the client & server string
+ *
+ */
+static void
+ypSshAlgoCompare(
+    const GString *str1,
+    const GString *str2,
+    fbVarfield_t  *str3)
+{
+    if (strchr(str1->str, ',') != NULL) {
+        gchar  **tokens1 = g_strsplit(str1->str, ",", -1);
+        gchar  **tokens2 = g_strsplit(str2->str, ",", -1);
+        gboolean algo_match = FALSE;
+        for (unsigned int i = 0; i < g_strv_length(tokens1); i++) {
+            for (unsigned int j = 0; j < g_strv_length(tokens2); j++) {
+                if (strcmp(tokens2[j], tokens1[i]) == 0) {
+                    str3->len = strlen(tokens1[i]);
+                    str3->buf = (unsigned char *)g_strdup(tokens1[i]);
+                    algo_match = TRUE;
+                    break;
+                }
+            }
+            if (algo_match == TRUE) {
+                break;
+            }
+        }
+        g_strfreev(tokens1);
+        g_strfreev(tokens2);
+    } else {
+        str3->len = str1->len;
+        str3->buf = (uint8_t *)g_strdup(str1->str);
+    }
+}
 #endif /* #if YAF_ENABLE_HOOKS */
 #endif /* #if YAF_ENABLE_APPLABEL */

@@ -135,7 +135,7 @@ sub check_file
     delete $checksums{$tail_name};
 
     my $md5;
-    compute_md5(\$md5, "cat $path", 0);
+    compute_md5_file(\$md5, $path, 0);
     return if grep {$_ eq $md5} @sums;
     push @mismatch, $tail_name;
 }

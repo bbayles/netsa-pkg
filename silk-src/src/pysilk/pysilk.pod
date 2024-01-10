@@ -1917,7 +1917,9 @@ an integer, the integer should represent the 8-bit representation of
 the flags.  If a string, the string should consist of a concatenation
 of zero or more of the characters C<F>, C<S>, C<R>, C<P>, C<A>, C<U>,
 C<E>, and C<C>---upper or lower-case---representing the FIN, SYN, RST,
-PSH, ACK, URG, ECE, and CWR flags.  Spaces in the string are ignored.
+PSH, ACK, URG, ECE, and CWR flags.  As of SiLK 3.20.0, the constructor
+accepts C<-> which sets all flags in the contructor.  Spaces in the
+string are ignored.
 
 Examples:
 
@@ -3024,7 +3026,7 @@ L<http://docs.python.org/>
 
 =cut
 
-$SiLK: pysilk.pod 01d273aa43de 2020-04-16 15:57:54Z mthomas $
+$SiLK: pysilk.pod 35b901fd2f56 2023-03-10 19:46:07Z mthomas $
 
 Local Variables:
 mode:text

@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2016-2020 by Carnegie Mellon University.
+** Copyright (C) 2016-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -21,7 +63,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: rwaggbag.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: rwaggbag.c e95eb8cd5b0c 2023-09-05 21:09:53Z mthomas $");
 
 #include <silk/rwascii.h>
 #include <silk/rwrec.h>
@@ -86,7 +128,7 @@ static sk_aggbag_t *ab = NULL;
 /* OPTIONS */
 
 typedef enum {
-    /* OPT_HELP_FIELDS, */
+    OPT_HELP_FIELDS,
     OPT_KEYS,
     OPT_COUNTERS,
     OPT_OUTPUT_PATH
@@ -94,7 +136,7 @@ typedef enum {
 
 
 static struct option appOptions[] = {
-    /* {"help-fields",         NO_ARG,       0, OPT_HELP_FIELDS}, */
+    {"help-fields",         NO_ARG,       0, OPT_HELP_FIELDS},
     {"keys",                REQUIRED_ARG, 0, OPT_KEYS},
     {"counters",            REQUIRED_ARG, 0, OPT_COUNTERS},
     {"output-path",         REQUIRED_ARG, 0, OPT_OUTPUT_PATH},
@@ -102,7 +144,7 @@ static struct option appOptions[] = {
 };
 
 static const char *appHelp[] = {
-    /* "Describe each possible key and counter and exit. Def. no", */
+    "Describe each supported key and counter and exit. Def. no",
     ("Use these fields as the grouping key. Specify fields as a\n"
      "\tcomma-separated list of names"),
     ("Compute these values for each group.\n"
@@ -116,7 +158,7 @@ static const char *appHelp[] = {
 /* LOCAL FUNCTION PROTOTYPES */
 
 static int  appOptionsHandler(clientData cData, int opt_index, char *opt_arg);
-/* static void helpFields(FILE *fh); */
+static void helpFields(FILE *fh);
 static int  createStringmaps(void);
 static int
 parseFields(
@@ -386,11 +428,9 @@ appOptionsHandler(
     int rv;
 
     switch ((appOptionsEnum)opt_index) {
-#if 0
       case OPT_HELP_FIELDS:
         helpFields(USAGE_FH);
         exit(EXIT_SUCCESS);
-#endif  /* #if 0 */
 
       case OPT_KEYS:
         if (keys_arg) {
@@ -430,7 +470,6 @@ appOptionsHandler(
 }
 
 
-#if 0
 /*
  *  helpFields(fh);
  *
@@ -440,26 +479,23 @@ static void
 helpFields(
     FILE               *fh)
 {
+#define HELP_FIELDS_MSG                                                 \
+    ("The following names may be used in the --%s switch."              \
+     " Names are case-\n"                                               \
+     "insensitive and may be abbreviated to the shortest unique prefix.\n")
+
     if (createStringmaps()) {
         exit(EXIT_FAILURE);
     }
 
-    fprintf(fh,
-            ("The following names may be used in the --%s switch. Names are\n"
-             "case-insensitive and may be abbreviated to the shortest"
-             " unique prefix.\n"),
-            appOptions[OPT_KEYS].name);
+    fprintf(fh, HELP_FIELDS_MSG, appOptions[OPT_KEYS].name);
     skStringMapPrintDetailedUsage(key_name_map, fh);
 
-    fprintf(fh,
-            ("\n"
-             "The following names may be used in the --%s switch. Names are\n"
-             "case-insensitive and may be abbreviated to the shortest"
-             " unique prefix.\n"),
-            appOptions[OPT_COUNTERS].name);
+    fprintf(fh, "\n");
+
+    fprintf(fh, HELP_FIELDS_MSG, appOptions[OPT_COUNTERS].name);
     skStringMapPrintDetailedUsage(counter_name_map, fh);
 }
-#endif  /* 0 */
 
 
 /*
@@ -521,6 +557,7 @@ createStringmaps(
                 break;
             }
             sm_entry.id = type;
+            sm_entry.description = skAggBagFieldTypeGetDescription(type);
             sm_err = skStringMapAddEntries(map, 1, &sm_entry);
             if (sm_err) {
                 skAppPrintErr("Unable to add %s field named '%s': %s",

@@ -3,7 +3,7 @@
 ## The canonical pathname for this file is
 ## @sysconfdir@/@myprog@.conf
 ##
-## RCSIDENT("$SiLK: rwflowpack.conf.in 60e5dccfed7c 2015-09-23 20:32:54Z mthomas $")
+## RCSIDENT("$SiLK: rwflowpack.conf.in e352a9546507 2022-06-24 14:08:34Z mthomas $")
 ##
 ## This is a /bin/sh file that gets loaded by the init.d/@myprog@
 ## wrapper script, and this file must follow /bin/sh syntax rules.
@@ -71,6 +71,12 @@ ARCHIVE_DIR=${statedirectory}/archive
 # subdirectories of the ARCHIVE_DIR.  If this variable's value is 1,
 # files are stored in ARCHIVE_DIR itself, not in subdirectories of it.
 FLAT_ARCHIVE=0
+
+# A command to run each file after it has been copied to the
+# ARCHIVE_DIR.  In the command, "%s" will be replaced with the full
+# path to the file in the archive directory.
+#POST_ARCHIVE_COMMAND='echo processed file %s'
+POST_ARCHIVE_COMMAND=
 
 # Directory to move an input file into if there is a problem opening
 # the file.  If this value is not set, rwflowpack will exit when it

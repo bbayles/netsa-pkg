@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2004-2020 by Carnegie Mellon University.
+** Copyright (C) 2004-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -32,7 +74,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: rwbagbuild.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: rwbagbuild.c 6a1929dbf54d 2023-09-13 14:12:09Z mthomas $");
 
 #include <silk/skbag.h>
 #include <silk/skcountry.h>
@@ -579,7 +621,8 @@ appOptionsHandler(
         break;
 
       case OPT_DEFAULT_COUNT:
-        rv = skStringParseUint64((uint64_t*)&default_count, opt_arg, 0, 0);
+        rv = skStringParseUint64((uint64_t*)&default_count, opt_arg,
+                                 SKBAG_COUNTER_MIN, SKBAG_COUNTER_MAX);
         if (rv) {
             skAppPrintErr("Invalid %s '%s': %s",
                           appOptions[opt_index].name, opt_arg,
@@ -812,6 +855,55 @@ parsePmapFileOption(
 
 
 /*
+ *    Add 'counter' to 'key' in 'bag'.  On success return SKBAG_OK.  On
+ *    overflow error, set 'counter' to the maximum, print a message if this is
+ *    the first overflow, and return SKBAG_OK.  On any other error, print a
+ *    message and return the error code.
+ */
+static int
+bagbuildAddCounter(
+    skBag_t                *bag,
+    skBagTypedKey_t        *key,
+    skBagTypedCounter_t    *counter)
+{
+    /* warn on overflow one time only */
+    static int overflow = 0;
+    skBagErr_t err;
+
+    err = skBagCounterAdd(bag, key, counter, NULL);
+    switch (err) {
+      case SKBAG_OK:
+        break;
+
+      case SKBAG_ERR_OP_BOUNDS:
+        counter->val.u64 = SKBAG_COUNTER_MAX;
+        skBagCounterSet(bag, key, counter);
+        if (!overflow) {
+            overflow = 1;
+            skAppPrintErr(
+                "**WARNING** Counter overflow for Bag being written to '%s'",
+                skStreamGetPathname(out_stream));
+        }
+        err = SKBAG_OK;
+        break;
+
+      case SKBAG_ERR_MEMORY:
+        skAppPrintErr("Out of memory for Bag being written to '%s'.\n"
+                      "\tCleaning up and exiting",
+                      skStreamGetPathname(out_stream));
+        break;
+
+      default:
+        skAppPrintErr(
+            "Error adding to counter for Bag being written to '%s': %s",
+            skStreamGetPathname(out_stream), skBagStrerror(err));
+        break;
+    }
+
+    return err;
+}
+
+/*
  *    Read textual input from 'stream' containing proto-port pairs
  *    with an optional counter.  Map the proto-port pair to a value in
  *    a prefix map file, and add the value and the counter to the bag.
@@ -829,7 +921,6 @@ createBagProtoPortPmap(
     char *sz_counter;
     char line[1024];
     int lc = 0;
-    skBagErr_t err;
     uint32_t tmp32;
     int rv;
 
@@ -911,8 +1002,8 @@ createBagProtoPortPmap(
         /* parse the protocol */
         rv = skStringParseUint32(&tmp32, sz_proto, 0, UINT8_MAX);
         if (rv) {
-            skAppPrintErr("Error parsing protocol on line %d: %s",
-                          lc, skStringParseStrerror(rv));
+            skAppPrintErr("Error parsing protocol on line %d '%s': %s",
+                          lc, sz_proto, skStringParseStrerror(rv));
             return 1;
         }
         pp.proto = tmp32;
@@ -920,8 +1011,8 @@ createBagProtoPortPmap(
         /* parse the port */
         rv = skStringParseUint32(&tmp32, sz_port, 0, UINT16_MAX);
         if (rv) {
-            skAppPrintErr("Error parsing port on line %d: %s",
-                          lc, skStringParseStrerror(rv));
+            skAppPrintErr("Error parsing port on line %d '%s': %s",
+                          lc, sz_port, skStringParseStrerror(rv));
             return 1;
         }
         pp.port = tmp32;
@@ -933,11 +1024,12 @@ createBagProtoPortPmap(
             /* not a pipe delimited line; use default count */
             counter.val.u64 = default_count;
         } else {
-            rv = skStringParseUint64(&counter.val.u64, sz_counter, 0, 0);
+            rv = skStringParseUint64(&counter.val.u64, sz_counter,
+                                     SKBAG_COUNTER_MIN, SKBAG_COUNTER_MAX);
             if (rv < 0) {
                 /* parse error */
-                skAppPrintErr("Error parsing count on line %d: %s",
-                              lc, skStringParseStrerror(rv));
+                skAppPrintErr("Error parsing count on line %d '%s': %s",
+                              lc, sz_counter, skStringParseStrerror(rv));
                 return 1;
             }
             if (rv > 0) {
@@ -955,10 +1047,7 @@ createBagProtoPortPmap(
         }
 
         key.val.u32 = skPrefixMapFindValue(prefix_map, &pp);
-        err = skBagCounterAdd(bag, &key, &counter, NULL);
-        if (err != SKBAG_OK) {
-            skAppPrintErr("Error adding value to bag: %s",
-                          skBagStrerror(err));
+        if (bagbuildAddCounter(bag, &key, &counter) != 0) {
             return 1;
         }
     }
@@ -990,7 +1079,6 @@ createBagFromTextBag(
     skipaddr_t ipaddr;
     char line[1024];
     int lc = 0;
-    skBagErr_t err;
     int rv;
 
 #if SK_ENABLE_IPV6
@@ -1054,11 +1142,12 @@ createBagFromTextBag(
             /* not a pipe delimited line; use default count */
             counter.val.u64 = default_count;
         } else {
-            rv = skStringParseUint64(&counter.val.u64, sz_counter, 0, 0);
+            rv = skStringParseUint64(&counter.val.u64, sz_counter,
+                                     SKBAG_COUNTER_MIN, SKBAG_COUNTER_MAX);
             if (rv < 0) {
                 /* parse error */
-                skAppPrintErr("Error parsing count on line %d: %s",
-                              lc, skStringParseStrerror(rv));
+                skAppPrintErr("Error parsing count on line %d '%s': %s",
+                              lc, sz_counter, skStringParseStrerror(rv));
                 return 1;
             }
             if (rv > 0) {
@@ -1082,8 +1171,8 @@ createBagFromTextBag(
         rv = skStringParseIPWildcard(&ipwild, sz_key);
         if (rv != 0) {
             /* not parsable */
-            skAppPrintErr("Error parsing IP on line %d: %s",
-                          lc, skStringParseStrerror(rv));
+            skAppPrintErr("Error parsing IP on line %d '%s': %s",
+                          lc, sz_key, skStringParseStrerror(rv));
             return 1;
         }
         /* Add IPs from wildcard to the bag */
@@ -1093,10 +1182,7 @@ createBagFromTextBag(
                    == SK_ITERATOR_OK)
             {
                 key.val.u32 = skCountryLookupCode(&ipaddr);
-                err = skBagCounterAdd(bag, &key, &counter, NULL);
-                if (err != SKBAG_OK) {
-                    skAppPrintErr("Error adding value to bag: %s",
-                                  skBagStrerror(err));
+                if (bagbuildAddCounter(bag, &key, &counter) != 0) {
                     return 1;
                 }
             }
@@ -1107,10 +1193,7 @@ createBagFromTextBag(
                    == SK_ITERATOR_OK)
             {
                 key.val.u32 = skPrefixMapFindValue(prefix_map, &ipaddr);
-                err = skBagCounterAdd(bag, &key, &counter, NULL);
-                if (err != SKBAG_OK) {
-                    skAppPrintErr("Error adding value to bag: %s",
-                                  skBagStrerror(err));
+                if (bagbuildAddCounter(bag, &key, &counter) != 0) {
                     return 1;
                 }
             }
@@ -1120,10 +1203,7 @@ createBagFromTextBag(
             while (skIPWildcardIteratorNext(&iter, &ipkey.val.addr)
                    == SK_ITERATOR_OK)
             {
-                err = skBagCounterAdd(bag, &ipkey, &counter, NULL);
-                if (err != SKBAG_OK) {
-                    skAppPrintErr("Error adding value to bag: %s",
-                                  skBagStrerror(err));
+                if (bagbuildAddCounter(bag, &ipkey, &counter) != 0) {
                     return 1;
                 }
             }
@@ -1152,10 +1232,7 @@ createBagFromTextBag(
                 skipaddrSetV4(&ipaddr, &key.val.u32);
                 key.val.u32 = skPrefixMapFindValue(prefix_map, &ipaddr);
             }
-            err = skBagCounterAdd(bag, &key, &counter, NULL);
-            if (err != SKBAG_OK) {
-                skAppPrintErr("Error adding value to bag: %s",
-                              skBagStrerror(err));
+            if (bagbuildAddCounter(bag, &key, &counter) != 0) {
                 return 1;
             }
         } else {
@@ -1163,8 +1240,8 @@ createBagFromTextBag(
             rv = skStringParseIPWildcard(&ipwild, sz_key);
             if (rv != 0) {
                 /* not parsable */
-                skAppPrintErr("Error parsing IP on line %d: %s",
-                              lc, skStringParseStrerror(rv));
+                skAppPrintErr("Error parsing IP on line %d '%s': %s",
+                              lc, sz_key, skStringParseStrerror(rv));
                 return 1;
             }
             if (skIPWildcardIsV6(&ipwild)) {
@@ -1186,10 +1263,7 @@ createBagFromTextBag(
                        == SK_ITERATOR_OK)
                 {
                     key.val.u32 = skCountryLookupCode(&ipaddr);
-                    err = skBagCounterAdd(bag, &key, &counter, NULL);
-                    if (err != SKBAG_OK) {
-                        skAppPrintErr("Error adding value to bag: %s",
-                                      skBagStrerror(err));
+                    if (bagbuildAddCounter(bag, &key, &counter) != 0) {
                         return 1;
                     }
                 }
@@ -1200,10 +1274,7 @@ createBagFromTextBag(
                        == SK_ITERATOR_OK)
                 {
                     key.val.u32 = skPrefixMapFindValue(prefix_map, &ipaddr);
-                    err = skBagCounterAdd(bag, &key, &counter, NULL);
-                    if (err != SKBAG_OK) {
-                        skAppPrintErr("Error adding value to bag: %s",
-                                      skBagStrerror(err));
+                    if (bagbuildAddCounter(bag, &key, &counter) != 0) {
                         return 1;
                     }
                 }
@@ -1213,10 +1284,7 @@ createBagFromTextBag(
                 while (skIPWildcardIteratorNext(&iter, &ipkey.val.addr)
                        == SK_ITERATOR_OK)
                 {
-                    err = skBagCounterAdd(bag, &ipkey, &counter, NULL);
-                    if (err != SKBAG_OK) {
-                        skAppPrintErr("Error adding value to bag: %s",
-                                      skBagStrerror(err));
+                    if (bagbuildAddCounter(bag, &ipkey, &counter) != 0) {
                         return 1;
                     }
                 }
@@ -1261,7 +1329,7 @@ bagFromSetCountry(
     bag_key_counter_t *kc = (bag_key_counter_t *)v_bag_key_counter;
 
     kc->key.val.u16 = skCountryLookupCode(ipaddr);
-    return skBagCounterAdd(kc->bag, &kc->key, &kc->counter, NULL);
+    return bagbuildAddCounter(kc->bag, &kc->key, &kc->counter);
 }
 
 
@@ -1279,7 +1347,7 @@ bagFromSetPmap(
     bag_key_counter_t *kc = (bag_key_counter_t *)v_bag_key_counter;
 
     kc->key.val.u32 = skPrefixMapFindValue(prefix_map, ipaddr);
-    return skBagCounterAdd(kc->bag, &kc->key, &kc->counter, NULL);
+    return bagbuildAddCounter(kc->bag, &kc->key, &kc->counter);
 }
 
 
