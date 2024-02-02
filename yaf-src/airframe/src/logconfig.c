@@ -1,67 +1,71 @@
 /*
-** logconfig.c
-** Generic glib-based logging configuration support
-**
-** ------------------------------------------------------------------------
-** Copyright (C) 2005-2023 Carnegie Mellon University. All Rights Reserved.
-** ------------------------------------------------------------------------
-** Authors: Brian Trammell
-** ------------------------------------------------------------------------
-** @OPENSOURCE_HEADER_START@
-** Use of the YAF system and related source code is subject to the terms
-** of the following licenses:
-**
-** GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
-** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
-**
-** NO WARRANTY
-**
-** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
-** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
-** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
-** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
-** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
-** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
-** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
-** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
-** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
-** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
-** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
-** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
-** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
-** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
-** DELIVERABLES UNDER THIS LICENSE.
-**
-** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
-** Mellon University, its trustees, officers, employees, and agents from
-** all claims or demands made against them (and any related losses,
-** expenses, or attorney's fees) arising out of, or relating to Licensee's
-** and/or its sub licensees' negligent use or willful misuse of or
-** negligent conduct or willful misconduct regarding the Software,
-** facilities, or other rights or assistance granted by Carnegie Mellon
-** University under this License, including, but not limited to, any
-** claims of product liability, personal injury, death, damage to
-** property, or violation of any laws or regulations.
-**
-** Carnegie Mellon University Software Engineering Institute authored
-** documents are sponsored by the U.S. Department of Defense under
-** Contract FA8721-05-C-0003. Carnegie Mellon University retains
-** copyrights in all material produced under this contract. The U.S.
-** Government retains a non-exclusive, royalty-free license to publish or
-** reproduce these documents, or allow others to do so, for U.S.
-** Government purposes only pursuant to the copyright license under the
-** contract clause at 252.227.7013.
-**
-** @OPENSOURCE_HEADER_END@
-** ------------------------------------------------------------------------
-*/
+ *  Copyright 2005-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+/*
+ *  logconfig.c
+ *  Generic glib-based logging configuration support
+ *
+ *  ------------------------------------------------------------------------
+ *  Authors: Brian Trammell
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
+ *
+ *  Copyright 2023 Carnegie Mellon University.
+ *
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
+ *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
+ *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ *  ------------------------------------------------------------------------
+ */
 
 #define _AIRFRAME_SOURCE_
 #include <airframe/logconfig.h>
 #include <airframe/daeconfig.h>
 #include <airframe/airutil.h>
 
+/* wrap this around string literals that are assigned to variables of type
+ * "char *" to quiet compiler warnings */
+#define C(String) (char *)String
+
+
+#ifdef  USE_GOPTION
 #define AF_OPTION_WRAP "\n\t\t\t\t"
+#else
+#define AF_OPTION_WRAP " "
+#endif
 
 
 typedef struct logc_st {
@@ -115,17 +119,15 @@ logc_add_option_group(
 
 static void
 logc_print_version(
-    )
+    void)
 {
-    fprintf(stderr, "%s version %s (c) 2000-2021 Carnegie Mellon University.\n",
+    fprintf(stdout, "%s version %s (c) 2006-2023 Carnegie Mellon University.\n",
             logc.appname, logc.version);
-    fprintf(stderr, "GNU General Public License (GPL) Rights "
+    fprintf(stdout, "GNU General Public License (GPL) Rights "
             "pursuant to Version 2, June 1991\n");
-    fprintf(stderr, "Some included library code covered by LGPL 2.1; "
+    fprintf(stdout, "Some included library code covered by LGPL 2.1; "
             "see source for details.\n");
-    fprintf(stderr, "Government Purpose License Rights (GPLR) "
-            "pursuant to DFARS 252.227-7013\n");
-    fprintf(stderr, "Send bug reports, feature requests, and comments to "
+    fprintf(stdout, "Send bug reports, feature requests, and comments to "
             "netsa-help@cert.org.\n");
 }
 
@@ -437,18 +439,18 @@ logc_setup(
     /* default to stderr, or user for forking daemon */
     if (logc.logspec == NULL) {
         if (daec_will_fork()) {
-            logc.logspec = "user";
+            logc.logspec = C("user");
         } else {
-            logc.logspec = "stderr";
+            logc.logspec = C("stderr");
         }
     }
 
     /* default to warning logging; handle verbose flag */
     if (logc.loglevel == NULL) {
         if (logc.opt_verbose) {
-            logc.loglevel = "debug";
+            logc.loglevel = C("debug");
         } else {
-            logc.loglevel = "warning";
+            logc.loglevel = C("warning");
         }
     }
 

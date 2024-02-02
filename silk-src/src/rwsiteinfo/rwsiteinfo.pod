@@ -9,7 +9,7 @@ B<rwsiteinfo> - Print information from the silk.conf site configuration file
   rwsiteinfo --fields=FIELD[,FIELD...]
         { [--classes=CLASS[,CLASS...]] [--types=TYPE[,TYPE...]]
           | [--flowtypes=CLASS/TYPE[,CLASS/TYPE...]] }
-        [--sensors=SENSOR[,SENSOR...]]
+        [--sensors=SENSOR[,SENSOR...]] [--groups=GROUP[,GROUP...]]
         [--data-rootdir=ROOT_DIRECTORY] [--site-config-file=FILENAME]
         [--timestamp-format=FORMAT] [--no-titles]
         [--no-columns] [--column-separator=CHAR]
@@ -26,15 +26,16 @@ B<rwsiteinfo> - Print information from the silk.conf site configuration file
 =head1 DESCRIPTION
 
 B<rwsiteinfo> is a utility to print selected information about the
-classes, types, flowtypes, and sensors that are defined in the
-B<silk.conf(5)> site configuration file.  The B<--fields> switch is
-required, and its argument is a comma-separated list of field names
-selecting the fields to be printed.  The output from B<rwsiteinfo>
-consists of multiple columns and rows, where each column contains one
-of the I<FIELD>s and where each row has a unique value for one of the
-I<FIELD>s.  B<rwsiteinfo> prints rows until all possible combinations
-of fields is exhausted.  By default, the information is printed in a
-columnar, bar (C<|>) delimited format.
+classes, types, flowtypes, sensors, and groups (collections of
+sensors) that are defined in the B<silk.conf(5)> site configuration
+file.  The B<--fields> switch is required, and its argument is a
+comma-separated list of field names selecting the fields to be
+printed.  The output from B<rwsiteinfo> consists of multiple columns
+and rows, where each column contains one of the I<FIELD>s and where
+each row has a unique value for one of the I<FIELD>s.  B<rwsiteinfo>
+prints rows until all possible combinations of fields is exhausted.
+By default, the information is printed in a columnar, bar-delimited
+(C<|>-delimited) format.
 
 As of SiLK 3.11.0, B<rwsiteinfo> can visit the files in the data
 repository to report the date of the earliest (oldest) file in the
@@ -43,17 +44,35 @@ repository, and the number of files in the repository.  These values
 are reported individually for each row in the output.  B<Note:> If
 your data repository is large, scanning it may take a long time.
 
-The B<--classes>, B<--types>, B<--flowtypes>, and B<--sensors>
-switches allow the user to limit the amount of information printed.
-(These switches operate similarly to their namesakes on B<rwfilter(1)>
-and B<rwfglob(1)>.)  If none of these switches are given,
-B<rwsiteinfo> prints information for I<all> values defined in the
-F<silk.conf> file.  If one or more of these switches is specified,
-B<rwsiteinfo> limits its output to the specified values.  To print
+The B<--classes>, B<--types>, B<--flowtypes>, B<--sensors>, and
+B<--groups> switches allow the user to limit the amount of information
+printed.  (These switches operate similarly to their namesakes on
+B<rwfilter(1)> and B<rwfglob(1)>.)  If none of these switches are
+given, B<rwsiteinfo> prints information for I<all> values defined in
+the F<silk.conf> file.  If one or more of these switches is specified,
+B<rwsiteinfo> limits its output to the specified values.  The limit is
+applied even if that field is not listed in B<--fields>.  For example,
+specifying B<--sensors=S1 --fields=class> tells B<rwsiteinfo> to limit
+the output to classes that have sensor C<S1> as a member.  To print
 information about the default class or the default types within a
 class, use the at-sign (C<@>) as the name of the class or type,
 respectively.  The B<--flowtypes> switch must be used independently of
 the B<--classes> and B<--types> switches.
+
+SiLK 3.21.0 added support for sensor groups to B<rwsiteinfo>.  Sensor
+groups are defined in the B<silk.conf(5)> file within a B<group>
+block.  The B<--sensors> switch accepts sensor group names to limit
+the output to sensors defined with the named groups.  The B<--groups>
+switch may be used to limit the output to specified sensor groups.
+Using the same argument to B<--groups> or B<--sensors> produces the
+same result unless B<--fields> includes group and the F<silk.conf>
+file has sensors as members of multiple groups.
+
+As of SiLK 3.20, the B<--classes>, B<--types>, B<--flowtypes>,
+B<--sensors>, and B<--groups> switches accept a value in the form
+@I<PATH>, where I<PATH> names a file (that is, an C<@> character
+followed by a file or path name).  The format of this file is
+described in the L</Read Argument Values from a File> section below.
 
 As stated above, B<rwsiteinfo> prints unique rows given a list of
 I<FIELD>s.  As an example, suppose the user entered the command
@@ -85,6 +104,44 @@ may be printed or they may be identified by a symbol.  Most field
 names support a I<FIELD>B<:list> variant that puts all possible values
 for that field into a single column.  See the description of the
 B<--fields> switch below for details.
+
+=head2 Read Argument Values from a File
+
+As of SiLK 3.20, the B<--classes>, B<--types>, B<--flowtypes>,
+B<--sensors>, and B<--group> switches accept a value in the form
+@I<PATH>, where C<@> is the "at" character (ASCII 0x40) and I<PATH>
+names a file or a path to a file.  For example, the following reads
+the name of types from the file F<t.txt> and uses the sensors C<S3>,
+C<S7>, and the names and/or IDs read from F</tmp/sensor.txt>:
+
+ rwsiteinfo --type=@t.txt --sensors=S3,@/tmp/sensor.txt,S7
+
+Multiple @I<PATH> values are allowed within a single argument.  If the
+name of the file is C<->, the names are read from the standard input.
+
+The file must be a text file.  Blank lines are ignored as are
+comments, which begin with the C<#> character and continue to the end
+of the line.  Whitespace at the beginning and end of a line is ignored as
+is whitespace that surrounds commas; all other whitespace within a line
+is significant.
+
+A file may contain a value on each line and/or multiple values on a
+line separated by commas and optional whitespace.  For example:
+
+ # Sensor 4
+       S4
+ # The first sensors
+ S0, S1,S2
+ S3     # Sensor 3
+
+An attempt to use an @I<PATH> directive in a file is an error.
+
+When B<rwsiteinfo> is parsing the name of a file, it converts the
+sequences C<@,> and C<@@> to C<,> and C<@>, respectively.  For
+example, B<--class=@cl@@ss.txt@,v> reads the class from the file
+F<cl@ss.txt,v>.  It is an error if any other character follows an
+embedded C<@> (B<--flowtypes=@f@il> contains C<@i>) or if a single
+C<@> occurs at the end of the name (B<--sensor=@errat@>).
 
 
 =head1 OPTIONS
@@ -136,6 +193,10 @@ the integer identifier for the sensor, e.g., C<3>
 =item describe-sensor
 
 the sensor description, when present
+
+=item group
+
+the sensor group name  I<Since SiLK 3.21.0.>
 
 =item default-class
 
@@ -197,6 +258,12 @@ sensors in a single row separated using the list-delimiter
 instead of printing sensor identifiers on separate rows, join all the
 sensor identifiers in a single row separated using the list-delimiter
 
+=item group:list
+
+instead of printing sensor group names on separate rows, join all the
+group names in a single row separated using the list-delimiter
+I<Since SiLK 3.21.0.>
+
 =item default-class:list
 
 equivalent to default-class, but provided for consistency
@@ -209,30 +276,52 @@ list-delimiter
 
 =back
 
-=item B<--classes>=I<CLASS>[,I<CLASS>...]
+=item B<--classes>=I<CLASS>[,I<CLASS>,@I<PATH>...]
 
 Restrict the output using the class(es) named in the comma-separated
 list.  The default class may be specified by using an at-sign (C<@>)
-as the name of a class.
+as the name of a class.  As of SiLK 3.20.0, if an argument is
+"@I<PATH>", B<rwsiteinfo> attempts to open the file I<PATH> and read
+the names of classes from it; see L</Read Argument Values from a File>
+for details.
 
-=item B<--types>=I<TYPE>[,I<TYPE>...]
+=item B<--types>=I<TYPE>[,I<TYPE>,@I<PATH>...]
 
 Restrict the output using the type(s) named in the comma-separated
 list.  The default types for a class may be specified by using an
-at-sign (C<@>) as the name of a type.
+at-sign (C<@>) as the name of a type.  An argument of "@I<PATH>"
+causes B<rwsiteinfo> to read type names from the file I<PATH>; see
+L</Read Argument Values from a File>.
 
-=item B<--flowtypes>=I<CLASS>/I<TYPE>[,I<CLASS>/I<TYPE>...]
+=item B<--flowtypes>=I<CLASS>/I<TYPE>[,I<CLASS>/I<TYPE>,@I<PATH>...]
 
 Restrict the output using the class/type pairs named in the
 comma-separated list, where the class name and type name are separated
 by a slash (C</>).  The keyword C<all> may be used for the I<CLASS>
-and/or I<TYPE> to select all classes and/or types.
+and/or I<TYPE> to select all classes and/or types.  As of SiLK 3.20.0,
+the arguments may also include "@I<PATH>" which causes B<rwsiteinfo>
+to open the file I<PATH> and read the class/type pairs from it; see
+L</Read Argument Values from a File>.
 
-=item B<--sensors>=I<SENSOR>[,I<SENSOR>...]
+=item B<--sensors>=I<SENSOR>[,I<SENSOR>,I<SENSOR-GROUP>,@I<PATH>...]
 
-Restrict the output to the sensors(s) named in the comma-separated
-list of sensor names, sensor IDs (integers), and/or ranges of sensor
-IDs.
+Restrict the output to the sensors(s) identified in the
+comma-separated list of sensor names, sensor IDs (integers), ranges of
+sensor IDs, sensors added to the specified sensor group names, and
+names and/or IDs of sensors and sensor groups read from the file
+I<PATH>.  Using a sensor group name adds all sensors defined within
+that group.  The ability to use sensor group names was added in SiLK
+3.21.0.
+
+=item B<--groups>=I<SENSOR-GROUP>[,I<SENSOR-GROUP>,@I<PATH>...]
+
+Restrict the output using the sensor groups named in the
+comma-separated list.  Naming a group in either B<--groups> or
+B<--sensors> produces the same result unless B<--fields> includes
+C<group> and the F<silk.conf> puts sensors in multiple groups.  If an
+argument is "@I<PATH>", B<rwsiteinfo> attempts to open the file
+I<PATH> and read the names of sensor groups from it; see L</Read
+Argument Values from a File> for details.  I<Since SiLK-3.21.0.>
 
 =item B<--data-rootdir>=I<ROOT_DIRECTORY>
 
@@ -371,9 +460,32 @@ configured, then exit the application.
 In the following examples, the dollar sign (C<$>) represents the shell
 prompt.  The text after the dollar sign represents the command line.
 Lines have been wrapped for improved readability, and the back slash
-(C<\>) is used to indicate a wrapped line.  The output from these
-examples is based on the sample F<silk.conf> as distributed for the
-twoway site (c.f. B<packlogic-twoway(3)>).
+(C<\>) is used to indicate a wrapped line.
+
+The output from these examples is based on the sample F<silk.conf> as
+distributed for the twoway site (c.f. B<packlogic-twoway(3)>).
+
+=head2 Displaying the sensors with various options
+
+This displays all known sensors using the default display options:
+
+ $ rwsiteinfo --fields=sensor
+ Sensor|
+     S0|
+     S1|
+     S2|
+     S3|
+     S4|
+     S5|
+     S6|
+     S7|
+     S8|
+     S9|
+    S10|
+    S11|
+    S12|
+    S13|
+    S14|
 
 The following prints all known sensor names, one name per line:
 
@@ -394,8 +506,8 @@ The following prints all known sensor names, one name per line:
  S13
  S14
 
-The following prints all known sensor names on a single line (the
-names will be separated by comma):
+The following prints all known sensor names on a single line with the
+names separated by comma:
 
  $ rwsiteinfo --fields=sensor:list --no-titles --delimited
  S0,S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12,S13,S14
@@ -408,7 +520,8 @@ the separator:
  S0 S1 S2 S3 S4 S5 S6 S7 S8 S9 S10 S11 S12 S13 S14
 
 The following prints the sensor names for the default class on a
-single line:
+single line (since there is a single class, the output is the same as
+that shown above):
 
  $ rwsiteinfo --fields=sensor:list --class=@ --no-titles --delimited
  S0,S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12,S13,S14
@@ -441,6 +554,8 @@ deprecated B<mapsid(1)> tool.
         12|   S12|       all|                                  |
         13|   S13|       all|                                  |
         14|   S14|       all|                                  |
+
+=head2 Displaying classes and types
 
 This prints three columns: the first contains the class, the second
 contains the type, and the third uses a C<+> to mark rows for the
@@ -478,7 +593,9 @@ default type for each class, but twoway site has a single class.)
 This does the same (by limiting the output the default types).
 
  $ rwsiteinfo --fields=type --types=@ --no-titles --delimited
- all
+ in
+ inweb
+ inicmp
 
 The following prints the class, the sensor, and the type.  The number
 of rows of output (excluding the title) is the product of the number
@@ -502,6 +619,45 @@ of classes, number of types, and number of sensors.
  ...
    all|   S14|outicmp|
    all|   S14|  other|
+
+=head2 Displaying sensor groups
+
+The B<--group> switch was added in SiLK 3.21.0 and limits the output
+to particular sensor groups.  In addition, the B<--sensors> switch
+accepts sensor group names.  Given this F<silk.conf> file:
+
+ sensor 1 S1
+ sensor 2 S2
+ sensor 3 S3
+ group G12
+   sensors S1 S2
+ end group
+ group G13
+   sensors S1 S3
+ end group
+ ...
+
+Using B<--group=G12> limits the output to that group:
+
+ $ rwsiteinfo --fields=group,sensor --group=G12
+ Group|Sensor|
+   G12|    S1|
+   G12|    S2|
+
+If B<--sensors=G12> is used, B<rwsiteinfo> limits the output to the
+sensors that group contains (B<S1> and B<S2>).  The result includes
+group B<G13> since that group contains sensor B<S1>:
+
+ $ rwsiteinfo --fields=group,sensor --sensor=G12
+ Group|Sensor|
+   G12|    S1|
+   G12|    S2|
+   G13|    S1|
+
+This occurs when sensors appear in multiple groups and group is one of
+the output B<--fields>.
+
+=head2 Displaying information about the flow data repository
 
 The repo-start-date, repo-end-date, and repo-file-count fields print
 the range of available dates for the files in the repository.  The
@@ -547,6 +703,42 @@ This shows the information for each sensor:
     S12|                   |                   |         0|
     S13|                   |                   |         0|
     S14|                   |                   |         0|
+
+=head2 Restricting the output by reading names from a file
+
+Suppose the file F<sensors.txt> exits in the current directory and has
+the content shown here:
+
+ $ cat sensors.txt
+ # Sensor 4
+       S4
+ # The first sensors
+ S0,S1,S2
+ S3     # Sensor 3
+
+When using SiLK 3.20.0 or later, the file can be used to restrict
+which sensors B<rwsiteinfo> displays:
+
+ $ rwsiteinfo --fields=class,sensor  --sensor=@/tmp/foobart
+ Class|Sensor|
+   all|    S0|
+   all|    S1|
+   all|    S2|
+   all|    S3|
+   all|    S4|
+
+An example that shows use of the C<@> escapes when parsing the name of
+a file (file F<weird,n@me> becomes C<weird@,n@@me>), and the error
+generated when attempting to use @I<PATH> within a file:
+
+ $ cat weird,n@me
+ S1
+ @another-file
+
+ $ rwsiteinfo --fields=sensor --sensor=@weird@,n@@me
+ rwsiteinfo: Error parsing sensors '@weird@,n@@me': Bad
+     token '@another-file' found in file 'weird,n@me': May not
+     recursively use @FILE construct within a file
 
 
 =head1 ENVIRONMENT
@@ -645,6 +837,15 @@ B<--data-rootdir> switch is not specified.
 
 =head1 NOTES
 
+B<rwsiteinfo> added support for sensor groups in SiLK 3.21.0.  For
+information on sensor groups, see the documentation for the B<group>
+block command in the B<silk.conf(5)> manual page.
+
+The ability to read classes, types, sensors, and flowtypes from files
+via the @I<PATH> directive was added in SiLK 3.20.0.
+
+The B<--output-path> switch was added in SiLK 3.15.0.
+
 The repo-start-date, repo-end-date, and repo-file-count fields were
 added in SiLK 3.11.0.
 
@@ -662,7 +863,7 @@ B<packlogic-twoway(3)>, B<silk(7)>, B<tzset(3)>, B<environ(7)>
 
 =cut
 
-$SiLK: rwsiteinfo.pod 9e3cbf975420 2019-09-24 14:42:59Z mthomas $
+$SiLK: rwsiteinfo.pod c05ad63a27aa 2023-05-12 19:43:56Z mthomas $
 
 Local Variables:
 mode:text

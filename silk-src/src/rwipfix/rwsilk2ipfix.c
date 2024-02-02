@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2007-2020 by Carnegie Mellon University.
+** Copyright (C) 2007-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -17,7 +59,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: rwsilk2ipfix.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: rwsilk2ipfix.c 6a1929dbf54d 2023-09-13 14:12:09Z mthomas $");
 
 #include <silk/rwrec.h>
 #include <silk/skipfix.h>
@@ -50,22 +92,28 @@ RCSIDENT("$SiLK: rwsilk2ipfix.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
  *    fbInfoElementSpec_t 'multiple_spec' array below.
  */
 /* IP version */
-#define REC_V6            (1 <<  0)
-#define REC_V4            (1 <<  1)
+#define REC_V6            (1u <<  0)
+#define REC_V4            (1u <<  1)
 /* for protocols with no ports */
-#define REC_NO_PORTS      (1 <<  2)
+#define REC_NO_PORTS      (1u <<  2)
 /* for ICMP records */
-#define REC_ICMP          (1 <<  3)
+#define REC_ICMP          (1u <<  3)
 /* for non-TCP records with ports (UDP, SCTP) */
-#define REC_UDP           (1 <<  4)
+#define REC_UDP           (1u <<  4)
 /* for TCP records with a single flag */
-#define REC_TCP           (1 <<  5)
+#define REC_TCP           (1u <<  5)
 /* for TCP records with a expanded flags */
-#define REC_TCP_EXP       (1 <<  6)
+#define REC_TCP_EXP       (1u <<  6)
 /* additional flags could be added based on the type of SiLK flow
  * file; for example: whether the record has NextHopIP + SNMP ports,
  * or whether it has an app-label.  Each additional test doubles the
  * number templates to manage. */
+
+/* only include class,type,sensor names when silk.conf file is found */
+#define REC_SILK_CONF     (1u << 30)
+
+/* do not include paddingOctets in exported templates */
+#define REC_PADDING       (1u << 31)
 
 /*
  *    External Template ID traditionally used for SiLK Flow
@@ -92,7 +140,12 @@ RCSIDENT("$SiLK: rwsilk2ipfix.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
 /*
  *    Structures to map an rwRec into prior to transcoding with the
  *    template.
+ *
+ *    Note: There is really no need to do this; we could have just relied on
+ *    the fixbuf transcoder to convert the large record with everything to the
+ *    specialized export records.
  */
+/* The base values, present on every flow */
 struct rec_prelim_st {
     uint64_t            stime;
     uint64_t            etime;
@@ -102,164 +155,150 @@ struct rec_prelim_st {
     uint16_t            egress;
     uint16_t            application;
     uint16_t            sensor;
-};
-typedef struct rec_prelim_st rec_prelim_t;
-
-struct rec_noports_v4_st {
-    rec_prelim_t        pre;
     uint8_t             flowtype;
     uint8_t             attributes;
     uint8_t             protocol;
-    uint8_t             padding1;
+    uint8_t             padding1[5];
+};
+typedef struct rec_prelim_st rec_prelim_t;
+
+/* The names the close the record, present on every flow if silk.conf found */
+struct rec_names_st {
+    fbVarfield_t        silkFlowtypeName;
+    fbVarfield_t        silkClassName;
+    fbVarfield_t        silkTypeName;
+    fbVarfield_t        silkSensorName;
+};
+typedef struct rec_names_st rec_names_t;
+
+/* IPv4 version of the close of a record */
+struct rec_ip4_names_st {
     uint32_t            sip;
     uint32_t            dip;
     uint32_t            nhip;
+    uint32_t            padding4;
+    rec_names_t         names;
+};
+typedef struct rec_ip4_names_st rec_ip4_names_t;
+
+#if SK_ENABLE_IPV6
+/* IPv6 version of the close of a record */
+struct rec_ip6_names_st {
+    uint8_t             sip[16];
+    uint8_t             dip[16];
+    uint8_t             nhip[16];
+    rec_names_t         names;
+};
+typedef struct rec_ip6_names_st rec_ip6_names_t;
+#endif  /* SK_ENABLE_IPV6 */
+
+/*
+ * In all the following structures that describe the records, the padding
+ * appear first so it may be combined with the padding at the end of
+ * rec_prelim_t.
+ */
+
+/* When no other data, just print the core values, IPs, and names */
+struct rec_noports_v4_st {
+    rec_prelim_t        pre;
+    rec_ip4_names_t     ips_names;
 };
 typedef struct rec_noports_v4_st rec_noports_v4_t;
 
 #if SK_ENABLE_IPV6
 struct rec_noports_v6_st {
     rec_prelim_t        pre;
-    uint8_t             flowtype;
-    uint8_t             attributes;
-    uint8_t             protocol;
-    uint8_t             padding1;
-    uint32_t            padding3;
-    uint8_t             sip[16];
-    uint8_t             dip[16];
-    uint8_t             nhip[16];
+    rec_ip6_names_t     ips_names;
 };
 typedef struct rec_noports_v6_st rec_noports_v6_t;
 #endif  /* SK_ENABLE_IPV6 */
 
+/* ICMP only has the icmpTypeCode in addition to core values, IPs, names */
 struct rec_icmp_v4_st {
     rec_prelim_t        pre;
-    uint8_t             flowtype;
-    uint8_t             attributes;
-    uint8_t             protocol;
-    uint8_t             padding1;
-    uint16_t            padding2;
+    uint8_t             padding1[6];
     uint16_t            icmptypecode;
-    uint32_t            padding3;
-    uint32_t            sip;
-    uint32_t            dip;
-    uint32_t            nhip;
+    rec_ip4_names_t     ips_names;
 };
 typedef struct rec_icmp_v4_st rec_icmp_v4_t;
 
 #if SK_ENABLE_IPV6
 struct rec_icmp_v6_st {
     rec_prelim_t        pre;
-    uint8_t             flowtype;
-    uint8_t             attributes;
-    uint8_t             protocol;
-    uint8_t             padding1;
-    uint16_t            padding2;
+    uint8_t             padding1[6];
     uint16_t            icmptypecode;
-    uint8_t             sip[16];
-    uint8_t             dip[16];
-    uint8_t             nhip[16];
+    rec_ip6_names_t     ips_names;
 };
 typedef struct rec_icmp_v6_st rec_icmp_v6_t;
 #endif  /* SK_ENABLE_IPV6 */
 
+/* UDP adds the ports to the core values, IPs, and names */
 struct rec_udp_v4_st {
     rec_prelim_t        pre;
-    uint8_t             flowtype;
-    uint8_t             attributes;
-    uint8_t             protocol;
-    uint8_t             padding1;
+    uint8_t             padding1[4];
     uint16_t            sport;
     uint16_t            dport;
-    uint32_t            padding3;
-    uint32_t            sip;
-    uint32_t            dip;
-    uint32_t            nhip;
+    rec_ip4_names_t     ips_names;
 };
 typedef struct rec_udp_v4_st rec_udp_v4_t;
 
 #if SK_ENABLE_IPV6
 struct rec_udp_v6_st {
     rec_prelim_t        pre;
-    uint8_t             flowtype;
-    uint8_t             attributes;
-    uint8_t             protocol;
-    uint8_t             padding1;
+    uint8_t             padding1[4];
     uint16_t            sport;
     uint16_t            dport;
-    uint8_t             sip[16];
-    uint8_t             dip[16];
-    uint8_t             nhip[16];
+    rec_ip6_names_t     ips_names;
 };
 typedef struct rec_udp_v6_st rec_udp_v6_t;
 #endif  /* SK_ENABLE_IPV6 */
 
+/* TCP adds flags and ports to the core values, IPs, and names */
 struct rec_tcp_v4_st {
     rec_prelim_t        pre;
-    uint8_t             flowtype;
-    uint8_t             attributes;
-    uint8_t             protocol;
+    uint8_t             padding1[3];
     uint8_t             flags_all;
     uint16_t            sport;
     uint16_t            dport;
-    uint32_t            padding3;
-    uint32_t            sip;
-    uint32_t            dip;
-    uint32_t            nhip;
+    rec_ip4_names_t     ips_names;
 };
 typedef struct rec_tcp_v4_st rec_tcp_v4_t;
 
 #if SK_ENABLE_IPV6
 struct rec_tcp_v6_st {
     rec_prelim_t        pre;
-    uint8_t             flowtype;
-    uint8_t             attributes;
-    uint8_t             protocol;
+    uint8_t             padding1[3];
     uint8_t             flags_all;
     uint16_t            sport;
     uint16_t            dport;
-    uint8_t             sip[16];
-    uint8_t             dip[16];
-    uint8_t             nhip[16];
+    rec_ip6_names_t     ips_names;
 };
 typedef struct rec_tcp_v6_st rec_tcp_v6_t;
 #endif  /* SK_ENABLE_IPV6 */
 
+/* Expanded TCP adds flags and ports to the core values, IPs, and names */
 struct rec_tcp_exp_v4_st {
     rec_prelim_t        pre;
-    uint8_t             flowtype;
-    uint8_t             attributes;
-    uint8_t             protocol;
     uint8_t             padding1;
-    uint16_t            sport;
-    uint16_t            dport;
-    uint8_t             padding4;
-    uint8_t             flags_all;
     uint8_t             flags_init;
     uint8_t             flags_rest;
-    uint32_t            sip;
-    uint32_t            dip;
-    uint32_t            nhip;
+    uint8_t             flags_all;
+    uint16_t            sport;
+    uint16_t            dport;
+    rec_ip4_names_t     ips_names;
 };
 typedef struct rec_tcp_exp_v4_st rec_tcp_exp_v4_t;
 
 #if SK_ENABLE_IPV6
 struct rec_tcp_exp_v6_st {
     rec_prelim_t        pre;
-    uint8_t             flowtype;
-    uint8_t             attributes;
-    uint8_t             protocol;
     uint8_t             padding1;
-    uint16_t            sport;
-    uint16_t            dport;
-    uint32_t            padding3;
-    uint8_t             padding4;
-    uint8_t             flags_all;
     uint8_t             flags_init;
     uint8_t             flags_rest;
-    uint8_t             sip[16];
-    uint8_t             dip[16];
-    uint8_t             nhip[16];
+    uint8_t             flags_all;
+    uint16_t            sport;
+    uint16_t            dport;
+    rec_ip6_names_t     ips_names;
 };
 typedef struct rec_tcp_exp_v6_st rec_tcp_exp_v6_t;
 #endif  /* SK_ENABLE_IPV6 */
@@ -285,47 +324,41 @@ static fbInfoElementSpec_t multiple_spec[] = {
     /* application */
     {(char *)"silkAppLabel",             2,  0},
     /* sID */
-    {(char *)"silkFlowSensor",           2,  0},
+    {(char *)"silkSensorId",             2,  0},
     /* flow_type */
-    {(char *)"silkFlowType",             1,  0},
+    {(char *)"silkFlowtypeId",           1,  0},
     /* attributes */
     {(char *)"silkTCPState",             1,  0},
     /* proto */
     {(char *)"protocolIdentifier",       1,  0},
+    /* 5 bytes of rec_prelim_t->padding1 combined with next padding1 */
 
-    /* either flags_all or padding1 */
-    {(char *)"tcpControlBits",           1,  REC_TCP},
-    {(char *)"paddingOctets",            1,  REC_TCP_EXP},
-    {(char *)"paddingOctets",            1,  REC_NO_PORTS},
-    {(char *)"paddingOctets",            1,  REC_ICMP},
-    {(char *)"paddingOctets",            1,  REC_UDP},
+    /* if no_ports, just the rec_prelim_t->padding1 */
+    {(char *)"paddingOctets",            5,  REC_NO_PORTS | REC_PADDING},
 
-    /* nothing if no_ports, padding2 if ICMP, or sPort */
-    {(char *)"paddingOctets",            2,  REC_ICMP},
-    {(char *)"sourceTransportPort",      2,  REC_UDP},
-    {(char *)"sourceTransportPort",      2,  REC_TCP},
-    {(char *)"sourceTransportPort",      2,  REC_TCP_EXP},
-
-    /* nothing if no_ports, icmpTypeCode if ICMP, or dPort */
+    /* if ICMP, 5 + 6 bytes of padding, then icmpTypeCode */
+    {(char *)"paddingOctets",            11, REC_ICMP | REC_PADDING},
     {(char *)"icmpTypeCodeIPv4",         2,  REC_ICMP | REC_V4},
     {(char *)"icmpTypeCodeIPv6",         2,  REC_ICMP | REC_V6},
+
+    /* if UDP, 5 + 4 bytes of padding, then ports */
+    {(char *)"paddingOctets",            9,  REC_UDP | REC_PADDING},
+    {(char *)"sourceTransportPort",      2,  REC_UDP},
     {(char *)"destinationTransportPort", 2,  REC_UDP},
+
+    /* if TCP, 5 + 3 bytes of padding, then flags_all and ports */
+    {(char *)"paddingOctets",            8,  REC_TCP | REC_PADDING},
+    {(char *)"tcpControlBits",           1,  REC_TCP},
+    {(char *)"sourceTransportPort",      2,  REC_TCP},
     {(char *)"destinationTransportPort", 2,  REC_TCP},
-    {(char *)"destinationTransportPort", 2,  REC_TCP_EXP},
 
-    /* nothing if no_ports and IPv4; padding3 if (1)IPv6 and no_ports,
-     * (2)IPv6 and expanded TCP, (3)IPv4 and not expanded TCP */
-    {(char *)"paddingOctets",            4,  REC_NO_PORTS | REC_V6},
-    {(char *)"paddingOctets",            4,  REC_TCP_EXP | REC_V6},
-    {(char *)"paddingOctets",            4,  REC_ICMP | REC_V4},
-    {(char *)"paddingOctets",            4,  REC_UDP  | REC_V4},
-    {(char *)"paddingOctets",            4,  REC_TCP  | REC_V4},
-
-    /* nothing unless expanded TCP */
-    {(char *)"paddingOctets",            1,  REC_TCP_EXP},
-    {(char *)"tcpControlBits",           1,  REC_TCP_EXP},
+    /* if expanded TCP, 5 + 1 bytes of padding, then flags and ports  */
+    {(char *)"paddingOctets",            6,  REC_TCP_EXP | REC_PADDING},
     {(char *)"initialTCPFlags",          1,  REC_TCP_EXP},
     {(char *)"unionTCPFlags",            1,  REC_TCP_EXP},
+    {(char *)"tcpControlBits",           1,  REC_TCP_EXP},
+    {(char *)"sourceTransportPort",      2,  REC_TCP_EXP},
+    {(char *)"destinationTransportPort", 2,  REC_TCP_EXP},
 
     /* sIP -- one of these is used */
     {(char *)"sourceIPv6Address",        16, REC_V6},
@@ -337,6 +370,14 @@ static fbInfoElementSpec_t multiple_spec[] = {
     {(char *)"ipNextHopIPv6Address",     16, REC_V6},
     {(char *)"ipNextHopIPv4Address",     4,  REC_V4},
 
+    /* padding4 if IPv4 */
+    {(char *)"paddingOctets",            4,  REC_V4 | REC_PADDING},
+
+    {(char *)"silkFlowtypeName",         FB_IE_VARLEN, REC_SILK_CONF},
+    {(char *)"silkClassName",            FB_IE_VARLEN, REC_SILK_CONF},
+    {(char *)"silkTypeName",             FB_IE_VARLEN, REC_SILK_CONF},
+    {(char *)"silkSensorName",           FB_IE_VARLEN, REC_SILK_CONF},
+
     /* done */
     FB_IESPEC_NULL
 };
@@ -347,18 +388,36 @@ static fbInfoElementSpec_t multiple_spec[] = {
  */
 static fbInfoElement_t info_elements[] = {
     /* Extra fields produced by yaf for SiLK records */
-    FB_IE_INIT("initialTCPFlags",              IPFIX_CERT_PEN, 14,  1,
-               FB_IE_F_ENDIAN | FB_IE_F_REVERSIBLE),
-    FB_IE_INIT("unionTCPFlags",                IPFIX_CERT_PEN, 15,  1,
-               FB_IE_F_ENDIAN | FB_IE_F_REVERSIBLE),
-    FB_IE_INIT("silkFlowType",                 IPFIX_CERT_PEN, 30,  1,
-               FB_IE_F_ENDIAN),
-    FB_IE_INIT("silkFlowSensor",               IPFIX_CERT_PEN, 31,  2,
-               FB_IE_F_ENDIAN),
-    FB_IE_INIT("silkTCPState",                 IPFIX_CERT_PEN, 32,  1,
-               FB_IE_F_ENDIAN),
-    FB_IE_INIT("silkAppLabel",                 IPFIX_CERT_PEN, 33,  2,
-               FB_IE_F_ENDIAN),
+    FB_IE_INIT_FULL("initialTCPFlags",      IPFIX_CERT_PEN,  14,  1,
+                    FB_IE_FLAGS | FB_IE_F_ENDIAN | FB_IE_F_REVERSIBLE,
+                    0, 0, FB_UINT_8, NULL),
+    FB_IE_INIT_FULL("unionTCPFlags",        IPFIX_CERT_PEN,  15,  1,
+                    FB_IE_FLAGS | FB_IE_F_ENDIAN | FB_IE_F_REVERSIBLE,
+                    0, 0, FB_UINT_8, NULL),
+    FB_IE_INIT_FULL("silkFlowtypeId",       IPFIX_CERT_PEN,  30,  1,
+                    FB_IE_IDENTIFIER | FB_IE_F_ENDIAN,
+                    0, 0, FB_UINT_8, NULL),
+    FB_IE_INIT_FULL("silkSensorId"  ,       IPFIX_CERT_PEN,  31,  2,
+                    FB_IE_IDENTIFIER | FB_IE_F_ENDIAN,
+                    0, 0,  FB_UINT_16, NULL),
+    FB_IE_INIT_FULL("silkTCPState",         IPFIX_CERT_PEN,  32,  1,
+                    FB_IE_FLAGS | FB_IE_F_ENDIAN,
+                    0, 0,  FB_UINT_8, NULL),
+    FB_IE_INIT_FULL("silkAppLabel",         IPFIX_CERT_PEN,  33,  2,
+                    FB_IE_IDENTIFIER | FB_IE_F_ENDIAN,
+                    0, 0,  FB_UINT_16, NULL),
+    FB_IE_INIT_FULL("silkFlowtypeName",     IPFIX_CERT_PEN, 938,  FB_IE_VARLEN,
+                    FB_IE_DEFAULT,
+                    0, 0, FB_STRING, NULL),
+    FB_IE_INIT_FULL("silkClassName",        IPFIX_CERT_PEN, 939,  FB_IE_VARLEN,
+                    FB_IE_DEFAULT,
+                    0, 0, FB_STRING, NULL),
+    FB_IE_INIT_FULL("silkTypeName",         IPFIX_CERT_PEN, 940,  FB_IE_VARLEN,
+                    FB_IE_DEFAULT,
+                    0, 0, FB_STRING, NULL),
+    FB_IE_INIT_FULL("silkSensorName",       IPFIX_CERT_PEN, 941,  FB_IE_VARLEN,
+                    FB_IE_DEFAULT,
+                    0, 0, FB_STRING, NULL),
     FB_IE_NULL
 };
 
@@ -368,6 +427,13 @@ static sk_options_ctx_t *optctx = NULL;
 
 /* the IPFIX output file; use stdout if no name provided */
 static sk_fileptr_t ipfix_output;
+
+/* disable export of the elements that use silk.conf to get the names of the
+ * sensor, class, and type */
+static int no_site_name_elements = 0;
+
+/* whether the silk.conf file was successfully loaded */
+static int have_silk_conf = 0;
 
 /* whether to print statistics */
 static int print_statistics = 0;
@@ -389,12 +455,14 @@ static fBuf_t *fbuf = NULL;
 
 typedef enum {
     OPT_IPFIX_OUTPUT,
+    OPT_NO_SITE_NAME_ELEMENTS,
     OPT_PRINT_STATISTICS,
     OPT_SINGLE_TEMPLATE
 } appOptionsEnum;
 
 static struct option appOptions[] = {
     {"ipfix-output",            REQUIRED_ARG, 0, OPT_IPFIX_OUTPUT},
+    {"no-site-name-elements",   NO_ARG,       0, OPT_NO_SITE_NAME_ELEMENTS},
     {"print-statistics",        NO_ARG,       0, OPT_PRINT_STATISTICS},
     {"single-template",         NO_ARG,       0, OPT_SINGLE_TEMPLATE},
     {0,0,0,0}                   /* sentinel entry */
@@ -402,6 +470,9 @@ static struct option appOptions[] = {
 
 static const char *appHelp[] = {
     ("Write IPFIX records to the specified path. Def. stdout"),
+    ("Do not export the elements that use the\n"
+     "\tsite configuration file to get the names of the flowtype, class,\n"
+     "\ttype, and sensor."),
     ("Print the count of processed records. Def. No"),
     ("Use a single template for all IPFIX records. Def. No.\n"
      "\tThis switch creates output identical to that produced by SiLK 3.11.0\n"
@@ -555,7 +626,10 @@ appSetup(
 
     /* try to load site config file; if it fails, we will not be able
      * to resolve flowtype and sensor from input file names */
-    sksiteConfigure(0);
+    have_silk_conf = (0 == sksiteConfigure(0));
+    if (no_site_name_elements) {
+        have_silk_conf = 0;
+    }
 
     /* set level to "warning" to avoid the "Started logging" message */
     logmask = sklogGetMask();
@@ -623,6 +697,10 @@ appOptionsHandler(
         ipfix_output.of_name = opt_arg;
         break;
 
+      case OPT_NO_SITE_NAME_ELEMENTS:
+        no_site_name_elements = 1;
+        break;
+
       case OPT_PRINT_STATISTICS:
         print_statistics = 1;
         break;
@@ -677,8 +755,8 @@ toipfix_one_template(
         uint64_t            octetDeltaCount;            /*  96-103 */
 
         uint8_t             protocolIdentifier;         /* 104     */
-        uint8_t             silkFlowType;               /* 105     */
-        uint16_t            silkFlowSensor;             /* 106-107 */
+        uint8_t             silkFlowtypeId;             /* 105     */
+        uint16_t            silkSensorId;               /* 106-107 */
 
         uint8_t             tcpControlBits;             /* 108     */
         uint8_t             initialTCPFlags;            /* 109     */
@@ -711,8 +789,8 @@ toipfix_one_template(
         { (char*)"octetDeltaCount",                    8, 0 },
         /* Protocol; sensor information */
         { (char*)"protocolIdentifier",                 1, 0 },
-        { (char*)"silkFlowType",                       1, 0 },
-        { (char*)"silkFlowSensor",                     2, 0 },
+        { (char*)"silkFlowtypeId",                     1, 0 },
+        { (char*)"silkSensorId",                       2, 0 },
         /* Flags */
         { (char*)"tcpControlBits",                     1, 0 },
         { (char*)"initialTCPFlags",                    1, 0 },
@@ -821,8 +899,8 @@ toipfix_one_template(
             fixrec.packetDeltaCount = rwRecGetPkts(&rwrec);
             fixrec.octetDeltaCount = rwRecGetBytes(&rwrec);
             fixrec.protocolIdentifier = rwRecGetProto(&rwrec);
-            fixrec.silkFlowType = rwRecGetFlowType(&rwrec);
-            fixrec.silkFlowSensor = rwRecGetSensor(&rwrec);
+            fixrec.silkFlowtypeId = rwRecGetFlowType(&rwrec);
+            fixrec.silkSensorId = rwRecGetSensor(&rwrec);
             fixrec.tcpControlBits = rwRecGetFlags(&rwrec);
             fixrec.initialTCPFlags = rwRecGetInitFlags(&rwrec);
             fixrec.unionTCPFlags = rwRecGetRestFlags(&rwrec);
@@ -914,7 +992,6 @@ toipfix_multiple_templates(
 #endif
     };
     const unsigned int count = sizeof(tid)/sizeof(tid[0]);
-    fbTemplate_t *tmpl[TMPL_COUNT];
 
     union fixrec_un {
         rec_prelim_t     pre;
@@ -932,8 +1009,15 @@ toipfix_multiple_templates(
         rec_tcp_exp_v4_t rec4_tcp_exp;
     } fixrec;
 
+    char flowtype[SK_MAX_STRLEN_FLOWTYPE + 1];
+    char ft_class[SK_MAX_STRLEN_FLOWTYPE + 1];
+    char ft_type[SK_MAX_STRLEN_FLOWTYPE + 1];
+    char sensor[SK_MAX_STRLEN_SENSOR + 1];
+
     GError *err = NULL;
     skstream_t *stream = NULL;
+    uint32_t silk_conf_flag;
+    rec_names_t *names;
     rwRec rwrec;
     uint64_t rec_count = 0;
     unsigned int i;
@@ -944,28 +1028,47 @@ toipfix_multiple_templates(
            == count);
     assert(count <= TMPL_COUNT);
 
+    memset(flowtype, 0, sizeof(flowtype));
+    memset(ft_class, 0, sizeof(ft_class));
+    memset(ft_type, 0, sizeof(ft_class));
+    memset(sensor, 0, sizeof(sensor));
+
+    silk_conf_flag = (have_silk_conf) ? REC_SILK_CONF : 0;
+
     /* Create each template, add the spec to the template, and add the
      * template to the session */
     for (i = 0; i < count; ++i) {
-        tmpl[i] = fbTemplateAlloc(model);
+        fbTemplate_t *tmpl;
+
+        /* Create the internal template and add to the session */
+        tmpl = fbTemplateAlloc(model);
         if (!fbTemplateAppendSpecArray(
-                tmpl[i], multiple_spec, spec_flag[i], &err))
+                tmpl, multiple_spec,
+                spec_flag[i] | REC_PADDING | silk_conf_flag, &err))
         {
             skAppPrintErr("Could not create template: %s", err->message);
             g_clear_error(&err);
-            fbTemplateFreeUnused(tmpl[i]);
+            fbTemplateFreeUnused(tmpl);
             return EXIT_FAILURE;
         }
-
-        /* Add the template to the session */
-        if (!fbSessionAddTemplate(session, TRUE, tid[i], tmpl[i], &err)) {
+        if (!fbSessionAddTemplate(session, TRUE, tid[i], tmpl, &err)) {
             skAppPrintErr("Could not add template to session: %s",
                           err->message);
             g_clear_error(&err);
-            fbTemplateFreeUnused(tmpl[i]);
             return EXIT_FAILURE;
         }
-        if (!fbSessionAddTemplate(session, FALSE, tid[i], tmpl[i], &err)) {
+
+        /* Create the external template and add to the session */
+        tmpl = fbTemplateAlloc(model);
+        if (!fbTemplateAppendSpecArray(
+                tmpl, multiple_spec, spec_flag[i] | silk_conf_flag, &err))
+        {
+            skAppPrintErr("Could not create template: %s", err->message);
+            g_clear_error(&err);
+            fbTemplateFreeUnused(tmpl);
+            return EXIT_FAILURE;
+        }
+        if (!fbSessionAddTemplate(session, FALSE, tid[i], tmpl, &err)) {
             skAppPrintErr("Could not add template to session: %s",
                           err->message);
             g_clear_error(&err);
@@ -1001,144 +1104,131 @@ toipfix_multiple_templates(
             fixrec.pre.egress = rwRecGetOutput(&rwrec);
             fixrec.pre.application = rwRecGetApplication(&rwrec);
             fixrec.pre.sensor = rwRecGetSensor(&rwrec);
+            fixrec.pre.flowtype = rwRecGetFlowType(&rwrec);
+            fixrec.pre.attributes = rwRecGetTcpState(&rwrec);
+            fixrec.pre.protocol = rwRecGetProto(&rwrec);
 
 #if SK_ENABLE_IPV6
             if (rwRecIsIPv6(&rwrec)) {
+                rec_ip6_names_t *ip6_names;
+
                 switch (rwRecGetProto(&rwrec)) {
                   case IPPROTO_ICMP:
                   case IPPROTO_ICMPV6:
                     i = tid_to_position.p_TID6_ICMP;
-                    fixrec.rec6_icmp.flowtype = rwRecGetFlowType(&rwrec);
-                    fixrec.rec6_icmp.attributes = rwRecGetTcpState(&rwrec);
-                    fixrec.rec6_icmp.protocol = rwRecGetProto(&rwrec);
+                    ip6_names = &fixrec.rec6_icmp.ips_names;
                     fixrec.rec6_icmp.icmptypecode = rwRecGetDPort(&rwrec);
-                    rwRecMemGetSIPv6(&rwrec, fixrec.rec6_icmp.sip);
-                    rwRecMemGetDIPv6(&rwrec, fixrec.rec6_icmp.dip);
-                    rwRecMemGetNhIPv6(&rwrec, fixrec.rec6_icmp.nhip);
                     break;
 
                   case IPPROTO_UDP:
                   case IPPROTO_SCTP:
                     i = tid_to_position.p_TID6_UDP;
-                    fixrec.rec6_udp.flowtype = rwRecGetFlowType(&rwrec);
-                    fixrec.rec6_udp.attributes = rwRecGetTcpState(&rwrec);
-                    fixrec.rec6_udp.protocol = rwRecGetProto(&rwrec);
+                    ip6_names = &fixrec.rec6_udp.ips_names;
                     fixrec.rec6_udp.sport = rwRecGetSPort(&rwrec);
                     fixrec.rec6_udp.dport = rwRecGetDPort(&rwrec);
-                    rwRecMemGetSIPv6(&rwrec, fixrec.rec6_udp.sip);
-                    rwRecMemGetDIPv6(&rwrec, fixrec.rec6_udp.dip);
-                    rwRecMemGetNhIPv6(&rwrec, fixrec.rec6_udp.nhip);
                     break;
 
                   case IPPROTO_TCP:
                     if (rwRecGetTcpState(&rwrec) & SK_TCPSTATE_EXPANDED) {
                         i = tid_to_position.p_TID6_TCP_EXP;
-                        fixrec.rec6_tcp_exp.flowtype = rwRecGetFlowType(&rwrec);
-                        fixrec.rec6_tcp_exp.attributes=rwRecGetTcpState(&rwrec);
-                        fixrec.rec6_tcp_exp.protocol = rwRecGetProto(&rwrec);
-                        fixrec.rec6_tcp_exp.sport = rwRecGetSPort(&rwrec);
-                        fixrec.rec6_tcp_exp.dport = rwRecGetDPort(&rwrec);
-                        fixrec.rec6_tcp_exp.flags_all = rwRecGetFlags(&rwrec);
+                        ip6_names = &fixrec.rec6_tcp_exp.ips_names;
                         fixrec.rec6_tcp_exp.flags_init
                             = rwRecGetInitFlags(&rwrec);
                         fixrec.rec6_tcp_exp.flags_rest
                             = rwRecGetRestFlags(&rwrec);
-                        rwRecMemGetSIPv6(&rwrec, fixrec.rec6_tcp_exp.sip);
-                        rwRecMemGetDIPv6(&rwrec, fixrec.rec6_tcp_exp.dip);
-                        rwRecMemGetNhIPv6(&rwrec, fixrec.rec6_tcp_exp.nhip);
+                        fixrec.rec6_tcp_exp.flags_all = rwRecGetFlags(&rwrec);
+                        fixrec.rec6_tcp_exp.sport = rwRecGetSPort(&rwrec);
+                        fixrec.rec6_tcp_exp.dport = rwRecGetDPort(&rwrec);
                     } else {
                         i = tid_to_position.p_TID6_TCP;
-                        fixrec.rec6_tcp.flowtype = rwRecGetFlowType(&rwrec);
-                        fixrec.rec6_tcp.attributes = rwRecGetTcpState(&rwrec);
-                        fixrec.rec6_tcp.protocol = rwRecGetProto(&rwrec);
+                        ip6_names = &fixrec.rec6_tcp.ips_names;
                         fixrec.rec6_tcp.flags_all = rwRecGetFlags(&rwrec);
                         fixrec.rec6_tcp.sport = rwRecGetSPort(&rwrec);
                         fixrec.rec6_tcp.dport = rwRecGetDPort(&rwrec);
-                        rwRecMemGetSIPv6(&rwrec, fixrec.rec6_tcp.sip);
-                        rwRecMemGetDIPv6(&rwrec, fixrec.rec6_tcp.dip);
-                        rwRecMemGetNhIPv6(&rwrec, fixrec.rec6_tcp.nhip);
                     }
                     break;
 
                   default:
                     i = tid_to_position.p_TID6_NOPORTS;
-                    fixrec.rec6_noports.flowtype = rwRecGetFlowType(&rwrec);
-                    fixrec.rec6_noports.attributes = rwRecGetTcpState(&rwrec);
-                    fixrec.rec6_noports.protocol = rwRecGetProto(&rwrec);
-                    rwRecMemGetSIPv6(&rwrec, fixrec.rec6_noports.sip);
-                    rwRecMemGetDIPv6(&rwrec, fixrec.rec6_noports.dip);
-                    rwRecMemGetNhIPv6(&rwrec, fixrec.rec6_noports.nhip);
+                    ip6_names = &fixrec.rec6_noports.ips_names;
                     break;
                 }
+
+                rwRecMemGetSIPv6(&rwrec, ip6_names->sip);
+                rwRecMemGetDIPv6(&rwrec, ip6_names->dip);
+                rwRecMemGetNhIPv6(&rwrec, ip6_names->nhip);
+                names = &ip6_names->names;
+
             } else
 #endif  /* SK_ENABLE_IPV6 */
             {
+                rec_ip4_names_t *ip4_names;
+
                 switch (rwRecGetProto(&rwrec)) {
                   case IPPROTO_ICMP:
                   case IPPROTO_ICMPV6:
                     i = tid_to_position.p_TID4_ICMP;
-                    fixrec.rec4_icmp.flowtype = rwRecGetFlowType(&rwrec);
-                    fixrec.rec4_icmp.attributes = rwRecGetTcpState(&rwrec);
-                    fixrec.rec4_icmp.protocol = rwRecGetProto(&rwrec);
+                    ip4_names = &fixrec.rec4_icmp.ips_names;
                     fixrec.rec4_icmp.icmptypecode = rwRecGetDPort(&rwrec);
-                    rwRecMemGetSIPv4(&rwrec, &fixrec.rec4_icmp.sip);
-                    rwRecMemGetDIPv4(&rwrec, &fixrec.rec4_icmp.dip);
-                    rwRecMemGetNhIPv4(&rwrec, &fixrec.rec4_icmp.nhip);
                     break;
 
                   case IPPROTO_UDP:
                   case IPPROTO_SCTP:
                     i = tid_to_position.p_TID4_UDP;
-                    fixrec.rec4_udp.flowtype = rwRecGetFlowType(&rwrec);
-                    fixrec.rec4_udp.attributes = rwRecGetTcpState(&rwrec);
-                    fixrec.rec4_udp.protocol = rwRecGetProto(&rwrec);
+                    ip4_names = &fixrec.rec4_udp.ips_names;
                     fixrec.rec4_udp.sport = rwRecGetSPort(&rwrec);
                     fixrec.rec4_udp.dport = rwRecGetDPort(&rwrec);
-                    rwRecMemGetSIPv4(&rwrec, &fixrec.rec4_udp.sip);
-                    rwRecMemGetDIPv4(&rwrec, &fixrec.rec4_udp.dip);
-                    rwRecMemGetNhIPv4(&rwrec, &fixrec.rec4_udp.nhip);
                     break;
 
                   case IPPROTO_TCP:
                     if (rwRecGetTcpState(&rwrec) & SK_TCPSTATE_EXPANDED) {
                         i = tid_to_position.p_TID4_TCP_EXP;
-                        fixrec.rec4_tcp_exp.flowtype = rwRecGetFlowType(&rwrec);
-                        fixrec.rec4_tcp_exp.attributes=rwRecGetTcpState(&rwrec);
-                        fixrec.rec4_tcp_exp.protocol = rwRecGetProto(&rwrec);
-                        fixrec.rec4_tcp_exp.sport = rwRecGetSPort(&rwrec);
-                        fixrec.rec4_tcp_exp.dport = rwRecGetDPort(&rwrec);
-                        fixrec.rec4_tcp_exp.flags_all = rwRecGetFlags(&rwrec);
+                        ip4_names = &fixrec.rec4_tcp_exp.ips_names;
                         fixrec.rec4_tcp_exp.flags_init
                             = rwRecGetInitFlags(&rwrec);
                         fixrec.rec4_tcp_exp.flags_rest
                             = rwRecGetRestFlags(&rwrec);
-                        rwRecMemGetSIPv4(&rwrec, &fixrec.rec4_tcp_exp.sip);
-                        rwRecMemGetDIPv4(&rwrec, &fixrec.rec4_tcp_exp.dip);
-                        rwRecMemGetNhIPv4(&rwrec, &fixrec.rec4_tcp_exp.nhip);
+                        fixrec.rec4_tcp_exp.flags_all = rwRecGetFlags(&rwrec);
+                        fixrec.rec4_tcp_exp.sport = rwRecGetSPort(&rwrec);
+                        fixrec.rec4_tcp_exp.dport = rwRecGetDPort(&rwrec);
                     } else {
                         i = tid_to_position.p_TID4_TCP;
-                        fixrec.rec4_tcp.flowtype = rwRecGetFlowType(&rwrec);
-                        fixrec.rec4_tcp.attributes = rwRecGetTcpState(&rwrec);
-                        fixrec.rec4_tcp.protocol = rwRecGetProto(&rwrec);
+                        ip4_names = &fixrec.rec4_tcp.ips_names;
                         fixrec.rec4_tcp.flags_all = rwRecGetFlags(&rwrec);
                         fixrec.rec4_tcp.sport = rwRecGetSPort(&rwrec);
                         fixrec.rec4_tcp.dport = rwRecGetDPort(&rwrec);
-                        rwRecMemGetSIPv4(&rwrec, &fixrec.rec4_tcp.sip);
-                        rwRecMemGetDIPv4(&rwrec, &fixrec.rec4_tcp.dip);
-                        rwRecMemGetNhIPv4(&rwrec, &fixrec.rec4_tcp.nhip);
                     }
                     break;
 
                   default:
                     i = tid_to_position.p_TID4_NOPORTS;
-                    fixrec.rec4_noports.flowtype = rwRecGetFlowType(&rwrec);
-                    fixrec.rec4_noports.attributes = rwRecGetTcpState(&rwrec);
-                    fixrec.rec4_noports.protocol = rwRecGetProto(&rwrec);
-                    rwRecMemGetSIPv4(&rwrec, &fixrec.rec4_noports.sip);
-                    rwRecMemGetDIPv4(&rwrec, &fixrec.rec4_noports.dip);
-                    rwRecMemGetNhIPv4(&rwrec, &fixrec.rec4_noports.nhip);
+                    ip4_names = &fixrec.rec4_noports.ips_names;
                     break;
                 }
+
+                rwRecMemGetSIPv4(&rwrec,  &ip4_names->sip);
+                rwRecMemGetDIPv4(&rwrec,  &ip4_names->dip);
+                rwRecMemGetNhIPv4(&rwrec, &ip4_names->nhip);
+                names = &ip4_names->names;
+            }
+
+            if (have_silk_conf) {
+                names->silkFlowtypeName.buf = (uint8_t *)flowtype;
+                names->silkFlowtypeName.len =
+                    sksiteFlowtypeGetName(flowtype, sizeof(flowtype),
+                                          fixrec.pre.flowtype);
+                names->silkClassName.buf = (uint8_t *)ft_class;
+                names->silkClassName.len =
+                    sksiteFlowtypeGetClass(ft_class, sizeof(ft_class),
+                                          fixrec.pre.flowtype);
+                names->silkTypeName.buf = (uint8_t *)ft_type;
+                names->silkTypeName.len =
+                    sksiteFlowtypeGetType(ft_type, sizeof(ft_type),
+                                          fixrec.pre.flowtype);
+                names->silkSensorName.buf = (uint8_t *)sensor;
+                names->silkSensorName.len =
+                    sksiteSensorGetName(sensor, sizeof(sensor),
+                                        fixrec.pre.sensor);
             }
 
             /* Set the template */

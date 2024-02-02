@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2004-2020 by Carnegie Mellon University.
+** Copyright (C) 2004-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -13,7 +55,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: parse-tests.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: parse-tests.c 35b901fd2f56 2023-03-10 19:46:07Z mthomas $");
 
 #include <silk/skipaddr.h>
 #include <silk/utils.h>
@@ -1227,6 +1269,7 @@ tcp_flag_parser(
         {0,                    19, "FAFAS"},
         {0,                   251, "FSPUAEC"},
         {0,                   255, "FSrpauEC"},
+        {0,                   255, "-"},
         {SKUTILS_ERR_BAD_CHAR,  0, "T"},
         {SKUTILS_ERR_BAD_CHAR,  0, ".A"},
         {SKUTILS_ERR_BAD_CHAR, 16, "A."},
@@ -1302,26 +1345,29 @@ flag_high_mask_parser(
         uint8_t     exp_mask;
         const char *str;
     } input[] = {
-        {0,                     18,  23, "AS/ASRF" },
-        {0,                     32,  32, "U   / U" },
-        {SKUTILS_ERR_BAD_CHAR,   0,   0, "G   / U" },
-        {SKUTILS_ERR_BAD_CHAR,  17,   0, "AFTSR" },
-        {SKUTILS_ERR_BAD_CHAR,  17,  17, "AF/AFTSR" },
-        {0,                     17,  17, "AF/af" },
-        {0,                     17,  19, "af/ASF" },
-        {SKUTILS_ERR_BAD_CHAR,  17,  19, "af/ASF/" },
-        {0,                     17,  19, "  A F  / A S F  " },
-        {0,                     17,  19, " AF/ASF" },
-        {0,                     17,  19, " AF/ASF " },
-        {0,                     17,  19, "AF/ASF " },
-        {0,                      0,  17, "/AF"},
-        {SKUTILS_ERR_BAD_RANGE, 18, 176, "  AS / AUC" },
-        {SKUTILS_ERR_SHORT,     18,   0, "AS" },
-        {SKUTILS_ERR_SHORT,     18,   0, "AS/" },
-        {SKUTILS_ERR_EMPTY,      0,   0, " " },
-        {SKUTILS_ERR_EMPTY,      0,   0, "" },
-        {SKUTILS_ERR_INVALID,    0,   0, NULL },
-        {0,                      0,   0, SENTINEL }
+        {0,                      18,  23, "AS/ASRF" },
+        {0,                      32,  32, "U   / U" },
+        {SKUTILS_ERR_BAD_CHAR,    0,   0, "G   / U" },
+        {SKUTILS_ERR_BAD_CHAR,   17,   0, "AFTSR" },
+        {SKUTILS_ERR_BAD_CHAR,   17,  17, "AF/AFTSR" },
+        {0,                      17,  17, "AF/af" },
+        {0,                      17,  19, "af/ASF" },
+        {SKUTILS_ERR_BAD_CHAR,   17,  19, "af/ASF/" },
+        {0,                      17,  19, "  A F  / A S F  " },
+        {0,                      17,  19, " AF/ASF" },
+        {0,                      17,  19, " AF/ASF " },
+        {0,                      17,  19, "AF/ASF " },
+        {0,                       0,  17, "/AF"},
+        {0,                      17, 255, " AF/- " },
+        {0,                     255, 255, "A-F/-" },
+        {SKUTILS_ERR_BAD_RANGE,  18, 176, "  AS / AUC" },
+        {SKUTILS_ERR_BAD_RANGE, 255, 176, "-/ AUC" },
+        {SKUTILS_ERR_SHORT,      18,   0, "AS" },
+        {SKUTILS_ERR_SHORT,      18,   0, "AS/" },
+        {SKUTILS_ERR_EMPTY,       0,   0, " " },
+        {SKUTILS_ERR_EMPTY,       0,   0, "" },
+        {SKUTILS_ERR_INVALID,     0,   0, NULL },
+        {0,                       0,   0, SENTINEL }
     };
 
     P_HEADER("skStringParseTCPFlagsHighMask()");

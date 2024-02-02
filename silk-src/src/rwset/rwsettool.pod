@@ -10,8 +10,8 @@ B<rwsettool> - Operate on IPset files to produce a new IPset
               | --symmetric-difference
               | --sample {--size=SIZE | --ratio=RATIO} [--seed=SEED]
               | --mask=NET_BLOCK_SIZE | --fill-blocks=NET_BLOCK_SIZE }
-        [--output-path=PATH] [--record-version=VERSION]
-        [--invocation-strip]
+        [--output-path=PATH [--modify-inplace [--backup-path=BACKUP]]]
+        [--record-version=VERSION] [--invocation-strip]
         [--note-strip] [--note-add=TEXT] [--note-file-add=FILE]
         [--compression-method=COMP_METHOD] [INPUT_SET ...]
 
@@ -87,6 +87,14 @@ to B<--output-path> causes B<rwsettool> to write the IPset to the
 standard output.  B<rwsettool> exits with an error if an attempt
 is made to read an IPset from the terminal or write an IPset to the
 terminal.
+
+In SiLK 3.21.0, B<rwsettool> added the B<--modify-inplace> switch
+which correctly handles the case when an input file is also used as
+the output file.  That switch causes B<rwsettool> to write the new
+IPset to a temporary file first and then replace the original output
+file.  The B<--backup-path> switch may be used in conjunction with
+B<--modify-inplace> to set the pathname where the original output file
+is copied.
 
 To create an IPset file from SiLK Flow records, use B<rwset(1)>, and
 to create one from text, use B<rwsetbuild(1)>.  B<rwsetcat(1)> prints
@@ -204,15 +212,42 @@ These switches control the output:
 
 =item B<--output-path>=I<PATH>
 
-Write the resulting IPset to I<PATH>, where I<PATH> is a filename, a
-named pipe, the keyword C<stderr> to write the output to the standard
-error, or the keyword C<stdout> or C<-> to write the output to the
-standard output.  If I<PATH> names an existing file, B<rwsettool>
-exits with an error unless the SILK_CLOBBER environment variable is
-set, in which case I<PATH> is overwritten.  If this switch is not
-given, the output is written to the standard output.  Attempting to
-write the binary output to a terminal causes B<rwsettool> to exit with
-an error.
+Write the resulting IPset to I<PATH>, where I<PATH> is a
+filename, a named pipe, the keyword C<stderr> to write the output to
+the standard error, or the keyword C<stdout> or C<-> to write the
+output to the standard output.  If I<PATH> names an existing file,
+B<rwsettool> exits with an error unless the B<--modify-inplace> switch
+is given or the SILK_CLOBBER environment variable is set, in which
+case I<PATH> is overwritten.  If B<--output-path> is not given,
+the output is written to the standard output.  Attempting to write the
+binary output to a terminal causes B<rwsettool> to exit with an error.
+
+=item B<--modify-inplace>
+
+Allow B<rwsettool> to overwrite an existing file and properly account
+for the output file (I<PATH>) also being an input file.  When this
+switch is given, B<rwsettool> writes the output to a temporary
+location first, then overwrites I<PATH>.  B<rwsettool> attempts to
+copy the permission, owner, and group from the original file to the
+new file.  The switch is ignored when I<PATH> does not exist or the
+output is the standard output or standard error.  B<rwsettool> exits
+with an error when this switch is given and I<PATH> is not a regular
+file.  If B<rwsettool> encounters an error or is interrupted prior to
+closing the temporary file, the temporary file is removed.  See also
+B<--backup-path>.  I<Since SiLK 3.21.0.>
+
+=item B<--backup-path>=I<BACKUP>
+
+Move the file named by B<--output-path> (I<PATH>) to the path
+I<BACKUP> immediately prior to moving the temporary file created by
+B<--modify-inplace> over I<PATH>.  If I<BACKUP> names a directory, the
+file is moved into that directory.  This switch will overwrite an
+existing file.  If I<PATH> and I<BACKUP> point to the same location,
+the output is written to I<PATH> and no backup is created.  If
+B<BACKUP> cannot be created, the new IPset file is left in the
+temporary file and B<rwsettool> exits with a message and an error.
+B<rwsettool> exits with an error if this switch is given without
+B<--modify-inplace>.  I<Since SiLK 3.21.0.>
 
 =item B<--record-version>=I<VERSION>
 
@@ -255,9 +290,9 @@ are usually more compact that version 4.
 
 =item B<--invocation-strip>
 
-Do not record any command line history; that is, do not copy the
-invocation history from the input files to the output file, and do not
-record the current command line invocation in the output.
+Do not record any command line history; that is, do not record the
+current command line invocation in the output.  The invocation history
+of the input IPset files is always stripped.
 
 =item B<--note-strip>
 
@@ -709,9 +744,14 @@ argument of 0 was allowed and made the default.  Version 4 was added
 in S<SiLK 3.7> as was support for the SILK_IPSET_RECORD_VERSION
 environment variable.  Version 5 was added in S<SiLK 3.14>.
 
+The B<--modify-inplace> switch was added in SiLK 3.21.  When
+B<--backup-path> is also given, there is a small time window when the
+original file does not exist: the time between moving the original
+file to the backup location and moving the temporary file into place.
+
 =cut
 
-$SiLK: rwsettool.pod 4162e8e3f110 2018-02-26 19:01:54Z mthomas $
+$SiLK: rwsettool.pod 54da8a7dbfe6 2023-05-03 14:35:40Z mthomas $
 
 Local Variables:
 mode:text

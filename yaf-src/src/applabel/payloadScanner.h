@@ -1,63 +1,54 @@
-/**
- * @internal
+/*
+ *  Copyright 2007-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+/*
+ *  playloadScanner.h
+ *  This defines the interface to the payload scanner functions
  *
- * @file playloadScanner.h
+ *  ------------------------------------------------------------------------
+ *  Authors: Chris Inacio
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
  *
- * This defines the interface to the payload scanner functions
+ *  Copyright 2023 Carnegie Mellon University.
  *
- ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
- ** ------------------------------------------------------------------------
- ** Authors: Chris Inacio
- ** ------------------------------------------------------------------------
- ** @OPENSOURCE_HEADER_START@
- ** Use of the YAF system and related source code is subject to the terms
- ** of the following licenses:
- **
- ** GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
- ** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
- **
- ** NO WARRANTY
- **
- ** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
- ** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
- ** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
- ** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
- ** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
- ** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
- ** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
- ** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
- ** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
- ** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
- ** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
- ** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
- ** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
- ** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
- ** DELIVERABLES UNDER THIS LICENSE.
- **
- ** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
- ** Mellon University, its trustees, officers, employees, and agents from
- ** all claims or demands made against them (and any related losses,
- ** expenses, or attorney's fees) arising out of, or relating to Licensee's
- ** and/or its sub licensees' negligent use or willful misuse of or
- ** negligent conduct or willful misconduct regarding the Software,
- ** facilities, or other rights or assistance granted by Carnegie Mellon
- ** University under this License, including, but not limited to, any
- ** claims of product liability, personal injury, death, damage to
- ** property, or violation of any laws or regulations.
- **
- ** Carnegie Mellon University Software Engineering Institute authored
- ** documents are sponsored by the U.S. Department of Defense under
- ** Contract FA8721-05-C-0003. Carnegie Mellon University retains
- ** copyrights in all material produced under this contract. The U.S.
- ** Government retains a non-exclusive, royalty-free license to publish or
- ** reproduce these documents, or allow others to do so, for U.S.
- ** Government purposes only pursuant to the copyright license under the
- ** contract clause at 252.227.7013.
- **
- ** @OPENSOURCE_HEADER_END@
- ** ------------------------------------------------------------------------
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
  *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
+ *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ *  ------------------------------------------------------------------------
  */
 
 
@@ -69,6 +60,109 @@
 #include <yaf/autoinc.h>
 #include <yaf/yafcore.h>
 #include <yaf/decode.h>
+/**
+ * SSH Declarations
+ * Refrence sshplugin.c and dpacketplugin.c to find
+ * the implementation of the following definitions.
+*/
+
+/* IDs used by yfDPIData_t->dpacketID */
+/* SSH List of Key Exchange Algorithms */
+#define YF_SSH_KEX_ALGO                 20
+/* SSH List of Host Key Algorithms */
+#define YF_SSH_SERVER_HOST_KEY_ALGO     21
+/* SSH List of Encryption Algorithms Client to Server */
+#define YF_SSH_ENCRYPTION_ALGO_CLI_SRV  22
+/* SSH List of MAC Algorithms Client to Server */
+#define YF_SSH_MAC_ALGO_CLI_SRV         23
+/* SSH List of Compression Algorithms Client to Server */
+#define YF_SSH_COMPRESS_ALGO_CLI_SRV    24
+/* SSH List of Encryption Algorithms Server to Client */
+#define YF_SSH_ENCRYPTION_ALGO_SRV_CLI  25
+/* SSH List of MAC Algorithms Server to Client */
+#define YF_SSH_MAC_ALGO_SRV_CLI         26
+/* SSH List of Compression Algorithms Server to Client */
+#define YF_SSH_COMPRESS_ALGO_SRV_CLI    27
+/* SSH Host Key */
+#define YF_SSH_HOST_KEY                 28
+/* SSH Version reported in initial packet */
+#define YF_SSH_VERSION                  29
+/* Client's KEX Request value */
+#define YF_SSH_CLIENT_KEX_REQUEST       30
+
+/* Values defined in the SSH RFCs. For a complete list:
+ * https://www.iana.org/assignments/ssh-parameters/ssh-parameters.xhtml */
+
+/* Values between 1 and 19 are transport layer messages */
+#define SSH_MSG_DISCONNECT              1
+
+/* Key exchange initialization */
+#define SSH2_MSG_KEXINIT                20
+#define SSH2_MSG_NEWKEYS                21
+
+/*
+ * To find the message containing the host key, examine the message from the
+ * client after the KEXINIT message.  Per RFC 4253 Section 8, if the client
+ * sends KEXDH_INIT (or ECDH_INIT), the server sends the host key in the
+ * KEXDH_REPLY (or ECDH_REPLY) message.  Per RFC 4419, if the client sends
+ * group exchange init (KEX_DH_GEX_REQUEST), the server responds with
+ * KEX_DH_GEX_GROUP, the client responds with MSG_KEX_DH_GEX_INIT (32), and
+ * the server responds with KEX_DH_GEX_REPLY which contains the host key.
+ */
+#define SSH_MSG_KEXDH_INIT          30
+#define SSH_MSG_KEXDH_REPLY         31
+#define SSH2_MSG_KEX_ECDH_INIT      30
+#define SSH2_MSG_KEX_ECDH_REPLY     31
+#define SSH_MSG_KEX_DH_GEX_REQUEST  34
+#define SSH_MSG_KEX_DH_GEX_GROUP    31
+#define SSH_MSG_KEX_DH_GEX_REPLY    33
+
+#define SSH_PORT_NUMBER 22
+
+/**
+ * End of the SSH declarations
+*/
+
+/**
+ * SSL Declarations
+ * Refrence tlsplugin.c and dpacketplugin.c to find
+ * the implementation of the following definitions. 
+ * 
+*/
+
+/* IDs used by yfDPIData_t->dpacketID */
+/* sslClientVersion */
+#define YF_SSL_CLIENT_VERSION   88
+/* sslServerCipher */
+#define YF_SSL_SERVER_CIPHER    89
+/* sslCompressionMethod */
+#define YF_SSL_COMPRESSION      90
+/* sslCipherList */
+#define YF_SSL_CIPHER_LIST      91
+/* sslCipherList in SSL v2 */
+#define YF_SSL_V2_CIPHER_LIST   92
+/* offset of the start of a certificate */
+#define YF_SSL_CERT_START       93
+/* sslRecordVersion */
+#define YF_SSL_RECORD_VERSION   94
+/* sslServerName */
+#define YF_SSL_SERVER_NAME      95
+/* location of eliptic curve values */
+#define YF_SSL_ELIPTIC_CURVE    96
+/* location of eliptic curve point format list */
+#define YF_SSL_ELIPTIC_FORMAT   97
+/* ssl version? */
+#define YF_SSL_VERSION          99
+/* location of the client extension list */
+#define YF_SSL_CLIENT_EXTENSION 100
+/* location of the server extension list */
+#define YF_SSL_SERVER_EXTENSION 101
+/* the server version */
+#define YF_SSL_SERVER_VERSION   102
+
+/**
+ * End of SSL Declarations
+*/
 
 
 /*

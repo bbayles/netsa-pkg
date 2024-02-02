@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2001-2020 by Carnegie Mellon University.
+** Copyright (C) 2001-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -15,7 +57,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: sku-string.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: sku-string.c c3cb530920e1 2023-04-26 14:50:25Z mthomas $");
 
 #include <silk/utils.h>
 #include <silk/skipaddr.h>
@@ -410,22 +452,28 @@ skTCPFlagsString(
     char               *outbuf,
     unsigned int        print_flags)
 {
-    static const char characters[] = {'F', 'S', 'R', 'P', 'A', 'U', 'E', 'C'};
-    static const uint8_t bits[] = {FIN_FLAG, SYN_FLAG, RST_FLAG, PSH_FLAG,
-                                   ACK_FLAG, URG_FLAG, ECE_FLAG, CWR_FLAG};
-    int i;
-    char *c = outbuf;
-
-    for (i = 0; i < 8; i++) {
-        if (flags & bits[i]) {
-            *c = characters[i];
-            ++c;
-        } else if (print_flags & SK_PADDED_FLAGS) {
-            *c = ' ';
-            ++c;
-        }
+    if (print_flags & SK_PADDED_FLAGS) {
+        outbuf[0] = (flags & FIN_FLAG) ? 'F' : ' ';
+        outbuf[1] = (flags & SYN_FLAG) ? 'S' : ' ';
+        outbuf[2] = (flags & RST_FLAG) ? 'R' : ' ';
+        outbuf[3] = (flags & PSH_FLAG) ? 'P' : ' ';
+        outbuf[4] = (flags & ACK_FLAG) ? 'A' : ' ';
+        outbuf[5] = (flags & URG_FLAG) ? 'U' : ' ';
+        outbuf[6] = (flags & ECE_FLAG) ? 'E' : ' ';
+        outbuf[7] = (flags & CWR_FLAG) ? 'C' : ' ';
+        outbuf[8] = '\0';
+    } else {
+        char *c = outbuf;
+        if (flags & FIN_FLAG) { *c = 'F'; ++c; }
+        if (flags & SYN_FLAG) { *c = 'S'; ++c; }
+        if (flags & RST_FLAG) { *c = 'R'; ++c; }
+        if (flags & PSH_FLAG) { *c = 'P'; ++c; }
+        if (flags & ACK_FLAG) { *c = 'A'; ++c; }
+        if (flags & URG_FLAG) { *c = 'U'; ++c; }
+        if (flags & ECE_FLAG) { *c = 'E'; ++c; }
+        if (flags & CWR_FLAG) { *c = 'C'; ++c; }
+        *c = '\0';
     }
-    *c = '\0';
     return outbuf;
 }
 
@@ -455,31 +503,24 @@ skTCPStateString(
     char               *outbuf,
     unsigned int        print_flags)
 {
-#define SKTCPSTATE_NUM_BITS 4
-    static const char characters[] = {'T', 'C', 'F', 'S'};
-    static const uint8_t bits[] = {SK_TCPSTATE_TIMEOUT_KILLED,
-                                   SK_TCPSTATE_TIMEOUT_STARTED,
-                                   SK_TCPSTATE_FIN_FOLLOWED_NOT_ACK,
-                                   SK_TCPSTATE_UNIFORM_PACKET_SIZE};
-    int i;
-    char *c = outbuf;
-
-    for (i = 0; i < SKTCPSTATE_NUM_BITS; i++) {
-        if (state & bits[i]) {
-            *c = characters[i];
-            ++c;
-        } else if (print_flags & SK_PADDED_FLAGS) {
-            *c = ' ';
-            ++c;
-        }
-    }
     if (print_flags & SK_PADDED_FLAGS) {
-        for (/*empty*/; i < 8; i++) {
-            *c = ' ';
-            ++c;
-        }
+        outbuf[0] = (state & SK_TCPSTATE_TIMEOUT_KILLED      ) ? 'T' : ' ';
+        outbuf[1] = (state & SK_TCPSTATE_TIMEOUT_STARTED     ) ? 'C' : ' ';
+        outbuf[2] = (state & SK_TCPSTATE_FIN_FOLLOWED_NOT_ACK) ? 'F' : ' ';
+        outbuf[3] = (state & SK_TCPSTATE_UNIFORM_PACKET_SIZE ) ? 'S' : ' ';
+        outbuf[4] = ' ';
+        outbuf[5] = ' ';
+        outbuf[6] = ' ';
+        outbuf[7] = ' ';
+        outbuf[8] = '\0';
+    } else {
+        char *c = outbuf;
+        if (state & SK_TCPSTATE_TIMEOUT_KILLED      ) { *c = 'T'; ++c; }
+        if (state & SK_TCPSTATE_TIMEOUT_STARTED     ) { *c = 'C'; ++c; }
+        if (state & SK_TCPSTATE_FIN_FOLLOWED_NOT_ACK) { *c = 'F'; ++c; }
+        if (state & SK_TCPSTATE_UNIFORM_PACKET_SIZE ) { *c = 'S'; ++c; }
+        *c = '\0';
     }
-    *c = '\0';
     return outbuf;
 }
 
@@ -1702,7 +1743,7 @@ skStringParseIPWildcard(
 
                 /* shortcut the "x.x" case */
                 if ((ipwild->m_min[block] == 0)
-                    && (ipwild->m_min[block] == 0xFFFF))
+                    && (ipwild->m_max[block] == 0xFFFF))
                 {
                     memset(ipwild->m_blocks[block], 0xFF,
                            sizeof(ipwild->m_blocks[0]));
@@ -2871,6 +2912,11 @@ skStringParseTCPFlags(
     *result = 0;
     while (*cp) {
         switch (*cp) {
+          case '-':
+            TCP_FLAG_SET_FLAG(*result,
+                              (FIN_FLAG | SYN_FLAG | RST_FLAG | PSH_FLAG |
+                               ACK_FLAG | URG_FLAG | ECE_FLAG | CWR_FLAG ));
+            break;
           case 'f':
           case 'F':
             TCP_FLAG_SET_FLAG(*result, FIN_FLAG);
@@ -2948,6 +2994,11 @@ skStringParseTCPFlagsHighMask(
      */
     while (*cp) {
         switch (*cp) {
+          case '-':
+            TCP_FLAG_SET_FLAG(*result,
+                              (FIN_FLAG | SYN_FLAG | RST_FLAG | PSH_FLAG |
+                               ACK_FLAG | URG_FLAG | ECE_FLAG | CWR_FLAG ));
+            break;
           case 'f':
           case 'F':
             TCP_FLAG_SET_FLAG(*result, FIN_FLAG);
@@ -3046,6 +3097,12 @@ skStringParseTCPState(
     *result = 0;
     while (*cp) {
         switch (*cp) {
+          case '-':
+            *result |= (SK_TCPSTATE_TIMEOUT_KILLED
+                        | SK_TCPSTATE_TIMEOUT_STARTED
+                        | SK_TCPSTATE_FIN_FOLLOWED_NOT_ACK
+                        | SK_TCPSTATE_UNIFORM_PACKET_SIZE);
+            break;
           case 't':
           case 'T':
             *result |= SK_TCPSTATE_TIMEOUT_KILLED;
@@ -3107,6 +3164,12 @@ skStringParseTCPStateHighMask(
      */
     while (*cp) {
         switch (*cp) {
+          case '-':
+            *result |= (SK_TCPSTATE_TIMEOUT_KILLED
+                        | SK_TCPSTATE_TIMEOUT_STARTED
+                        | SK_TCPSTATE_FIN_FOLLOWED_NOT_ACK
+                        | SK_TCPSTATE_UNIFORM_PACKET_SIZE);
+            break;
           case 't':
           case 'T':
             *result |= SK_TCPSTATE_TIMEOUT_KILLED;

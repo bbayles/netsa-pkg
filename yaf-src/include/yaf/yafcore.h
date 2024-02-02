@@ -1,58 +1,55 @@
 /*
+ *  Copyright 2006-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+/*
  *
- ** @file yafcore.h
- ** YAF core I/O routines
- **
- ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
- ** ------------------------------------------------------------------------
- ** Authors: Brian Trammell
- ** ------------------------------------------------------------------------
- ** Use of the YAF system and related source code is subject to the terms
- ** of the following licenses:
- **
- ** GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
- ** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
- **
- ** NO WARRANTY
- **
- ** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
- ** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
- ** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
- ** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
- ** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
- ** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
- ** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
- ** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
- ** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
- ** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
- ** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
- ** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
- ** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
- ** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
- ** DELIVERABLES UNDER THIS LICENSE.
- **
- ** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
- ** Mellon University, its trustees, officers, employees, and agents from
- ** all claims or demands made against them (and any related losses,
- ** expenses, or attorney's fees) arising out of, or relating to Licensee's
- ** and/or its sub licensees' negligent use or willful misuse of or
- ** negligent conduct or willful misconduct regarding the Software,
- ** facilities, or other rights or assistance granted by Carnegie Mellon
- ** University under this License, including, but not limited to, any
- ** claims of product liability, personal injury, death, damage to
- ** property, or violation of any laws or regulations.
- **
- ** Carnegie Mellon University Software Engineering Institute authored
- ** documents are sponsored by the U.S. Department of Defense under
- ** Contract FA8721-05-C-0003. Carnegie Mellon University retains
- ** copyrights in all material produced under this contract. The U.S.
- ** Government retains a non-exclusive, royalty-free license to publish or
- ** reproduce these documents, or allow others to do so, for U.S.
- ** Government purposes only pursuant to the copyright license under the
- ** contract clause at 252.227.7013.
- **
- ** ------------------------------------------------------------------------
+ *  yafcore.h
+ *  YAF core I/O routines
+ *
+ *  ------------------------------------------------------------------------
+ *  Authors: Brian Trammell
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
+ *
+ *  Copyright 2023 Carnegie Mellon University.
+ *
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
+ *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
+ *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ *  ------------------------------------------------------------------------
  */
 
 /**
@@ -78,7 +75,7 @@
  * YAF installation process.
  *
  * @section Copyright
- * YAF is copyright 2006-2021 Carnegie Mellon University, and is released
+ * YAF is copyright 2006-2023 Carnegie Mellon University, and is released
  * under the GNU General Public License.  See the COPYING file in the
  * distribution for details.
  *
@@ -155,13 +152,18 @@
 #define YAF_END_RESOURCE        5
 /** Flow flushed due to udp-uniflow on all or selected ports.*/
 #define YAF_END_UDPFORCE        0x1F
-/** Flow has same size packets in this direction */
+/** Flow reason mask */
+#define YAF_END_MASK            0x7F
+/** SiLK mode flow reason flag - flow was created after active termination */
+#define YAF_ENDF_ISCONT         0x80
+
+/** Attribute bit flag: Flow has same size packets in this direction */
 #define YAF_SAME_SIZE           0x01
-/** Flow was processed out of sequence */
+/** Attribute bit flag: Flow was processed out of sequence */
 #define YAF_OUT_OF_SEQUENCE     0x02
-/** Flow had MP_CAPABLE TCP Option */
+/** Attribute bit flag: Flow had MP_CAPABLE TCP Option */
 #define YAF_MP_CAPABLE          0x04
-/** Flow contained packets that were fragmented */
+/** Attribute bit flag: Flow contained packets that were fragmented */
 #define YAF_FRAGMENTS           0x08
 /** Flow contains partial fragments */
 #define YAF_PARTIAL_FRAGS       0x10
@@ -169,11 +171,6 @@
 #define YAF_FRAG_ACTIVE         0x03
 /** Flow has fragments that have reached passive timeout */
 #define YAF_FRAG_PASSIVE        0x04
-/** Flow reason mask */
-#define YAF_END_MASK            0x7F
-
-/** SiLK mode flow reason flag - flow was created after active termination */
-#define YAF_ENDF_ISCONT         0x80
 
 /** IP protocol identifier for ICMP */
 #define YAF_IP_ICMP             1
@@ -201,6 +198,13 @@
 /** Maximum number of labels we're going to keep around */
 #define YAF_MAX_MPLS_LABELS     3
 
+/** Upper bound of a packet's payload octets to be a "small packet" in the
+ *  detailed flow-stats.  Payload octets must be less than this value. */
+#define YAF_SMALL_PKT_BOUND     60
+/** Lower bound of a packet's payload octets to be a "large packet" in the
+ *  detailed flow-stats.  Payload octets must be greater than this value. */
+#define YAF_LARGE_PKT_BOUND     225
+
 /**
  * A YAF flow key.
  * Contains a flow's five-tuple; used at runtime in the flow table.
@@ -224,6 +228,8 @@ typedef struct yfFlowKey_st {
 #if YAF_ENABLE_DAG_SEPARATE_INTERFACES || YAF_ENABLE_SEPARATE_INTERFACES
     uint8_t    netIf;
 #endif
+    /** Layer 2 Id */
+    uint32_t   layer2Id;
     /** IP address two-tuple union */
     union {
         struct {
@@ -255,11 +261,11 @@ typedef struct yfFlowStats_st {
     uint64_t   ltime;
     /** Number of urgent packets */
     uint32_t   tcpurgct;
-    /** Number of packets with 60 bytes or less of data */
+    /** Number of packets with fewer than YAF_SMALL_PKT_BOUND bytes of data */
     uint32_t   smallpktct;
     /** total number of non empty pkts */
     uint32_t   nonemptypktct;
-    /** total number of packets with 225 bytes or more */
+    /** Number of packets with more than YAF_LARGE_PKT_BOUND bytes of data */
     uint32_t   largepktct;
     /** average interarrival time in milliseconds */
     uint32_t   aitime;
@@ -278,14 +284,14 @@ typedef struct yfFlowVal_st {
     uint64_t        oct;
     /** Packet count */
     uint64_t        pkt;
-#   if YAF_ENABLE_PAYLOAD
+#if YAF_ENABLE_PAYLOAD
     /** Payload length */
     uint32_t        paylen;
     /** Captured payload buffer */
     uint8_t        *payload;
     /** Offsets into the payload on packet boundaries */
     size_t         *paybounds;
-#   endif /* if YAF_ENABLE_PAYLOAD */
+#endif /* if YAF_ENABLE_PAYLOAD */
     /** Initial TCP sequence number */
     uint32_t        isn;
     /** Last TCP sequence number */
@@ -302,16 +308,16 @@ typedef struct yfFlowVal_st {
     uint8_t         appkt;
     /** VLAN TAG (also in key, but want to record both sides) */
     uint16_t        vlan;
-#   if YAF_ENABLE_SEPARATE_INTERFACES
+#if YAF_ENABLE_SEPARATE_INTERFACES
     uint8_t         netIf;
-#   endif
-#   if YAF_ENABLE_ENTROPY
+#endif
+#if YAF_ENABLE_ENTROPY
     /** Entropy value */
     uint8_t         entropy;
     /** Entropy padding */
     uint8_t         entpad[7];
-#   endif /* if YAF_ENABLE_ENTROPY */
-#   if YAF_ENABLE_P0F
+#endif /* if YAF_ENABLE_ENTROPY */
+#if YAF_ENABLE_P0F
     /** passive OS finger printing OS Name */
     const char     *osname;
     /** passive OS finger printing OS version */
@@ -322,8 +328,8 @@ typedef struct yfFlowVal_st {
     uint8_t         fuzzyPad[7];
     /** p0f OS FingerPrint */
     char           *osFingerPrint;
-#   endif /* if YAF_ENABLE_P0F */
-#   if YAF_ENABLE_FPEXPORT
+#endif /* if YAF_ENABLE_P0F */
+#if YAF_ENABLE_FPEXPORT
     /** length of firstPacket Handshake header */
     uint32_t        firstPacketLen;
     /** length of secondPacket Handshake header */
@@ -332,7 +338,7 @@ typedef struct yfFlowVal_st {
     uint8_t        *firstPacket;
     /** TCP Handshake header from second TCP packet */
     uint8_t        *secondPacket;
-#   endif /* if YAF_ENABLE_FPEXPORT */
+#endif /* if YAF_ENABLE_FPEXPORT */
     /** yaf flow statistics */
     yfFlowStats_t  *stats;
 } yfFlowVal_t;
@@ -532,7 +538,6 @@ yfWriterForSpread(
     uint16_t          *spreadGroupIndex,
     gboolean           export_meta,
     GError           **err);
-
 #endif /* HAVE_SPREAD */
 
 /**
@@ -810,9 +815,6 @@ yfPrintColumnHeaders(
 fbInfoModel_t *
 yfDPIInfoModel(
     void);
-
 #endif /* if YAF_ENABLE_HOOKS */
-
-
 
 #endif /* ifndef _YAF_CORE_H_ */

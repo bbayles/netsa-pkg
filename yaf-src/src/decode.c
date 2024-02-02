@@ -1,60 +1,55 @@
-/**
-** decode.c
-** YAF Layer 2 and Layer 3 decode routines
-**
-** ------------------------------------------------------------------------
-** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
-** ------------------------------------------------------------------------
-** Authors: Brian Trammell
-** ------------------------------------------------------------------------
-** @OPENSOURCE_HEADER_START@
-** Use of the YAF system and related source code is subject to the terms
-** of the following licenses:
-**
-** GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
-** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
-**
-** NO WARRANTY
-**
-** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
-** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
-** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
-** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
-** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
-** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
-** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
-** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
-** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
-** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
-** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
-** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
-** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
-** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
-** DELIVERABLES UNDER THIS LICENSE.
-**
-** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
-** Mellon University, its trustees, officers, employees, and agents from
-** all claims or demands made against them (and any related losses,
-** expenses, or attorney's fees) arising out of, or relating to Licensee's
-** and/or its sub licensees' negligent use or willful misuse of or
-** negligent conduct or willful misconduct regarding the Software,
-** facilities, or other rights or assistance granted by Carnegie Mellon
-** University under this License, including, but not limited to, any
-** claims of product liability, personal injury, death, damage to
-** property, or violation of any laws or regulations.
-**
-** Carnegie Mellon University Software Engineering Institute authored
-** documents are sponsored by the U.S. Department of Defense under
-** Contract FA8721-05-C-0003. Carnegie Mellon University retains
-** copyrights in all material produced under this contract. The U.S.
-** Government retains a non-exclusive, royalty-free license to publish or
-** reproduce these documents, or allow others to do so, for U.S.
-** Government purposes only pursuant to the copyright license under the
-** contract clause at 252.227.7013.
-**
-** @OPENSOURCE_HEADER_END@
-** ------------------------------------------------------------------------
-*/
+/*
+ *  Copyright 2007-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+/*
+ *  decode.c
+ *  YAF Layer 2 and Layer 3 decode routines
+ *
+ *  ------------------------------------------------------------------------
+ *  Authors: Brian Trammell
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
+ *
+ *  Copyright 2023 Carnegie Mellon University.
+ *
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
+ *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
+ *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ *  ------------------------------------------------------------------------
+ */
 
 #define _YAF_SOURCE_
 #include <yaf/autoinc.h>
@@ -195,7 +190,7 @@ typedef struct yfHdrNull_st {
         /* Check for at least one byte for IP version */ \
         if ((_caplen_) < 1) return NULL;                 \
         /* Fake ethertype based upon IP version */       \
-        _ipv = YF_IP_VERSION (_pkt_);                    \
+        _ipv = YF_IP_VERSION(_pkt_);                     \
         if (_ipv == 4) {                                 \
             (_type_) = YF_TYPE_IPv4;                     \
         } else if (_ipv == 6) {                          \
@@ -366,6 +361,37 @@ typedef struct yfHdrUdp_st {
 } yfHdrUdp_t;
 
 /**
+ * VxLAN header structure.
+ */
+typedef struct yfHdrVxlan_st {
+    /* Flags and reserved bits */
+    uint32_t   flags_r;
+    /* Vni and reserved bits */
+    uint32_t   vni_r;
+} yfHdrVxlan_t;
+
+/* VxLAN VNI decode macro */
+#define YF_VXLAN_VNI(_vni_r_)   ((_vni_r_ & 0xFFFFFF00) >> 8)
+
+/**
+ * Geneve minimum header structure.
+ */
+typedef struct yfHdrGeneve_st {
+    /* Version, Flags, Option Len, and Type. */
+    uint32_t   gv_flags;
+    /* VNI. Includes reserved bits */
+    uint32_t   gv_vni;
+    /* Variable-Length Options. min=8B, max=260B */
+    uint8_t    gv_vlo;
+} yfHdrGeneve_t;
+
+/* Geneve decode macros */
+#define YF_GENEVE_VER(_gv_flags_)    (((_gv_flags_ & 0xC0000000) >> 30))
+#define YF_GENEVE_OPLEN(_gv_flags_)  (((_gv_flags_ & 0x3F000000) >> 24) * 4)
+#define YF_GENEVE_TYPE(_gv_flags_)   ((_gv_flags_ & 0x0000FFFF))
+#define YF_GENEVE_VNI(_gv_vni_)      ((_gv_vni_ & 0xFFFFFF00) >> 8)
+
+/**
  * ICMP/ICMP6 partial header structure. Used to decode type and code only.
  */
 typedef struct ydHdrIcmp_st {
@@ -439,6 +465,8 @@ struct yfDecodeCtx_st {
     uint16_t   pcap_caplist;
     uint16_t   reqtype;
     gboolean   gremode;
+    GArray    *vxlanports;
+    GArray    *geneveports;
     /* Statistics */
     struct stats_tag {
         uint32_t   fail_l2hdr;
@@ -458,8 +486,33 @@ struct yfDecodeCtx_st {
         uint32_t   fail_l4frag;
         uint32_t   fail_grevers;
         uint32_t   fail_erspan;
+        uint32_t   fail_vxlan;
+        uint32_t   fail_geneve;
     } stats;
 };
+
+/**
+ * @brief Checks if the GArray of ports contains the destination port.
+ *
+ * @param ports The GArray of ports to search
+ * @param dport The dport to search for
+ * @return gboolean TRUE if the dport exists in the array, FALSE otherwise.
+ */
+static gboolean
+yfSearchArray(
+    const GArray  *ports,
+    uint16_t       dport)
+{
+    uint8_t i = 0;
+    do {
+        uint16_t port = g_array_index(ports, uint16_t, i);
+        if (port == dport) {
+            return TRUE;
+        }
+        i++;
+    } while (i < ports->len);
+    return FALSE;
+}
 
 /**
  * yfDecodeL2Loop
@@ -556,7 +609,7 @@ yfDecodeL2Shim(
 {
     uint32_t mpls_entry;
 
-    while (1) {
+    for (;;) {
         switch (*type) {
           case YF_TYPE_8021Q:
             /* Check for full 802.1q shim header */
@@ -944,9 +997,9 @@ yfDecodeIPv6(
     const yfHdrIPv6_t     *iph = (const yfHdrIPv6_t *)pkt;
     const yfHdrIPv6Ext_t  *ipe;
     const yfHdrIPv6Frag_t *ipf;
-    uint16_t iph_len = 0;                   /* total IP header accumulator */
-    size_t   hdr_len = 40;                  /* next header length */
-    uint8_t  hdr_next;
+    uint16_t               iph_len = 0;     /* total IP header accumulator */
+    size_t                 hdr_len = 40;    /* next header length */
+    uint8_t                hdr_next;
 
     /* Verify that we have a full IPv6 header */
     if (*caplen < hdr_len) {
@@ -978,7 +1031,7 @@ yfDecodeIPv6(
         fraginfo->frag = 0;
     }
     /* Now unwrap extension headers */
-    while (1) {
+    for (;;) {
         /* Advance packet pointer */
         *caplen -= hdr_len;
         pkt += hdr_len;
@@ -1061,9 +1114,9 @@ yfDecodeTCPOptions(
 {
     const yfHdrTcpOpt_t *opth = (const yfHdrTcpOpt_t *)pkt;
     uint8_t              subtype, flags, backup, hash;
-    size_t op_len = tcph_len - sizeof(yfHdrTcp_t);
-    size_t offset = 0;
-    size_t pktlen = *caplen - sizeof(yfHdrTcp_t);
+    size_t               op_len = tcph_len - sizeof(yfHdrTcp_t);
+    size_t               offset = 0;
+    size_t               pktlen = *caplen - sizeof(yfHdrTcp_t);
 
     if (pktlen < op_len) {
         return;
@@ -1385,6 +1438,154 @@ yfDecodeIP(
     yfTCPInfo_t     *tcpinfo,
     yfIPFragInfo_t  *fraginfo);
 
+/**
+ * @brief Decodes a VxLAN header. Assumes the next header is L2.
+ * Only runs on UDP packets. There is legitimate non-UDP+VxLAN traffic in AWS,
+ * but we are prioritizing being able to decode un-mirrored non-UDP traffic.
+ *
+ * @param ctx Decode Context
+ * @param caplen Capture Length
+ * @param pkt Packet Pointer
+ * @param key YAF's Flow Key
+ * @param iplen Packet IP length.
+ * @param fraginfo Fragmentation Info
+ * @param tcpinfo TCP Info
+ * @return const uint8_t* An updated packet pointer
+ */
+static const uint8_t *
+yfDecodeVxLAN(
+    yfDecodeCtx_t   *ctx,
+    size_t          *caplen,
+    const uint8_t   *pkt,
+    yfFlowKey_t     *key,
+    uint32_t        *iplen,
+    yfIPFragInfo_t  *fraginfo,
+    yfTCPInfo_t     *tcpinfo)
+{
+    const yfHdrVxlan_t *vxlanh   = (const yfHdrVxlan_t *)pkt;
+    size_t              vxlanh_len = sizeof(vxlanh);
+
+    if (*caplen < vxlanh_len) {
+        /* Could not verify we have a full VxLAN header. */
+        ++ctx->stats.fail_vxlan;
+        return NULL;
+    }
+    uint32_t vni_r = g_ntohl(vxlanh->vni_r);
+    uint32_t vni = YF_VXLAN_VNI(vni_r);
+
+    /* Set the most significant byte to identify VxLAN overlay type as per
+     * IANA IPFIX Information Element 351, layer2SegmentId */
+    uint32_t layer2Id = 0x01000000 | vni;
+    /* Always export the VxLAN VNI, even if Geneve decoding is enabled. */
+    key->layer2Id = layer2Id;
+
+    /* Advance packet pointer, skipping over the VxLAN header */
+    *caplen -= vxlanh_len;
+    pkt += vxlanh_len;
+
+    /* Decode L2 headers and update the l2info to reflect the encapsulated
+     * frame */
+    yfL2Info_t l2info;
+    uint16_t   type = 0;
+    if (!(pkt = yfDecodeL2(ctx, caplen, pkt, &type, &l2info))) {
+        ++ctx->stats.fail_l2hdr;
+        return NULL;
+    }
+
+    /* Now we should have the original IP packet. Decode it. */
+    if (!(pkt = yfDecodeIP(ctx, type, caplen, pkt, key, iplen,
+                           tcpinfo, fraginfo)))
+    {
+        return NULL;
+    }
+
+    return pkt;
+}
+
+/**
+ * @brief Decodes a Geneve header.
+ *
+ * @param ctx Decode Context
+ * @param caplen Capture Length
+ * @param pkt Packet Pointer
+ * @param key YAF's Flow Key
+ * @param iplen Packet IP length.
+ * @param fraginfo Fragmentation Info
+ * @param tcpinfo TCP Info
+ * @return const uint8_t* An updated packet pointer
+ */
+static const uint8_t *
+yfDecodeGeneve(
+    yfDecodeCtx_t   *ctx,
+    size_t          *caplen,
+    const uint8_t   *pkt,
+    yfFlowKey_t     *key,
+    uint32_t        *iplen,
+    yfIPFragInfo_t  *fraginfo,
+    yfTCPInfo_t     *tcpinfo)
+{
+    const yfHdrGeneve_t *geneveh = (const yfHdrGeneve_t *)pkt;
+    size_t               geneveh_len = sizeof(geneveh);
+
+    if (*caplen < geneveh_len) {
+        /* Could not verify we have a full Geneve header. */
+        ++ctx->stats.fail_geneve;
+        return NULL;
+    }
+
+    /* Extract and verify the version number is zero */
+    uint32_t gv_flags = g_ntohl(geneveh->gv_flags);
+    uint8_t  version = YF_GENEVE_VER(gv_flags);
+    if (version != 0) {
+        /* Geneve version is unknown. Dropping the packet. */
+        ++ctx->stats.fail_geneve;
+        return NULL;
+    }
+
+    /* Extract the VNI, ethertype, and optlen */
+    uint32_t gv_vni = g_ntohl(geneveh->gv_vni);
+    uint32_t vni = YF_GENEVE_VNI(gv_vni);
+    uint16_t type = YF_GENEVE_TYPE(gv_flags);
+    uint8_t oplen = YF_GENEVE_OPLEN(gv_flags);
+    geneveh_len += oplen;
+
+    /* Verify we still have a full Geneve header after considering variable
+     * options */
+    if (*caplen < geneveh_len) {
+        ++ctx->stats.fail_geneve;
+        return NULL;
+    }
+
+    /* Only export the Geneve VNI if VxLAN is not enabled */
+    if (!ctx->vxlanports) {
+        /* Setting the most significant byte to 0x03 to identify Geneve
+         * overlay type */
+        uint32_t layer2Id = 0x03000000 | vni;
+        key->layer2Id = layer2Id;
+    }
+
+    /* Advance packet pointer, skipping over the Geneve header */
+    *caplen -= geneveh_len;
+    pkt += geneveh_len;
+
+    /* If the next header is ethernet, decode it. */
+    if (!(type == YF_TYPE_IPv4 || type == YF_TYPE_IPv6)) {
+        yfL2Info_t l2info;
+        if (!(pkt = yfDecodeL2(ctx, caplen, pkt, &type, &l2info))) {
+            ++ctx->stats.fail_l2hdr;
+            return NULL;
+        }
+    }
+
+    /* Now we should have the next header. Decode it. */
+    if (!(pkt = yfDecodeIP(ctx, type, caplen, pkt, key, iplen,
+                           tcpinfo, fraginfo)))
+    {
+        return NULL;
+    }
+
+    return pkt;
+}
 
 static const uint8_t *
 yfDecodeERSPAN(
@@ -1500,7 +1701,7 @@ yfDecodeGRE(
 
     /* Parse any SREs if present */
     if (greh->gh_f_route) {
-        while (1) {
+        for (;;) {
             sreh = (const yfHdrSre_t *)pkt;
             sre_len = 4;
 
@@ -1633,6 +1834,20 @@ yfDecodeIP(
         if (!(pkt = yfDecodeUDP(ctx, caplen, pkt, key, fraginfo))) {
             return NULL;
         }
+        if (ctx->geneveports && yfSearchArray(ctx->geneveports, key->dp)) {
+            if (!(pkt = yfDecodeGeneve(ctx, caplen, pkt, key, iplen,
+                                       fraginfo, tcpinfo)))
+            {
+                return NULL;
+            }
+        }
+        if (ctx->vxlanports && yfSearchArray(ctx->vxlanports, key->dp)) {
+            if (!(pkt = yfDecodeVxLAN(ctx, caplen, pkt, key, iplen,
+                                      fraginfo, tcpinfo)))
+            {
+                return NULL;
+            }
+        }
         break;
       case YF_PROTO_ICMP:
       case YF_PROTO_ICMP6:
@@ -1712,6 +1927,7 @@ yfDecodeToPBuf(
         return FALSE;
     }
 
+    key->layer2Id = 0;
     l2info->l2hlen = (uint16_t)(capb4l2 - caplen);
     if (l2info) {
         key->vlanId = l2info->vlan_tag;
@@ -1765,7 +1981,9 @@ yfDecodeCtx_t *
 yfDecodeCtxAlloc(
     int        datalink,
     uint16_t   reqtype,
-    gboolean   gremode)
+    gboolean   gremode,
+    GArray    *vxlanports,
+    GArray    *geneveports)
 {
     yfDecodeCtx_t *ctx = NULL;
 
@@ -1776,6 +1994,8 @@ yfDecodeCtxAlloc(
     ctx->datalink = datalink;
     ctx->reqtype = reqtype;
     ctx->gremode = gremode;
+    ctx->vxlanports = vxlanports;
+    ctx->geneveports = geneveports;
     ctx->pcap_caplist = 0;
 
     /* Done */
@@ -1809,26 +2029,6 @@ yfDecodeTimeval(
     const struct timeval  *tv)
 {
     return (((uint64_t)tv->tv_sec * 1000) + ((uint64_t)tv->tv_usec / 1000));
-}
-
-
-/**
- * yfDecodeTimeNTP
- *
- *
- *
- */
-uint64_t
-yfDecodeTimeNTP(
-    uint64_t   ntp)
-{
-    double dntp;
-
-    dntp = (ntp & 0xFFFFFFFF00000000LL) >> 32;
-    dntp += ((ntp & 0x00000000FFFFFFFFLL) * 1.0) / (2LL << 32);
-
-    dntp *= 1000;
-    return (uint64_t)dntp;
 }
 
 

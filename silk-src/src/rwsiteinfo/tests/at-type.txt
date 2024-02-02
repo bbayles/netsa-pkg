@@ -1,0 +1,5 @@
+# Type 1
+    type1
+
+# default type
+@

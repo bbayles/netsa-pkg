@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2007-2020 by Carnegie Mellon University.
+** Copyright (C) 2007-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -22,7 +64,7 @@
 #define SKIPFIX_SOURCE 1
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: skipfix.c 7af5eab585e4 2020-04-15 15:56:48Z mthomas $");
+RCSIDENT("$SiLK: skipfix.c cc63053fcbc0 2023-05-03 20:44:06Z mthomas $");
 
 #include "ipfixsource.h"
 #include <silk/skipaddr.h>
@@ -372,8 +414,7 @@ RCSIDENT("$SiLK: skipfix.c 7af5eab585e4 2020-04-15 15:56:48Z mthomas $");
 
 #define ASSERT_IE_NAME_IS(aini_ie, aini_name)                           \
     assert(TMPL_BIT_ ## aini_name                                       \
-           && 0==strcmp((aini_ie)->ref.canon->ref.name, #aini_name))
-
+           && 0==strcmp(fbTemplateFieldGetName(aini_ie), #aini_name))
 
 /*
  *  **********  "Give Me Everything" Template for Import  **********
@@ -1365,7 +1406,7 @@ skiTemplateCallbackCtx(
 #define TMPL_PROC_MSG_OPT(wp_name) TMPL_PROC_MSG2("options ", wp_name)
 
     fbCollector_t *coll;
-    const fbInfoElement_t *ie;
+    const fbTemplateField_t *ie;
     const char *name;
     int show_tmpl;
     BMAP_TYPE out;
@@ -1415,9 +1456,10 @@ skiTemplateCallbackCtx(
         /* the sampling check requires multiple elements */
         samplingAlgorithm = samplerMode = 0;
 
-        for (i = 0; i < count && (ie = fbTemplateGetIndexedIE(tmpl, i)); ++i) {
-            if (ie->ent == 0) {
-                switch (ie->num) {
+        for (i = 0; i < count; ++i) {
+            ie = fbTemplateGetFieldByPosition(tmpl, i);
+            if (fbTemplateFieldGetPEN(ie) == 0) {
+                switch (fbTemplateFieldGetId(ie)) {
                   case  34:
                   case  35:
                     /* verify that both samplingInterval and
@@ -1437,9 +1479,9 @@ skiTemplateCallbackCtx(
                     }
                     break;
                 }
-            } else if (ie->ent == IPFIX_CERT_PEN) {
+            } else if (fbTemplateFieldGetPEN(ie) == IPFIX_CERT_PEN) {
                 /* CERT PRIVATE ENTERPRISE ELEMENTS */
-                switch (ie->num) {
+                switch (fbTemplateFieldGetId(ie)) {
                   case 104:
                     ASSERT_IE_NAME_IS(ie, flowTableFlushEventCount);
                     bmap |= (1 | TMPL_BIT_flowTableFlushEventCount);
@@ -1456,7 +1498,8 @@ skiTemplateCallbackCtx(
             }
             TRACEMSG(
                 3, ("%s bmap %#012" PRIx64 ", IE %s (%u/%u)",
-                    prefix, bmap, ie->ref.canon->ref.name, ie->ent, ie->num));
+                    prefix, bmap, fbTemplateFieldGetName(ie),
+                    fbTemplateFieldGetPEN(ie), fbTemplateFieldGetId(ie)));
         }
         if (bmap) {
             out = (BMAP_TYPE)bmap;
@@ -1474,10 +1517,11 @@ skiTemplateCallbackCtx(
 
     } else {
         /* populate the bitmap */
-        for (i = 0; i < count && (ie = fbTemplateGetIndexedIE(tmpl, i)); ++i) {
-            if (ie->ent == 0) {
+        for (i = 0; i < count; ++i) {
+            ie = fbTemplateGetFieldByPosition(tmpl, i);
+            if (fbTemplateFieldGetPEN(ie) == 0) {
                 /* STANDARD ELEMENT */
-                switch (ie->num) {
+                switch (fbTemplateFieldGetId(ie)) {
                   case   8:
                   case  12:
                     /* sourceIPv4Address and/or destinationIPv4Address */
@@ -1640,9 +1684,9 @@ skiTemplateCallbackCtx(
                     bmap |= TMPL_BIT_NF_F_FW_EVENT;
                     break;
                 }
-            } else if (ie->ent == FB_IE_PEN_REVERSE) {
+            } else if (fbTemplateFieldGetPEN(ie) == FB_IE_PEN_REVERSE) {
                 /* REVERSE VALUE OF STANDARD ELEMENTS */
-                switch (ie->num) {
+                switch (fbTemplateFieldGetId(ie)) {
                   case 1:
                   case 2:
                     /* reverseOctetDeltaCount and/or
@@ -1660,9 +1704,9 @@ skiTemplateCallbackCtx(
                     bmap |= TMPL_BIT_reverseVlanId;
                     break;
                 }
-            } else if (ie->ent == IPFIX_CERT_PEN) {
+            } else if (fbTemplateFieldGetPEN(ie) == IPFIX_CERT_PEN) {
                 /* CERT PRIVATE ENTERPRISE ELEMENTS */
-                switch (ie->num) {
+                switch (fbTemplateFieldGetId(ie)) {
                   case 14:
                     ASSERT_IE_NAME_IS(ie, initialTCPFlags);
                     bmap |= TMPL_BIT_initialTCPFlags;
@@ -1683,7 +1727,8 @@ skiTemplateCallbackCtx(
             }
             TRACEMSG(
                 3, ("%s bmap %#012" PRIx64 ", IE %s (%u/%u)",
-                    prefix, bmap, ie->ref.canon->ref.name, ie->ent, ie->num));
+                    prefix, bmap, fbTemplateFieldGetName(ie),
+                    fbTemplateFieldGetPEN(ie), fbTemplateFieldGetId(ie)));
         }
 
         /* now that the bitmap is populated, see if it matches some
@@ -1885,21 +1930,24 @@ skiTemplateCallbackCtx(
         ssize_t sz;
 
         *b = '\0';
-        for (i = 0;
-             i < count && (ie = fbTemplateGetIndexedIE(tmpl, i)) && rem > 2;
-             ++i)
-        {
+        for (i = 0; i < count && rem > 2; ++i) {
+            ie = fbTemplateGetFieldByPosition(tmpl, i);
             assert(b < (buf + sizeof(buf)));
-            if (0 == ie->ent) {
+            if (0 == fbTemplateFieldGetPEN(ie)) {
                 sz = snprintf(b, rem, "%s %s(%u)[%u]%s",
                               ((i > 0) ? "," : ""),
-                              ie->ref.canon->ref.name, ie->num, ie->len,
+                              fbTemplateFieldGetName(ie),
+                              fbTemplateFieldGetId(ie),
+                              fbTemplateFieldGetLen(ie),
                              ((i < scope) ? "{scope}" : ""));
             } else {
                 sz = snprintf(b, rem, "%s %s(%u/%u)[%u]%s",
                               ((i > 0) ? "," : ""),
-                              ie->ref.canon->ref.name, ie->ent, ie->num,
-                              ie->len, ((i < scope) ? "{scope}" : ""));
+                              fbTemplateFieldGetName(ie),
+                              fbTemplateFieldGetPEN(ie),
+                              fbTemplateFieldGetId(ie),
+                              fbTemplateFieldGetLen(ie),
+                              ((i < scope) ? "{scope}" : ""));
             }
             rem -= sz;
             b += sz;

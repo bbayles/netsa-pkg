@@ -1,60 +1,55 @@
 /*
-** mio_source_file.c
-** Multiple I/O regular file source, from single file, glob, or directory.
-**
-** ------------------------------------------------------------------------
-** Copyright (C) 2006-2023 Carnegie Mellon University. All Rights Reserved.
-** ------------------------------------------------------------------------
-** Authors: Brian Trammell
-** ------------------------------------------------------------------------
-** @OPENSOURCE_HEADER_START@
-** Use of the YAF system and related source code is subject to the terms
-** of the following licenses:
-**
-** GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
-** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
-**
-** NO WARRANTY
-**
-** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
-** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
-** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
-** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
-** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
-** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
-** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
-** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
-** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
-** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
-** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
-** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
-** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
-** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
-** DELIVERABLES UNDER THIS LICENSE.
-**
-** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
-** Mellon University, its trustees, officers, employees, and agents from
-** all claims or demands made against them (and any related losses,
-** expenses, or attorney's fees) arising out of, or relating to Licensee's
-** and/or its sub licensees' negligent use or willful misuse of or
-** negligent conduct or willful misconduct regarding the Software,
-** facilities, or other rights or assistance granted by Carnegie Mellon
-** University under this License, including, but not limited to, any
-** claims of product liability, personal injury, death, damage to
-** property, or violation of any laws or regulations.
-**
-** Carnegie Mellon University Software Engineering Institute authored
-** documents are sponsored by the U.S. Department of Defense under
-** Contract FA8721-05-C-0003. Carnegie Mellon University retains
-** copyrights in all material produced under this contract. The U.S.
-** Government retains a non-exclusive, royalty-free license to publish or
-** reproduce these documents, or allow others to do so, for U.S.
-** Government purposes only pursuant to the copyright license under the
-** contract clause at 252.227.7013.
-**
-** @OPENSOURCE_HEADER_END@
-** ------------------------------------------------------------------------
-*/
+ *  Copyright 2006-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+/*
+ *  mio_source_file.c
+ *  Multiple I/O regular file source, from single file, glob, or directory.
+ *
+ *  ------------------------------------------------------------------------
+ *  Authors: Brian Trammell
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
+ *
+ *  Copyright 2023 Carnegie Mellon University.
+ *
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
+ *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
+ *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ *  ------------------------------------------------------------------------
+ */
 
 #define _AIRFRAME_SOURCE_
 #include <airframe/mio_source_file.h>
@@ -68,7 +63,6 @@ typedef struct _MIOSourceFileEntry {
 
 typedef struct _MIOSourceFileContext {
     GQueue        *queue;
-    GMemChunk     *entrychunk;
     GStringChunk  *pathchunk;
     GString       *scratch;
     char          *lpath;
@@ -103,11 +97,6 @@ static void
 mio_source_file_context_reset(
     MIOSourceFileContext  *fx)
 {
-    if (fx->entrychunk) {g_mem_chunk_destroy(fx->entrychunk);}
-    fx->entrychunk = g_mem_chunk_new("MIOEntryChunk",
-                                     sizeof(MIOSourceFileEntry),
-                                     sizeof(MIOSourceFileEntry) * 256,
-                                     G_ALLOC_ONLY);
     if (fx->pathchunk) {g_string_chunk_free(fx->pathchunk);}
     fx->pathchunk = g_string_chunk_new(16384);
 }
@@ -123,7 +112,7 @@ mio_source_file_entry_new(
 
     if (flags & MIO_F_OPT_LOCK) {
         /* Generate lock path */
-        if (!fx->scratch) {(fx->scratch) = g_string_new("");}
+        if (!fx->scratch) {(fx->scratch) = g_string_new(NULL);}
         g_string_printf(fx->scratch, "%s.lock", path);
 
         /* Skip files locked at queue time */
@@ -133,7 +122,7 @@ mio_source_file_entry_new(
     }
 
     /* No lock contention right now; create the entry. */
-    fent = g_mem_chunk_alloc0(fx->entrychunk);
+    fent = g_slice_new0(MIOSourceFileEntry);
     fent->path = g_string_chunk_insert(fx->pathchunk, path);
     if (flags & MIO_F_OPT_LOCK) {
         fent->lpath = g_string_chunk_insert(fx->pathchunk, fx->scratch->str);
@@ -153,7 +142,7 @@ mio_source_next_file_queue(
     int fd;
     MIOSourceFileEntry *fent;
 
-    while (1) {
+    for (;;) {
         /* Attempt to dequeue a file entry */
         if (!(fent = g_queue_pop_tail(fx->queue))) {
             /* Queue is empty. We're done. */
@@ -166,7 +155,10 @@ mio_source_next_file_queue(
         /* Attempt lock */
         if (fent->lpath) {
             fd = open(fent->lpath, O_WRONLY | O_CREAT | O_EXCL, 0664);
-            if (fd < 0) {continue;}
+            if (fd < 0) {
+                g_slice_free(MIOSourceFileEntry, fent);
+                continue;
+            }
             close(fd);
         }
 
@@ -174,6 +166,7 @@ mio_source_next_file_queue(
         if (!g_file_test(fent->path, G_FILE_TEST_IS_REGULAR)) {
             /* file not here; unlock it */
             if (fent->lpath) {unlink(fent->lpath);}
+            g_slice_free(MIOSourceFileEntry, fent);
             continue;
         }
 
@@ -192,6 +185,7 @@ mio_source_next_file_queue(
                             fent->path, strerror(errno));
                 *flags |= MIO_F_CTL_ERROR;
                 if (fent->lpath) {unlink(fent->lpath);}
+                g_slice_free(MIOSourceFileEntry, fent);
                 return FALSE;
             }
 
@@ -205,6 +199,7 @@ mio_source_next_file_queue(
                 source->vsp = GINT_TO_POINTER(fd);
             }
         }
+        g_slice_free(MIOSourceFileEntry, fent);
 
         /* Done */
         return TRUE;
@@ -425,7 +420,7 @@ mio_source_close_file(
     if (ddir) {
         if (*ddir) {
             /* Create scratch string if necessary */
-            if (!fx->scratch) {fx->scratch = g_string_new("");}
+            if (!fx->scratch) {fx->scratch = g_string_new(NULL);}
             /* Calculate move destination path */
             dbase = g_path_get_basename(source->name);
             g_string_printf(fx->scratch, "%s/%s", ddir, dbase);
@@ -471,8 +466,13 @@ mio_source_free_file(
     if (source->spec) {g_free(source->spec);}
 
     if (fx) {
-        if (fx->queue) {g_queue_free(fx->queue);}
-        if (fx->entrychunk) {g_mem_chunk_destroy(fx->entrychunk);}
+        if (fx->queue) {
+            MIOSourceFileEntry *fent;
+            while ((fent = g_queue_pop_tail(fx->queue))) {
+                g_slice_free(MIOSourceFileEntry, fent);
+            }
+            g_queue_free(fx->queue);
+        }
         if (fx->pathchunk) {g_string_chunk_free(fx->pathchunk);}
         if (fx->scratch) {g_string_free(fx->scratch, TRUE);}
         g_free(fx);

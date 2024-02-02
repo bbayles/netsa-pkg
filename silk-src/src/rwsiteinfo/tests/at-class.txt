@@ -1,0 +1,2 @@
+@,bar-class
+# previous line is default-class, bar-class

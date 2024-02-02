@@ -3,10 +3,21 @@
 ## The canonical pathname for this file is
 ## @sysconfdir@/@myprog@.conf
 ##
-## RCSIDENT("$SiLK: rwsender.conf.in 8845fdf19700 2018-11-13 22:39:40Z mthomas $")
+## RCSIDENT("$SiLK: rwsender.conf.in 8e11149b0d14 2022-06-29 19:20:32Z mthomas $")
 ##
 ## This is a /bin/sh file that gets loaded by the init.d/@myprog@
 ## wrapper script, and this file must follow /bin/sh syntax rules.
+##
+##
+## Nearly all settings in this file correspond to command line
+## switches which are better documented by "rwsender --help" and the
+## rwsender manual page.
+## https://tools.netsa.cert.org/silk/rwsender.html
+##
+## Please consult that documentation while creating this file.
+##
+## If a command line switch does not map to a variable in this file,
+## this file does not support that switch.
 
 # Set to non-empty value to enable rwsender
 ENABLED=

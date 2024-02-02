@@ -1,4 +1,52 @@
-# RCSIDENT("$SiLK: Makefile.am 405461487899 2017-10-09 21:45:39Z mthomas $");
+## Copyright (C) 2004-2023 by Carnegie Mellon University.
+##
+## @OPENSOURCE_LICENSE_START@
+##
+## SiLK 3.22.0
+##
+## Copyright 2023 Carnegie Mellon University.
+##
+## NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+## INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+## UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+## AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+## PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+## THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+## ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+## INFRINGEMENT.
+##
+## Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+## contact permission@sei.cmu.edu for full terms.
+##
+## [DISTRIBUTION STATEMENT A] This material has been approved for public
+## release and unlimited distribution.  Please see Copyright notice for
+## non-US Government use and distribution.
+##
+## GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+##
+## Contract No.: FA8702-15-D-0002
+## Contractor Name: Carnegie Mellon University
+## Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+##
+## The Government's rights to use, modify, reproduce, release, perform,
+## display, or disclose this software are restricted by paragraph (b)(2) of
+## the Rights in Noncommercial Computer Software and Noncommercial Computer
+## Software Documentation clause contained in the above identified
+## contract. No restrictions apply after the expiration date shown
+## above. Any reproduction of the software or portions thereof marked with
+## this legend must also reproduce the markings.
+##
+## Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+## Trademark Office by Carnegie Mellon University.
+##
+## This Software includes and/or makes use of Third-Party Software each
+## subject to its own license.
+##
+## DM23-0973
+##
+## @OPENSOURCE_LICENSE_END@
+##
+## RCSIDENT("$SiLK: Makefile.am c35222643509 2023-08-03 21:43:50Z mthomas $");
 
 # Installed Targets
 
@@ -130,6 +178,9 @@ TESTS = \
 	tests/rwbagtool-null-input.pl \
 	tests/rwbagtool-bad-range-key.pl \
 	tests/rwbagtool-bad-range-counter.pl \
+	tests/rwbagtool-bad-scalarmultiply.pl \
+	tests/rwbagtool-bad-backup-no-inplace.pl \
+	tests/rwbagtool-bad-inplace-devnull.pl \
 	tests/rwbagtool-mincounter.pl \
 	tests/rwbagtool-maxcounter.pl \
 	tests/rwbagtool-minkey.pl \
@@ -157,6 +208,8 @@ TESTS = \
 	tests/rwbagtool-intersect-b2-v4.pl \
 	tests/rwbagtool-compl-intersect-b2-v4.pl \
 	tests/rwbagtool-add-subtract-b1-b2-v4.pl \
+	tests/rwbagtool-scalarmultiply-overflow1.pl \
+	tests/rwbagtool-scalarmultiply-overflow2.pl \
 	tests/rwbagtool-add-b1-b2-v6.pl \
 	tests/rwbagtool-add-b2-b1-v6.pl \
 	tests/rwbagtool-subtract-b1-b2-v6.pl \
@@ -172,7 +225,13 @@ TESTS = \
 	tests/rwbagtool-intersect-b2-v6.pl \
 	tests/rwbagtool-compl-intersect-b2-v6.pl \
 	tests/rwbagtool-add-subtract-b1-b2-v6.pl \
+	tests/rwbagtool-inplace-stdout.pl \
+	tests/rwbagtool-inplace-noexist.pl \
+	tests/rwbagtool-inplace-no-backup.pl \
+	tests/rwbagtool-inplace-backup.pl \
 	tests/rwbagbuild-null-input.pl \
+	tests/rwbagbuild-bad-counter-overflow.pl \
+	tests/rwbagbuild-bad-default-count.pl \
 	tests/rwbagbuild-baginput.pl \
 	tests/rwbagbuild-baginput-delim.pl \
 	tests/rwbagbuild-setinput.pl \
@@ -185,6 +244,7 @@ TESTS = \
 	tests/rwbagbuild-port-max.pl \
 	tests/rwbagbuild-port-overflow.pl \
 	tests/rwbagbuild-empty-v6.pl \
+	tests/rwbagbuild-counter-overflow.pl \
 	tests/rwbagbuild-stime-byt.pl \
 	tests/rwbagbuild-sensor-pkt.pl \
 	tests/rwbagbuild-flags-flo.pl \
@@ -195,3 +255,10 @@ TESTS = \
 	tests/rwbagbuild-dportpmap-pkt.pl \
 	tests/rwbagbuild-setinput-sippmap-flo.pl \
 	tests/rwbagbuild-setinput-dcc-pkt-v6.pl
+
+# above tests are automatically generated;
+# those below are written by hand
+TESTS += \
+	tests/rwbagtool-inplace-cleanup.pl \
+	tests/rwbagtool-inplace-keep-temp.pl \
+	tests/rwbagtool-notes.pl

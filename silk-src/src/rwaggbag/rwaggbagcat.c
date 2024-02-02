@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2016-2020 by Carnegie Mellon University.
+** Copyright (C) 2016-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -17,19 +59,40 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: rwaggbagcat.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: rwaggbagcat.c 6a1929dbf54d 2023-09-13 14:12:09Z mthomas $");
 
 #include <silk/silk_files.h>
 #include <silk/skaggbag.h>
 #include <silk/skcountry.h>
 #include <silk/sksite.h>
+#include <silk/skstringmap.h>
 #include <silk/utils.h>
+#include <silk/skvector.h>
 
 
 /* TYPEDEFS AND DEFINES */
 
 /* file handle for --help usage message */
 #define USAGE_FH stdout
+
+/* sizes of arrays that hold column info */
+#define AGGBAGCAT_ARRAY_SIZE    64
+
+/* the type used for user_fields */
+typedef struct user_field_data_st {
+    /* the type of the user_field */
+    sk_aggbag_type_t    field_type;
+    /* whether the field is present in current input AggBag */
+    uint8_t             is_missing;
+    /* string to print if the user field does not appear in the input; default
+     * is empty_string, may be set by --missing-field */
+    const char         *missing_string;
+    /* the value from the current entry in the AggBag, used while reading */
+    struct field_value_st {
+        uint64_t    number;
+        skipaddr_t  ip;
+    }                   value;
+} user_field_data_t;
 
 
 /* LOCAL VARIABLES */
@@ -51,10 +114,28 @@ static sk_fileptr_t output;
 static char *pager;
 
 /* the width of each column in the output */
-static int width[UINT8_MAX];
+static int width[AGGBAGCAT_ARRAY_SIZE];
 
 /* separator between output columns */
 static char column_separator = '|';
+
+/* available fields */
+static sk_stringmap_t *field_map = NULL;
+
+/* the argument to the --fields switch */
+static char *fields = NULL;
+
+/* when --fields is given, the fields (columns) to print in the order to print
+ * them */
+static user_field_data_t *user_fields = NULL;
+
+/* each argument to the --missing-field switch; switch may be
+ * repeated; vector of char* */
+static sk_vector_t *missing_field = NULL;
+
+/* default to print when the input does not contain a field specified in
+ * user_fields (a missing field) */
+static const char * const empty_string = "";
 
 /* output features set by the specified switch */
 static struct app_flags_st {
@@ -77,6 +158,9 @@ static sk_options_ctx_t *optctx = NULL;
 /* OPTIONS */
 
 typedef enum {
+    OPT_HELP_FIELDS,
+    OPT_FIELDS,
+    OPT_MISSING_FIELD,
     OPT_INTEGER_SENSORS,
     OPT_INTEGER_TCP_FLAGS,
     OPT_NO_TITLES,
@@ -90,6 +174,9 @@ typedef enum {
 
 
 static struct option appOptions[] = {
+    {"help-fields",         NO_ARG,       0, OPT_HELP_FIELDS},
+    {"fields",              REQUIRED_ARG, 0, OPT_FIELDS},
+    {"missing-field",       REQUIRED_ARG, 0, OPT_MISSING_FIELD},
     {"integer-sensors",     NO_ARG,       0, OPT_INTEGER_SENSORS},
     {"integer-tcp-flags",   NO_ARG,       0, OPT_INTEGER_TCP_FLAGS},
     {"no-titles",           NO_ARG,       0, OPT_NO_TITLES},
@@ -103,6 +190,15 @@ static struct option appOptions[] = {
 };
 
 static const char *appHelp[] = {
+    "Describe each supported field and exit. Def. no",
+    ("Print only the key and/or counter fields in this comma-\n"
+     "\tseparated set of fields, and print them in the order specified by\n"
+     "\tthe argument. If a field is not in input, prints blank or value\n"
+     "\tspecified for that field by --missing-field. Supported fields:"),
+    ("Given an argument of FIELD=STRING when --fields is\n"
+     "\tactive, print STRING as the value for FIELD when FIELD is not in the\n"
+     "\tinput AggBag. FIELD must be present in --fields.  Repeat the switch\n"
+     "\tto set the missing value for multiple FIELDs"),
     "Print sensor as an integer. Def. Sensor name",
     "Print TCP Flags as an integer. Def. No",
     "Do not print column titles. Def. Print titles",
@@ -120,6 +216,10 @@ static const char *appHelp[] = {
 /* LOCAL FUNCTION PROTOTYPES */
 
 static int  appOptionsHandler(clientData cData, int opt_index, char *opt_arg);
+static int  createStringmap(void);
+static void helpFields(FILE *fh);
+static int  parseFieldsString(const char *fields_string, char **errmsg);
+static int  parseMissingFieldValues(void);
 
 
 /* FUNCTION DEFINITIONS */
@@ -152,11 +252,20 @@ appUsageLong(
 
     fprintf(fh, "\nSWITCHES:\n");
     skOptionsDefaultUsage(fh);
-    skOptionsTimestampFormatUsage(fh);
-    skOptionsIPFormatUsage(fh);
     for (i = 0; appOptions[i].name; ++i) {
         fprintf(fh, "--%s %s. %s\n", appOptions[i].name,
                 SK_OPTION_HAS_ARG(appOptions[i]), appHelp[i]);
+        switch (appOptions[i].val) {
+          case OPT_FIELDS:
+            skStringMapPrintUsage(field_map, fh, 4);
+            break;
+          case OPT_MISSING_FIELD:
+            skOptionsTimestampFormatUsage(fh);
+            skOptionsIPFormatUsage(fh);
+            break;
+          default:
+            break;
+        }
     }
 
     skOptionsCtxOptionsUsage(optctx, fh);
@@ -187,6 +296,13 @@ appTeardown(
     if (output.of_name) {
         skFileptrClose(&output, &skAppPrintErr);
     }
+
+    skVectorDestroy(missing_field);
+    missing_field = NULL;
+    (void)skStringMapDestroy(field_map);
+    field_map = NULL;
+    free(user_fields);
+    user_fields = NULL;
 
     skOptionsCtxDestroy(&optctx);
     skAppUnregister();
@@ -248,6 +364,13 @@ appSetup(
         exit(EXIT_FAILURE);
     }
 
+    /* initialize the string-map of field identifiers, and add the
+     * locally defined fields. */
+    if (createStringmap()) {
+        skAppPrintErr("Unable to setup fields string map");
+        exit(EXIT_FAILURE);
+    }
+
     /* parse options */
     rv = skOptionsCtxOptionsParse(optctx, argc, argv);
     if (rv < 0) {
@@ -256,6 +379,25 @@ appSetup(
 
     /* try to load site config file */
     sksiteConfigure(0);
+
+    /* parse the --fields switch if given */
+    if (fields) {
+        char *errmsg;
+        if (parseFieldsString(fields, &errmsg)) {
+            skAppPrintErr("Invalid %s: %s",
+                          appOptions[OPT_FIELDS].name, errmsg);
+            exit(EXIT_FAILURE);
+        }
+
+        if (parseMissingFieldValues()) {
+            exit(EXIT_FAILURE);
+        }
+    } else if (missing_field) {
+        skAppPrintErr("May only use --%s when --%s is also specified",
+                      appOptions[OPT_MISSING_FIELD].name,
+                      appOptions[OPT_FIELDS].name);
+        exit(EXIT_FAILURE);
+    }
 
     /* open the --output-path.  the 'of_name' member is NULL if user
      * did not specify an output-path. */
@@ -295,6 +437,33 @@ appOptionsHandler(
     char               *opt_arg)
 {
     switch ((appOptionsEnum)opt_index) {
+      case OPT_HELP_FIELDS:
+        helpFields(USAGE_FH);
+        exit(EXIT_SUCCESS);
+
+      case OPT_FIELDS:
+        if (fields) {
+            skAppPrintErr("Invalid %s: Switch used multiple times",
+                          appOptions[opt_index].name);
+            return 1;
+        }
+        fields = opt_arg;
+        break;
+
+      case OPT_MISSING_FIELD:
+        if (NULL == missing_field) {
+            missing_field = skVectorNew(sizeof(char *));
+            if (NULL == missing_field) {
+                skAppPrintOutOfMemory("vector");
+                return 1;
+            }
+        }
+        if (skVectorAppendValue(missing_field, &opt_arg)) {
+            skAppPrintOutOfMemory("vector entry");
+            return 1;
+        }
+        break;
+
       case OPT_INTEGER_SENSORS:
         app_flags.integer_sensors = 1;
         break;
@@ -346,6 +515,196 @@ appOptionsHandler(
 
 
 /*
+ *  helpFields(fh);
+ *
+ *    Print a description of each field to the 'fh' file pointer
+ */
+static void
+helpFields(
+    FILE               *fh)
+{
+#define HELP_FIELDS_MSG                                                 \
+    ("The following names may be used in the --%s and --%s switches\n"  \
+     "for FIELD names. Names are case-insensitive"                      \
+     " and may be abbreviated to the\n"                                 \
+     "shortest unique prefix.\n")
+
+    fprintf(fh, HELP_FIELDS_MSG,
+            appOptions[OPT_FIELDS].name,
+            appOptions[OPT_MISSING_FIELD].name);
+
+    skStringMapPrintDetailedUsage(field_map, fh);
+}
+
+
+/*
+ *  ok = createStringmap();
+ *
+ *    Create the global 'field_map'.  Return 0 on success, or -1 on
+ *    failure.
+ */
+static int
+createStringmap(
+    void)
+{
+    sk_stringmap_status_t sm_err;
+    sk_stringmap_entry_t sm_entry;
+    sk_aggbag_type_iter_t iter;
+    sk_aggbag_type_t type;
+    unsigned int key_counter[] = {SK_AGGBAG_KEY, SK_AGGBAG_COUNTER};
+    unsigned int i;
+
+    memset(&sm_entry, 0, sizeof(sm_entry));
+
+    sm_err = skStringMapCreate(&field_map);
+    if (sm_err) {
+        skAppPrintErr("Unable to create string map");
+        return -1;
+    }
+
+    for (i = 0; i < sizeof(key_counter)/sizeof(key_counter[0]); ++i) {
+        skAggBagFieldTypeIteratorBind(&iter, key_counter[i]);
+        while ((sm_entry.name = skAggBagFieldTypeIteratorNext(&iter, &type))
+               != NULL)
+        {
+            sm_entry.id = type;
+            sm_entry.description = skAggBagFieldTypeGetDescription(type);
+            sm_err = skStringMapAddEntries(field_map, 1, &sm_entry);
+            if (sm_err) {
+                skAppPrintErr("Unable to add %s field named '%s': %s",
+                              ((SK_AGGBAG_KEY == key_counter[i])
+                               ? "key" : "counter"),
+                              sm_entry.name, skStringMapStrerror(sm_err));
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+/*
+ *  status = parseFieldsString(fields_string, &errmsg);
+ *
+ *    Parse the user's argument to the --fields switch and use it to allocate
+ *    and fill the user_fields array.
+ */
+static int
+parseFieldsString(
+    const char         *fields_string,
+    char              **errmsg)
+{
+    sk_stringmap_iter_t *iter = NULL;
+    sk_stringmap_entry_t *entry;
+    user_field_data_t *uf;
+    int rv = -1;
+
+    /* parse the fields */
+    if (skStringMapParse(field_map, fields_string, SKSTRINGMAP_DUPES_ERROR,
+                         &iter, errmsg))
+    {
+        goto END;
+    }
+
+    user_fields = ((user_field_data_t *)
+                   calloc(1 + skStringMapIterCountMatches(iter),
+                          sizeof(*user_fields)));
+    if (NULL == user_fields) {
+        skAppPrintOutOfMemory("user_fields");
+        exit(EXIT_FAILURE);
+    }
+
+    uf = user_fields;
+    while (skStringMapIterNext(iter, &entry, NULL) == SK_ITERATOR_OK) {
+        uf->field_type = (sk_aggbag_type_t)entry->id;
+        uf->missing_string = empty_string;
+        ++uf;
+    }
+    assert((uf - user_fields) == (ptrdiff_t)skStringMapIterCountMatches(iter));
+    uf->field_type = SKAGGBAG_FIELD_INVALID;
+    uf->missing_string = empty_string;
+
+    rv = 0;
+
+  END:
+    skStringMapIterDestroy(iter);
+    return rv;
+}
+
+
+/*
+ *    For each NAME=VALUE specified to --missing-field, find NAME in the
+ *    field_map, ensure NAME was specified in --fields, and set the missing
+ *    value for that field to the string VALUE.  Do not parse VALUE.
+ *
+ *    Return an error if NAME is not a valid field, if NAME not in --fields,
+ *    or if a previous value has already been set for NAME.
+ */
+static int
+parseMissingFieldValues(
+    void)
+{
+    sk_stringmap_entry_t *sm_entry;
+    sk_stringmap_status_t sm_err;
+    user_field_data_t *uf;
+    char *argument;
+    char *eq;
+    size_t i;
+
+    if (NULL == missing_field) {
+        return 0;
+    }
+
+    /* parse each of the NAME=VALUE arguments */
+    for (i = 0; 0 == skVectorGetValue(&argument, missing_field, i); ++i) {
+        /* find the '=' */
+        eq = strchr(argument, '=');
+        if (NULL == eq) {
+            skAppPrintErr("Invalid %s '%s': Unable to find '=' character",
+                          appOptions[OPT_MISSING_FIELD].name, argument);
+            return -1;
+        }
+
+        /* split into name and value */
+        *eq = '\0';
+
+        /* find the field with that name */
+        sm_err = skStringMapGetByName(field_map, argument, &sm_entry);
+        if (sm_err) {
+            skAppPrintErr("Invalid %s: Unable to find a field named '%s': %s",
+                          appOptions[OPT_MISSING_FIELD].name, argument,
+                          skStringMapStrerror(sm_err));
+            return -1;
+        }
+
+        /* find the field in the user_fields */
+        for (uf = user_fields; uf->field_type != SKAGGBAG_FIELD_INVALID; ++uf) {
+            if (uf->field_type == sm_entry->id) {
+                break;
+            }
+        }
+        if (SKAGGBAG_FIELD_INVALID == uf->field_type) {
+            skAppPrintErr("Invalid %s: Field '%s' does not appear in --%s",
+                          appOptions[OPT_MISSING_FIELD].name, sm_entry->name,
+                          appOptions[OPT_FIELDS].name);
+            return -1;
+        }
+        if (empty_string != uf->missing_string) {
+            skAppPrintErr(("Invalid %s: Missing value previously set"
+                           " for field '%s' ('%s')"),
+                          appOptions[OPT_MISSING_FIELD].name, sm_entry->name,
+                          uf->missing_string);
+            return -1;
+        }
+        uf->missing_string = eq + 1;
+    }
+
+    return 0;
+}
+
+
+/*
  *    Return the file handle to use for output.  This invokes the
  *    pager if necessary.
  */
@@ -368,131 +727,9 @@ getOutputHandle(
 
 
 /*
- *    Determine the widths of the output columns.
- */
-static void
-determineWidths(
-    const sk_aggbag_t  *ab)
-{
-    sk_aggbag_field_t field;
-    sk_aggbag_aggregate_t agg;
-    unsigned int col;
-
-    if (app_flags.no_columns) {
-        return;
-    }
-
-    col = 0;
-
-    skAggBagInitializeKey(ab, &agg, &field);
-    do {
-        switch (skAggBagFieldIterGetType(&field)) {
-          case SKAGGBAG_FIELD_SIPv4:
-          case SKAGGBAG_FIELD_DIPv4:
-          case SKAGGBAG_FIELD_NHIPv4:
-          case SKAGGBAG_FIELD_ANY_IPv4:
-            width[col] = skipaddrStringMaxlen(0, ip_format);
-            break;
-          case SKAGGBAG_FIELD_SIPv6:
-          case SKAGGBAG_FIELD_DIPv6:
-          case SKAGGBAG_FIELD_NHIPv6:
-          case SKAGGBAG_FIELD_ANY_IPv6:
-            width[col] = skipaddrStringMaxlen(1, ip_format);
-            break;
-          case SKAGGBAG_FIELD_SPORT:
-          case SKAGGBAG_FIELD_DPORT:
-          case SKAGGBAG_FIELD_ANY_PORT:
-          case SKAGGBAG_FIELD_ELAPSED:
-          case SKAGGBAG_FIELD_APPLICATION:
-          case SKAGGBAG_FIELD_INPUT:
-          case SKAGGBAG_FIELD_OUTPUT:
-          case SKAGGBAG_FIELD_ANY_SNMP:
-            width[col] = 5;
-            break;
-          case SKAGGBAG_FIELD_PROTO:
-          case SKAGGBAG_FIELD_ICMP_TYPE:
-          case SKAGGBAG_FIELD_ICMP_CODE:
-            width[col] = 3;
-            break;
-          case SKAGGBAG_FIELD_PACKETS:
-          case SKAGGBAG_FIELD_BYTES:
-          case SKAGGBAG_FIELD_CUSTOM_KEY:
-            width[col] = 10;
-            break;
-          case SKAGGBAG_FIELD_STARTTIME:
-          case SKAGGBAG_FIELD_ENDTIME:
-          case SKAGGBAG_FIELD_ANY_TIME:
-            if (timestamp_format & SKTIMESTAMP_EPOCH) {
-                width[col] = 10;
-            } else {
-                width[col] = 19;
-            }
-            break;
-          case SKAGGBAG_FIELD_FLAGS:
-          case SKAGGBAG_FIELD_INIT_FLAGS:
-          case SKAGGBAG_FIELD_REST_FLAGS:
-            if (app_flags.integer_tcp_flags) {
-                width[col] = 3;
-            } else {
-                width[col] = 8;
-            }
-            break;
-          case SKAGGBAG_FIELD_TCP_STATE:
-            width[col] = 8;
-            break;
-          case SKAGGBAG_FIELD_SID:
-            if (app_flags.integer_sensors) {
-                width[col] = 5;
-            } else {
-                width[col] = sksiteSensorGetMaxNameStrLen();
-            }
-            break;
-          case SKAGGBAG_FIELD_FTYPE_CLASS:
-            width[col] = sksiteClassGetMaxNameStrLen();
-            break;
-          case SKAGGBAG_FIELD_FTYPE_TYPE:
-            width[col] = (uint8_t)sksiteFlowtypeGetMaxTypeStrLen();
-            break;
-          case SKAGGBAG_FIELD_SIP_COUNTRY:
-          case SKAGGBAG_FIELD_DIP_COUNTRY:
-          case SKAGGBAG_FIELD_ANY_COUNTRY:
-            width[col] = 2;
-            break;
-          default:
-            break;
-        }
-        ++col;
-    } while (skAggBagFieldIterNext(&field) == SK_ITERATOR_OK);
-
-    skAggBagInitializeCounter(ab, &agg, &field);
-    do {
-        switch (skAggBagFieldIterGetType(&field)) {
-          case SKAGGBAG_FIELD_RECORDS:
-            width[col] = 10;
-            break;
-          case SKAGGBAG_FIELD_SUM_BYTES:
-            width[col] = 20;
-            break;
-          case SKAGGBAG_FIELD_SUM_PACKETS:
-            width[col] = 15;
-            break;
-          case SKAGGBAG_FIELD_SUM_ELAPSED:
-            width[col] = 10;
-            break;
-          case SKAGGBAG_FIELD_CUSTOM_COUNTER:
-            width[col] = 20;
-            break;
-          default:
-            break;
-        }
-        ++col;
-    } while (skAggBagFieldIterNext(&field) == SK_ITERATOR_OK);
-}
-
-
-/*
- *    Print the column titles.  Does nothing if the user has requested
- *    --no-titles.
+ *    Determine the widths of the output columns and print the titles when
+ *    user_fields have not been specified.  Does nothing when --no-columns and
+ *    --no-titles are true.
  */
 static void
 printTitles(
@@ -502,45 +739,155 @@ printTitles(
     sk_aggbag_field_t field;
     sk_aggbag_aggregate_t agg;
     sk_aggbag_type_t t;
-    const char *name;
     unsigned int col;
-    unsigned int kc;
     char delim[] = {'\0', '\0'};
+    unsigned int kc;
+    int w;
 
-    if (app_flags.no_titles) {
+    if (app_flags.no_columns && app_flags.no_titles) {
         return;
     }
 
     col = 0;
 
+    /* loop over keys then over counters */
     for (kc = 0; kc < 2; ++kc) {
         if (0 == kc) {
             skAggBagInitializeKey(ab, &agg, &field);
         } else {
             skAggBagInitializeCounter(ab, &agg, &field);
         }
+
         do {
+            w = 0;
             t = skAggBagFieldIterGetType(&field);
-            name = skAggBagFieldTypeGetName(t);
-            if (app_flags.no_columns) {
-                fprintf(fh, "%s%s", delim, name);
-            } else {
-                fprintf(fh, "%s%*.*s", delim, width[col], width[col], name);
+            switch (t) {
+              case SKAGGBAG_FIELD_SIPv4:
+              case SKAGGBAG_FIELD_DIPv4:
+              case SKAGGBAG_FIELD_NHIPv4:
+              case SKAGGBAG_FIELD_ANY_IPv4:
+                w = skipaddrStringMaxlen(0, ip_format);
+                break;
+              case SKAGGBAG_FIELD_SIPv6:
+              case SKAGGBAG_FIELD_DIPv6:
+              case SKAGGBAG_FIELD_NHIPv6:
+              case SKAGGBAG_FIELD_ANY_IPv6:
+                w = skipaddrStringMaxlen(1, ip_format);
+                break;
+              case SKAGGBAG_FIELD_SPORT:
+              case SKAGGBAG_FIELD_DPORT:
+              case SKAGGBAG_FIELD_ANY_PORT:
+              case SKAGGBAG_FIELD_ELAPSED:
+              case SKAGGBAG_FIELD_APPLICATION:
+              case SKAGGBAG_FIELD_INPUT:
+              case SKAGGBAG_FIELD_OUTPUT:
+              case SKAGGBAG_FIELD_ANY_SNMP:
+                w = 5;
+                break;
+              case SKAGGBAG_FIELD_PROTO:
+              case SKAGGBAG_FIELD_ICMP_TYPE:
+              case SKAGGBAG_FIELD_ICMP_CODE:
+                w = 3;
+                break;
+              case SKAGGBAG_FIELD_PACKETS:
+              case SKAGGBAG_FIELD_BYTES:
+              case SKAGGBAG_FIELD_CUSTOM_KEY:
+                w = 10;
+                break;
+              case SKAGGBAG_FIELD_STARTTIME:
+              case SKAGGBAG_FIELD_ENDTIME:
+              case SKAGGBAG_FIELD_ANY_TIME:
+                if (timestamp_format & SKTIMESTAMP_EPOCH) {
+                    w = 10;
+                } else {
+                    w = 19;
+                }
+                break;
+              case SKAGGBAG_FIELD_FLAGS:
+              case SKAGGBAG_FIELD_INIT_FLAGS:
+              case SKAGGBAG_FIELD_REST_FLAGS:
+                if (app_flags.integer_tcp_flags) {
+                    w = 3;
+                } else {
+                    w = 8;
+                }
+                break;
+              case SKAGGBAG_FIELD_TCP_STATE:
+                w = 8;
+                break;
+              case SKAGGBAG_FIELD_SID:
+                if (app_flags.integer_sensors) {
+                    w = 5;
+                } else {
+                    w = sksiteSensorGetMaxNameStrLen();
+                }
+                break;
+              case SKAGGBAG_FIELD_FTYPE_CLASS:
+                w = sksiteClassGetMaxNameStrLen();
+                break;
+              case SKAGGBAG_FIELD_FTYPE_TYPE:
+                w = (int)sksiteFlowtypeGetMaxTypeStrLen();
+                break;
+              case SKAGGBAG_FIELD_SIP_COUNTRY:
+              case SKAGGBAG_FIELD_DIP_COUNTRY:
+              case SKAGGBAG_FIELD_ANY_COUNTRY:
+                w = 2;
+                break;
+              case SKAGGBAG_FIELD_RECORDS:
+                w = 10;
+                break;
+              case SKAGGBAG_FIELD_SUM_BYTES:
+                w = 20;
+                break;
+              case SKAGGBAG_FIELD_SUM_PACKETS:
+                w = 15;
+                break;
+              case SKAGGBAG_FIELD_SUM_ELAPSED:
+                w = 10;
+                break;
+              case SKAGGBAG_FIELD_CUSTOM_COUNTER:
+                w = 20;
+                break;
+              default:
+                break;
             }
-            if (0 == col) {
-                delim[0] = column_separator;
+
+            if (w) {
+                if (app_flags.no_titles) {
+                    /* no_columns must be false; otherwise we would have
+                     * returned at the top of this function */
+                    width[col] = w;
+                } else {
+                    const char *name = skAggBagFieldTypeGetName(t);
+                    if (app_flags.no_columns) {
+                        fprintf(fh, "%s%s", delim, name);
+                    } else {
+                        width[col] = w;
+                        fprintf(fh, "%s%*.*s", delim, w, w, name);
+                    }
+                    if (0 == col) {
+                        delim[0] = column_separator;
+                    }
+                }
+                ++col;
             }
-            ++col;
         } while (skAggBagFieldIterNext(&field) == SK_ITERATOR_OK);
     }
 
-    if (app_flags.no_final_delimiter) {
-        delim[0] = '\0';
+    if (app_flags.no_titles) {
+        /* do nothing */
+    } else if (app_flags.no_final_delimiter) {
+        fprintf(fh, "\n");
+    } else {
+        fprintf(fh, "%c\n", column_separator);
     }
-    fprintf(fh, "%s\n", delim);
 }
 
 
+/*
+ *    Prints the contents of the AggBag when user_fields has not been
+ *    specified.
+ */
 static void
 printAggBag(
     const sk_aggbag_t  *ab,
@@ -553,6 +900,8 @@ printAggBag(
     skipaddr_t ip;
     char delim[] = {'\0', '\0'};
     unsigned int col;
+
+    printTitles(ab, fh);
 
     skAggBagIteratorBind(it, ab);
 
@@ -572,6 +921,7 @@ printAggBag(
                     &it->key, &it->key_field_iter, &ip);
                 fprintf(fh, "%s%*s", delim, width[col],
                         skipaddrString(buf, &ip, ip_format));
+                ++col;
                 break;
               case SKAGGBAG_FIELD_SPORT:
               case SKAGGBAG_FIELD_DPORT:
@@ -591,6 +941,7 @@ printAggBag(
                 skAggBagAggregateGetUnsigned(
                     &it->key, &it->key_field_iter, &number);
                 fprintf(fh, "%s%*" PRIu64, delim, width[col], number);
+                ++col;
                 break;
               case SKAGGBAG_FIELD_STARTTIME:
               case SKAGGBAG_FIELD_ENDTIME:
@@ -600,6 +951,7 @@ printAggBag(
                 fprintf(fh, "%s%*s", delim, width[col],
                         sktimestamp_r(buf, sktimeCreate(number, 0),
                                       timestamp_format));
+                ++col;
                 break;
               case SKAGGBAG_FIELD_FLAGS:
               case SKAGGBAG_FIELD_INIT_FLAGS:
@@ -608,30 +960,35 @@ printAggBag(
                     &it->key, &it->key_field_iter, &number);
                 fprintf(fh, "%s%*s", delim, width[col],
                         skTCPFlagsString(number, buf, 0));
+                ++col;
                 break;
               case SKAGGBAG_FIELD_TCP_STATE:
                 skAggBagAggregateGetUnsigned(
                     &it->key, &it->key_field_iter, &number);
                 fprintf(fh, "%s%*s", delim, width[col],
                         skTCPStateString(number, buf, 0));
+                ++col;
                 break;
               case SKAGGBAG_FIELD_SID:
                 skAggBagAggregateGetUnsigned(
                     &it->key, &it->key_field_iter, &number);
                 sksiteSensorGetName(buf, sizeof(buf), number);
                 fprintf(fh, "%s%*s", delim, width[col], buf);
+                ++col;
                 break;
               case SKAGGBAG_FIELD_FTYPE_CLASS:
                 skAggBagAggregateGetUnsigned(
                     &it->key, &it->key_field_iter, &number);
                 sksiteClassGetName(buf, sizeof(buf), number);
                 fprintf(fh, "%s%*s", delim, width[col], buf);
+                ++col;
                 break;
               case SKAGGBAG_FIELD_FTYPE_TYPE:
                 skAggBagAggregateGetUnsigned(
                     &it->key, &it->key_field_iter, &number);
                 sksiteFlowtypeGetType(buf, sizeof(buf), number);
                 fprintf(fh, "%s%*s", delim, width[col], buf);
+                ++col;
                 break;
               case SKAGGBAG_FIELD_SIP_COUNTRY:
               case SKAGGBAG_FIELD_DIP_COUNTRY:
@@ -640,23 +997,476 @@ printAggBag(
                     &it->key, &it->key_field_iter, &number);
                 skCountryCodeToName(number, buf, sizeof(buf));
                 fprintf(fh, "%s%*s", delim, width[col], buf);
+                ++col;
                 break;
               default:
                 break;
             }
+            if (1 == col) {
+                delim[0] = column_separator;
+            }
+        } while (skAggBagFieldIterNext(&it->key_field_iter) == SK_ITERATOR_OK);
+
+        /* handle counter fields */
+        do {
+            switch (skAggBagFieldIterGetType(&it->counter_field_iter)) {
+              case SKAGGBAG_FIELD_RECORDS:
+              case SKAGGBAG_FIELD_SUM_BYTES:
+              case SKAGGBAG_FIELD_SUM_PACKETS:
+              case SKAGGBAG_FIELD_SUM_ELAPSED:
+              case SKAGGBAG_FIELD_CUSTOM_COUNTER:
+                skAggBagAggregateGetUnsigned(
+                    &it->counter, &it->counter_field_iter, &number);
+                fprintf(fh, "%s%*" PRIu64, delim, width[col], number);
+                ++col;
+                break;
+              default:
+                break;
+            }
+        } while (skAggBagFieldIterNext(&it->counter_field_iter)
+                 == SK_ITERATOR_OK);
+
+        if (app_flags.no_final_delimiter) {
+            fprintf(fh, "\n");
+        } else {
+            fprintf(fh, "%c\n", column_separator);
+        }
+        delim[0] = '\0';
+    }
+
+    skAggBagIteratorFree(it);
+}
+
+
+/*
+ *    Determine the widths of the output columns and print the titles using
+ *    user_fields.  Does nothing when --no-columns and --no-titles are true.
+ */
+static void
+printTitlesUserFields(
+    FILE           *fh)
+{
+    char delim[] = {'\0', '\0'};
+    const user_field_data_t *uf;
+    size_t missing_width;
+    unsigned int col;
+    int w;
+
+    if (app_flags.no_columns && app_flags.no_titles) {
+        return;
+    }
+
+    col = 0;
+    for (uf = user_fields; uf->field_type != SKAGGBAG_FIELD_INVALID; ++uf) {
+        w = 0;
+        switch (uf->field_type) {
+          case SKAGGBAG_FIELD_SIPv4:
+          case SKAGGBAG_FIELD_DIPv4:
+          case SKAGGBAG_FIELD_NHIPv4:
+          case SKAGGBAG_FIELD_ANY_IPv4:
+            w = skipaddrStringMaxlen(0, ip_format);
+            break;
+          case SKAGGBAG_FIELD_SIPv6:
+          case SKAGGBAG_FIELD_DIPv6:
+          case SKAGGBAG_FIELD_NHIPv6:
+          case SKAGGBAG_FIELD_ANY_IPv6:
+            w = skipaddrStringMaxlen(1, ip_format);
+            break;
+          case SKAGGBAG_FIELD_SPORT:
+          case SKAGGBAG_FIELD_DPORT:
+          case SKAGGBAG_FIELD_ANY_PORT:
+          case SKAGGBAG_FIELD_ELAPSED:
+          case SKAGGBAG_FIELD_APPLICATION:
+          case SKAGGBAG_FIELD_INPUT:
+          case SKAGGBAG_FIELD_OUTPUT:
+          case SKAGGBAG_FIELD_ANY_SNMP:
+            w = 5;
+            break;
+          case SKAGGBAG_FIELD_PROTO:
+          case SKAGGBAG_FIELD_ICMP_TYPE:
+          case SKAGGBAG_FIELD_ICMP_CODE:
+            w = 3;
+            break;
+          case SKAGGBAG_FIELD_PACKETS:
+          case SKAGGBAG_FIELD_BYTES:
+          case SKAGGBAG_FIELD_CUSTOM_KEY:
+            w = 10;
+            break;
+          case SKAGGBAG_FIELD_STARTTIME:
+          case SKAGGBAG_FIELD_ENDTIME:
+          case SKAGGBAG_FIELD_ANY_TIME:
+            if (timestamp_format & SKTIMESTAMP_EPOCH) {
+                w = 10;
+            } else {
+                w = 19;
+            }
+            break;
+          case SKAGGBAG_FIELD_FLAGS:
+          case SKAGGBAG_FIELD_INIT_FLAGS:
+          case SKAGGBAG_FIELD_REST_FLAGS:
+            if (app_flags.integer_tcp_flags) {
+                w = 3;
+            } else {
+                w = 8;
+            }
+            break;
+          case SKAGGBAG_FIELD_TCP_STATE:
+            w = 8;
+            break;
+          case SKAGGBAG_FIELD_SID:
+            if (app_flags.integer_sensors) {
+                w = 5;
+            } else {
+                w = sksiteSensorGetMaxNameStrLen();
+            }
+            break;
+          case SKAGGBAG_FIELD_FTYPE_CLASS:
+            w = sksiteClassGetMaxNameStrLen();
+            break;
+          case SKAGGBAG_FIELD_FTYPE_TYPE:
+            w = (int)sksiteFlowtypeGetMaxTypeStrLen();
+            break;
+          case SKAGGBAG_FIELD_SIP_COUNTRY:
+          case SKAGGBAG_FIELD_DIP_COUNTRY:
+          case SKAGGBAG_FIELD_ANY_COUNTRY:
+            w = 2;
+            break;
+          case SKAGGBAG_FIELD_RECORDS:
+            w = 10;
+            break;
+          case SKAGGBAG_FIELD_SUM_BYTES:
+            w = 20;
+            break;
+          case SKAGGBAG_FIELD_SUM_PACKETS:
+            w = 15;
+            break;
+          case SKAGGBAG_FIELD_SUM_ELAPSED:
+            w = 10;
+            break;
+          case SKAGGBAG_FIELD_CUSTOM_COUNTER:
+            w = 20;
+            break;
+          default:
+            break;
+        }
+
+        if (w) {
+            missing_width = strlen(uf->missing_string);
+            if (w < (int)missing_width) {
+                w = (int)missing_width;
+            }
+
+            if (app_flags.no_titles) {
+                width[col] = w;
+            } else {
+                const char *name = skAggBagFieldTypeGetName(uf->field_type);
+                if (app_flags.no_columns) {
+                    fprintf(fh, "%s%s", delim, name);
+                } else {
+                    width[col] = w;
+                    fprintf(fh, "%s%*.*s", delim, w, w, name);
+                }
+                if (0 == col) {
+                    delim[0] = column_separator;
+                }
+            }
+            ++col;
+        }
+    }
+
+    if (app_flags.no_titles) {
+        /* do nothing */
+    } else if (app_flags.no_final_delimiter) {
+        fprintf(fh, "\n");
+    } else {
+        fprintf(fh, "%c\n", column_separator);
+    }
+}
+
+
+/*
+ *    Given the AggBag `ab`, for its key or counter at position `pos`
+ *    determines which `user_fields[col].value` to write the value into, for
+ *    all `pos`.  Sets `order[pos]` to `col` or leaves it unchanged if the
+ *    key/counter at position `pos` is not in `user_fields`.  Assumes order[]
+ *    has been initialized with all bits high.
+ */
+static void
+determineFieldMappingUserFields(
+    const sk_aggbag_t  *ab,
+    uint8_t             order[])
+{
+    sk_aggbag_field_t field;
+    sk_aggbag_aggregate_t agg;
+    sk_aggbag_type_t ab_field_type;
+    user_field_data_t *uf;
+    unsigned int col;
+    unsigned int pos;
+    unsigned int kc;
+
+    /* set all fields in user_fields to be missing */
+    for (uf = user_fields; uf->field_type != SKAGGBAG_FIELD_INVALID; ++uf) {
+        uf->is_missing = 1;
+    }
+
+    pos = 0;
+
+    /* loop over keys then over counters */
+    for (kc = 0; kc < 2; ++kc) {
+        if (0 == kc) {
+            skAggBagInitializeKey(ab, &agg, &field);
+        } else {
+            skAggBagInitializeCounter(ab, &agg, &field);
+        }
+
+        do {
+            ab_field_type = skAggBagFieldIterGetType(&field);
+
+            /* find the AggBag's field in user_fields */
+            for (uf = user_fields, col = 0;
+                 uf->field_type != SKAGGBAG_FIELD_INVALID;
+                 ++uf, ++col)
+            {
+                if (ab_field_type == uf->field_type) {
+                    assert(pos < AGGBAGCAT_ARRAY_SIZE);
+                    order[pos] = col;
+                    uf->is_missing = 0;
+                    break;
+                }
+            }
+            ++pos;
+        } while (skAggBagFieldIterNext(&field) == SK_ITERATOR_OK);
+    }
+}
+
+
+/*
+ *    Prints the contents of the AggBag when user_fields is active.
+ */
+static void
+printAggBagUserFields(
+    const sk_aggbag_t  *ab,
+    FILE               *fh)
+{
+    static int first_file = 1;
+    sk_aggbag_iter_t iter = SK_AGGBAG_ITER_INITIALIZER;
+    sk_aggbag_iter_t *it = &iter;
+    user_field_data_t *uf;
+    char buf[1024];
+    char delim[] = {'\0', '\0'};
+    unsigned int col;
+    unsigned int pos;
+
+    /* contains the mapping from user_fields to AggBag fields, where order[i]
+     * contains the index into user_fields[].  If order[i] is 0xff,
+     * user_fields does not contain that field. */
+    uint8_t order[AGGBAGCAT_ARRAY_SIZE];
+
+    /* print titles and determine widths when processing the first file */
+    if (first_file) {
+        first_file = 0;
+        printTitlesUserFields(fh);
+    }
+
+    /* determine the index into user_fields[] to use for each key/counter */
+    memset(order, 0xff, sizeof(order));
+    determineFieldMappingUserFields(ab, order);
+
+    /* visit the "rows" in the AggBag */
+    skAggBagIteratorBind(it, ab);
+    while (skAggBagIteratorNext(it) == SK_ITERATOR_OK) {
+        /* first loop over the key and counter fields and fill the
+         * user_fields[x].value with the value from the AggBag */
+
+        pos = 0;
+        /* handle key fields */
+        do {
+            if (UINT8_MAX == order[pos]) {
+                continue;
+            }
+            uf = &user_fields[order[pos]];
+            assert(skAggBagFieldIterGetType(&it->key_field_iter)
+                   == uf->field_type);
+            switch (uf->field_type) {
+              case SKAGGBAG_FIELD_SIPv6:
+              case SKAGGBAG_FIELD_SIPv4:
+              case SKAGGBAG_FIELD_DIPv6:
+              case SKAGGBAG_FIELD_DIPv4:
+              case SKAGGBAG_FIELD_NHIPv6:
+              case SKAGGBAG_FIELD_NHIPv4:
+              case SKAGGBAG_FIELD_ANY_IPv6:
+              case SKAGGBAG_FIELD_ANY_IPv4:
+                skAggBagAggregateGetIPAddress(
+                    &it->key, &it->key_field_iter, &uf->value.ip);
+                break;
+              case SKAGGBAG_FIELD_SPORT:
+              case SKAGGBAG_FIELD_DPORT:
+              case SKAGGBAG_FIELD_PROTO:
+              case SKAGGBAG_FIELD_PACKETS:
+              case SKAGGBAG_FIELD_BYTES:
+              case SKAGGBAG_FIELD_ELAPSED:
+              case SKAGGBAG_FIELD_INPUT:
+              case SKAGGBAG_FIELD_OUTPUT:
+              case SKAGGBAG_FIELD_APPLICATION:
+              case SKAGGBAG_FIELD_ICMP_TYPE:
+              case SKAGGBAG_FIELD_ICMP_CODE:
+              case SKAGGBAG_FIELD_ANY_PORT:
+              case SKAGGBAG_FIELD_ANY_SNMP:
+              case SKAGGBAG_FIELD_CUSTOM_KEY:
+              case SKAGGBAG_FIELD_CUSTOM_COUNTER:
+                skAggBagAggregateGetUnsigned(
+                    &it->key, &it->key_field_iter, &uf->value.number);
+                break;
+              case SKAGGBAG_FIELD_STARTTIME:
+              case SKAGGBAG_FIELD_ENDTIME:
+              case SKAGGBAG_FIELD_ANY_TIME:
+                skAggBagAggregateGetUnsigned(
+                    &it->key, &it->key_field_iter, &uf->value.number);
+                break;
+              case SKAGGBAG_FIELD_FLAGS:
+              case SKAGGBAG_FIELD_INIT_FLAGS:
+              case SKAGGBAG_FIELD_REST_FLAGS:
+                skAggBagAggregateGetUnsigned(
+                    &it->key, &it->key_field_iter, &uf->value.number);
+                break;
+              case SKAGGBAG_FIELD_TCP_STATE:
+                skAggBagAggregateGetUnsigned(
+                    &it->key, &it->key_field_iter, &uf->value.number);
+                break;
+              case SKAGGBAG_FIELD_SID:
+                skAggBagAggregateGetUnsigned(
+                    &it->key, &it->key_field_iter, &uf->value.number);
+                break;
+              case SKAGGBAG_FIELD_FTYPE_CLASS:
+                skAggBagAggregateGetUnsigned(
+                    &it->key, &it->key_field_iter, &uf->value.number);
+                break;
+              case SKAGGBAG_FIELD_FTYPE_TYPE:
+                skAggBagAggregateGetUnsigned(
+                    &it->key, &it->key_field_iter, &uf->value.number);
+                break;
+              case SKAGGBAG_FIELD_SIP_COUNTRY:
+              case SKAGGBAG_FIELD_DIP_COUNTRY:
+              case SKAGGBAG_FIELD_ANY_COUNTRY:
+                skAggBagAggregateGetUnsigned(
+                    &it->key, &it->key_field_iter, &uf->value.number);
+                break;
+              default:
+                break;
+            }
+        } while (++pos && (skAggBagFieldIterNext(&it->key_field_iter)
+                           == SK_ITERATOR_OK));
+
+        /* handle counter fields */
+        do {
+            if (UINT8_MAX == order[pos]) {
+                continue;
+            }
+            uf = &user_fields[order[pos]];
+            assert(skAggBagFieldIterGetType(&it->counter_field_iter)
+                   == uf->field_type);
+            switch (uf->field_type) {
+              case SKAGGBAG_FIELD_RECORDS:
+              case SKAGGBAG_FIELD_SUM_BYTES:
+              case SKAGGBAG_FIELD_SUM_PACKETS:
+              case SKAGGBAG_FIELD_SUM_ELAPSED:
+              case SKAGGBAG_FIELD_CUSTOM_COUNTER:
+                skAggBagAggregateGetUnsigned(
+                    &it->counter, &it->counter_field_iter, &uf->value.number);
+                break;
+              default:
+                break;
+            }
+        } while (++pos && (skAggBagFieldIterNext(&it->counter_field_iter)
+                           == SK_ITERATOR_OK));
+
+        /* loop over user_fields[] and print each */
+        for (uf = user_fields, col = 0;
+             uf->field_type != SKAGGBAG_FIELD_INVALID;
+             ++uf, ++col)
+        {
+            if (uf->is_missing) {
+                /* not present, display the missing_string */
+                fprintf(fh, "%s%*s", delim, width[col], uf->missing_string);
+            } else {
+                switch (uf->field_type) {
+                  case SKAGGBAG_FIELD_SIPv6:
+                  case SKAGGBAG_FIELD_SIPv4:
+                  case SKAGGBAG_FIELD_DIPv6:
+                  case SKAGGBAG_FIELD_DIPv4:
+                  case SKAGGBAG_FIELD_NHIPv6:
+                  case SKAGGBAG_FIELD_NHIPv4:
+                  case SKAGGBAG_FIELD_ANY_IPv6:
+                  case SKAGGBAG_FIELD_ANY_IPv4:
+                    fprintf(fh, "%s%*s", delim, width[col],
+                            skipaddrString(buf, &uf->value.ip, ip_format));
+                    break;
+                  case SKAGGBAG_FIELD_SPORT:
+                  case SKAGGBAG_FIELD_DPORT:
+                  case SKAGGBAG_FIELD_PROTO:
+                  case SKAGGBAG_FIELD_PACKETS:
+                  case SKAGGBAG_FIELD_BYTES:
+                  case SKAGGBAG_FIELD_ELAPSED:
+                  case SKAGGBAG_FIELD_INPUT:
+                  case SKAGGBAG_FIELD_OUTPUT:
+                  case SKAGGBAG_FIELD_APPLICATION:
+                  case SKAGGBAG_FIELD_ICMP_TYPE:
+                  case SKAGGBAG_FIELD_ICMP_CODE:
+                  case SKAGGBAG_FIELD_ANY_PORT:
+                  case SKAGGBAG_FIELD_ANY_SNMP:
+                  case SKAGGBAG_FIELD_CUSTOM_KEY:
+                  case SKAGGBAG_FIELD_CUSTOM_COUNTER:
+                  case SKAGGBAG_FIELD_RECORDS:
+                  case SKAGGBAG_FIELD_SUM_BYTES:
+                  case SKAGGBAG_FIELD_SUM_PACKETS:
+                  case SKAGGBAG_FIELD_SUM_ELAPSED:
+                    fprintf(fh, "%s%*" PRIu64, delim, width[col],
+                            uf->value.number);
+                    break;
+                  case SKAGGBAG_FIELD_STARTTIME:
+                  case SKAGGBAG_FIELD_ENDTIME:
+                  case SKAGGBAG_FIELD_ANY_TIME:
+                    fprintf(fh, "%s%*s", delim, width[col],
+                            sktimestamp_r(buf,
+                                          sktimeCreate(uf->value.number, 0),
+                                          timestamp_format));
+                    break;
+                  case SKAGGBAG_FIELD_FLAGS:
+                  case SKAGGBAG_FIELD_INIT_FLAGS:
+                  case SKAGGBAG_FIELD_REST_FLAGS:
+                    fprintf(fh, "%s%*s", delim, width[col],
+                            skTCPFlagsString(uf->value.number, buf, 0));
+                    break;
+                  case SKAGGBAG_FIELD_TCP_STATE:
+                    fprintf(fh, "%s%*s", delim, width[col],
+                            skTCPStateString(uf->value.number, buf, 0));
+                    break;
+                  case SKAGGBAG_FIELD_SID:
+                    sksiteSensorGetName(buf, sizeof(buf), uf->value.number);
+                    fprintf(fh, "%s%*s", delim, width[col], buf);
+                    break;
+                  case SKAGGBAG_FIELD_FTYPE_CLASS:
+                    sksiteClassGetName(buf, sizeof(buf), uf->value.number);
+                    fprintf(fh, "%s%*s", delim, width[col], buf);
+                    break;
+                  case SKAGGBAG_FIELD_FTYPE_TYPE:
+                    sksiteFlowtypeGetType(buf, sizeof(buf), uf->value.number);
+                    fprintf(fh, "%s%*s", delim, width[col], buf);
+                    break;
+                  case SKAGGBAG_FIELD_SIP_COUNTRY:
+                  case SKAGGBAG_FIELD_DIP_COUNTRY:
+                  case SKAGGBAG_FIELD_ANY_COUNTRY:
+                    skCountryCodeToName(uf->value.number, buf, sizeof(buf));
+                    fprintf(fh, "%s%*s", delim, width[col], buf);
+                    break;
+                  default:
+                    break;
+                }
+            }
             if (0 == col) {
                 delim[0] = column_separator;
             }
-            ++col;
-        } while (skAggBagFieldIterNext(&it->key_field_iter) == SK_ITERATOR_OK);
-
-        do {
-            skAggBagAggregateGetUnsigned(
-                &it->counter, &it->counter_field_iter, &number);
-            fprintf(fh, "%s%*" PRIu64, delim, width[col], number);
-            ++col;
-        } while (skAggBagFieldIterNext(&it->counter_field_iter)
-                 == SK_ITERATOR_OK);
+        }
 
         if (app_flags.no_final_delimiter) {
             fprintf(fh, "\n");
@@ -693,9 +1503,12 @@ int main(int argc, char **argv)
         if (NULL == fh) {
             fh = getOutputHandle();
         }
-        determineWidths(ab);
-        printTitles(ab, fh);
-        printAggBag(ab, fh);
+
+        if (user_fields) {
+            printAggBagUserFields(ab, fh);
+        } else {
+            printAggBag(ab, fh);
+        }
 
         skAggBagDestroy(&ab);
     }

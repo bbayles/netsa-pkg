@@ -1,4 +1,59 @@
+##  yafdpi manual page   -*- mode: text; fill-column: 78 -*-
+##
+##  @configure_input@
+##
+
 =pod
+
+=begin html
+
+<!--
+    Copyright (C) 2006-2023 Carnegie Mellon University
+    See license information in LICENSE.txt.
+-->
+<!--
+    @DISTRIBUTION_STATEMENT_BEGIN@
+    YAF 2.15.0
+
+    Copyright 2023 Carnegie Mellon University.
+
+    NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+    INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+    UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+    AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+    PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+    THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+    ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+    INFRINGEMENT.
+
+    Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+    contact permission@sei.cmu.edu for full terms.
+
+    [DISTRIBUTION STATEMENT A] This material has been approved for public
+    release and unlimited distribution.  Please see Copyright notice for
+    non-US Government use and distribution.
+
+    GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+    Contract No.: FA8702-15-D-0002
+    Contractor Name: Carnegie Mellon University
+    Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+
+    The Government's rights to use, modify, reproduce, release, perform,
+    display, or disclose this software are restricted by paragraph (b)(2) of
+    the Rights in Noncommercial Computer Software and Noncommercial Computer
+    Software Documentation clause contained in the above identified
+    contract. No restrictions apply after the expiration date shown
+    above. Any reproduction of the software or portions thereof marked with
+    this legend must also reproduce the markings.
+
+    This Software includes and/or makes use of Third-Party Software each
+    subject to its own license.
+
+    DM23-2313
+    @DISTRIBUTION_STATEMENT_END@
+-->
+
+=end html
 
 =head1 NAME
 
@@ -608,14 +663,58 @@ SMTP Header value string.  The value of that header.
 
 =head2 SSH
 
-By default, B<yaf> only exports 1 information element in the SSH
+By default, B<yaf> exports 14 information element's in the SSH
 template and data record.
 
 =over 2
 
 =item B<sshVersion> CERT (PEN 6871) IE 171, variable length, DPI basicList
 
-SSH Version Number
+SSH Client Version Number
+
+=item B<sshServerVersion> (PEN 6871) IE 472, variable length, string
+
+The version string from an SSH server.
+
+=item B<sshKeyExchangeAlgorithm> CERT (PEN 6871) IE 476, variable length
+
+The negotiated key exchange algorithm used for an SSH session.
+
+=item B<sshHostKeyAlgorithm> CERT (PEN 6871) IE 477, variable length
+
+The negotiated host key algorithm used for an SSH session.
+
+=item B<sshServerHostKey> CERT (PEN 6871) IE 478, variable length
+
+The MD5 hash of the public key of the SSH server.
+
+=item B<sshCipher> CERT (PEN 6871) IE 473, variable length
+
+The negotiated symmetric encryption algorithm used for an SSH session.
+
+=item B<sshMacAlgorithm> CERT (PEN 6871) IE 474, variable length
+
+The negotiated MAC algorithm used for an SSH session.
+
+=item B<sshCompressionMethod> CERT (PEN 6871) IE 475, variable length
+
+The negotiated compression algorithm used for an SSH session.
+
+=item B<sshHassh> CERT (PEN 6871) IE 468, variable length
+
+The client HASSH MD5 hash of the B<sshHasshAlgorithms> (CERT/469) fingerprint for an SSH client.
+
+=item B<sshServerHassh> CERT (PEN 6871) IE 470, variable length
+
+The server HASSH MD5 hash (hasshServer) of the B<sshServerHasshAlgorithms> (CERT/471) fingerprint for an SSH server.
+
+=item B<sshHasshAlgorithms> CERT (PEN 6871) IE 469, variable length
+
+The SSH client hasshAlgorithms: the concatenated name-lists of the client-to-server algorithms delimited by a semicolon. Element B<sshHassh> (CERT/468) holds the MD5 of this.
+
+=item B<sshServerHasshAlgorithms> CERT (PEN 6871) IE 471, varable length
+
+The SSH server hasshServerAlgoritms: the concatenated name-lists of the server-to-client algorithms delimited by a semicolon. Element B<sshServerHassh> (CERT/470) holds the MD5 of this.
 
 =back
 
@@ -995,6 +1094,22 @@ sslCompressionMethod is the compression method chosen by the server in the Serve
 =item B<sslRecordVersion> CERT (PEN 6871) IE 288, 2 octets, unsigned
 
 sslRecordVersion is the version of ssl or tls that was used in the flow.
+
+=item B<sslClientJA3> CERT (PEN 6871) IE 463, variable length
+
+The JA3 MD5 hash of the sslClientJA3Fingerprint (CERT/464) calculated on the client-side TLS/SSL fingerprint string.
+
+=item B<sslClientJA3Fingerprint> CERT (PEN 6871) IE 464, variable length
+
+The JA3 fingerprint string enumerated from the TLS/SSL ClientHello packet. Element sslClientJA3 (CERT/463) holds the MD5 of this.
+
+=item B<sslServerJA3S> CERT (PEN 6871) IE 465, variable length
+
+The JA3S MD5 hash of the sslServerJA3SFingerprint (CERT/466) calculated on the server-side TLS/SSL fingerprint string.
+
+=item B<sslServerJA3SFingerprint> CERT (PEN 6871) IE 466, variable length
+
+The JA3S fingerprint string enumerated from the TLS/SSL ServerHello packet. Element sslServerJA3S (CERT/465) holds the MD5 of this.
 
 =item B<subTemplateList> IE 292, variable length
 

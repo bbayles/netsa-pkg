@@ -17,6 +17,8 @@ B<rwaggbag> - Build a binary Aggregate Bag from SiLK Flow records
 
   rwaggbag --help
 
+  rwaggbag --help-fields
+
   rwaggbag --version
 
 
@@ -387,6 +389,12 @@ the command line.
 
 Print the available options and exit.
 
+=item B<--help-fields>
+
+Print the names and descriptions of the keys and counters that may be
+used in the B<--keys> and B<--counters> switches and exit.
+I<Since SiLK 3.22.0.>
+
 =item B<--version>
 
 Print the version number and information about how SiLK was
@@ -516,7 +524,7 @@ B<silk(7)>, B<yaf(1)>, B<zlib(3)>
 
 =cut
 
-$SiLK: rwaggbag.pod c56bd724bfc8 2019-10-11 19:38:12Z mthomas $
+$SiLK: rwaggbag.pod e95eb8cd5b0c 2023-09-05 21:09:53Z mthomas $
 
 Local Variables:
 mode:text

@@ -1,59 +1,51 @@
 dnl Copyright (C) 2004-2023 by Carnegie Mellon University.
+dnl See license information in LICENSE.txt.
+
+dnl @DISTRIBUTION_STATEMENT_BEGIN@
+dnl YAF 2.15.0
 dnl
-dnl @OPENSOURCE_HEADER_START@
+dnl Copyright 2023 Carnegie Mellon University.
 dnl
-dnl Use of the YAF system and related source code is subject to the terms
-dnl of the following licenses:
+dnl NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+dnl INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+dnl UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+dnl AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+dnl PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+dnl THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+dnl ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+dnl INFRINGEMENT.
 dnl
-dnl GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
-dnl Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
+dnl Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+dnl contact permission@sei.cmu.edu for full terms.
 dnl
-dnl NO WARRANTY
+dnl [DISTRIBUTION STATEMENT A] This material has been approved for public
+dnl release and unlimited distribution.  Please see Copyright notice for
+dnl non-US Government use and distribution.
 dnl
-dnl ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
-dnl PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
-dnl PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
-dnl "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
-dnl KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
-dnl LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
-dnl MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
-dnl OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
-dnl SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
-dnl TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
-dnl WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
-dnl LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
-dnl CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
-dnl CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
-dnl DELIVERABLES UNDER THIS LICENSE.
+dnl GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+dnl Contract No.: FA8702-15-D-0002
+dnl Contractor Name: Carnegie Mellon University
+dnl Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
 dnl
-dnl Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
-dnl Mellon University, its trustees, officers, employees, and agents from
-dnl all claims or demands made against them (and any related losses,
-dnl expenses, or attorney's fees) arising out of, or relating to Licensee's
-dnl and/or its sub licensees' negligent use or willful misuse of or
-dnl negligent conduct or willful misconduct regarding the Software,
-dnl facilities, or other rights or assistance granted by Carnegie Mellon
-dnl University under this License, including, but not limited to, any
-dnl claims of product liability, personal injury, death, damage to
-dnl property, or violation of any laws or regulations.
+dnl The Government's rights to use, modify, reproduce, release, perform,
+dnl display, or disclose this software are restricted by paragraph (b)(2) of
+dnl the Rights in Noncommercial Computer Software and Noncommercial Computer
+dnl Software Documentation clause contained in the above identified
+dnl contract. No restrictions apply after the expiration date shown
+dnl above. Any reproduction of the software or portions thereof marked with
+dnl this legend must also reproduce the markings.
 dnl
-dnl Carnegie Mellon University Software Engineering Institute authored
-dnl documents are sponsored by the U.S. Department of Defense under
-dnl Contract FA8721-05-C-0003. Carnegie Mellon University retains
-dnl copyrights in all material produced under this contract. The U.S.
-dnl Government retains a non-exclusive, royalty-free license to publish or
-dnl reproduce these documents, or allow others to do so, for U.S.
-dnl Government purposes only pursuant to the copyright license under the
-dnl contract clause at 252.227.7013.
+dnl This Software includes and/or makes use of Third-Party Software each
+dnl subject to its own license.
 dnl
-dnl @OPENSOURCE_HEADER_END@
+dnl DM23-2313
+dnl @DISTRIBUTION_STATEMENT_END@
 
 # ---------------------------------------------------------------------------
 # AX_CHECK_LIBZ
 #
 #    Determine how to use the zlib (gzip) compression library
 #
-#    Substitutions: ENABLE_ZLIB
 #    Output defines: YAF_ENABLE_ZLIB
 
 AC_DEFUN([AX_CHECK_LIBZ],[
@@ -136,13 +128,10 @@ AC_DEFUN([AX_CHECK_LIBZ],[
     else
         LIBS="$LIBS $ZLIB_LDFLAGS"
         CFLAGS="$ZLIB_CFLAGS $CFLAGS"
-    fi
 
-    AC_DEFINE_UNQUOTED([YAF_ENABLE_ZLIB], [$ENABLE_ZLIB],
-        [Define to 1 build with support for zlib compression.  Define
-         to 0 otherwise.  Requires the libz library and the <zlib.h>
-         header file.])
-    AC_SUBST([ENABLE_ZLIB], [$ENABLE_ZLIB])
+        AC_DEFINE([YAF_ENABLE_ZLIB], [1],
+            [Define to 1 build with support for zlib compression.  Requires the libz library and the <zlib.h> header file.])
+    fi
 ])# AX_CHECK_LIBZ
 
 dnl Local Variables:

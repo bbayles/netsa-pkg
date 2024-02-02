@@ -1,16 +1,55 @@
 /*
-** filedaemon.c
-** Invokes yaf, naf, etc. as a file daemon process
-**
-** ------------------------------------------------------------------------
-** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
-** ------------------------------------------------------------------------
-** Authors: Tony Cebzanov
-** ------------------------------------------------------------------------
-** GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
-** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227-7013
-** ------------------------------------------------------------------------
-*/
+ *  Copyright 2007-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+/*
+ *  filedaemon.c
+ *  Invokes yaf, naf, etc. as a file daemon process
+ *
+ *  ------------------------------------------------------------------------
+ *  Authors: Tony Cebzanov
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
+ *
+ *  Copyright 2023 Carnegie Mellon University.
+ *
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
+ *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
+ *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ *  ------------------------------------------------------------------------
+ */
 
 #define _AIRFRAME_SOURCE_
 #include <airframe/autoinc.h>
@@ -238,7 +277,7 @@ on_child_exit(
     /* Do move or delete */
     if (destdir) {
         if (*destdir) {
-            GString *destpath = g_string_new("");
+            GString *destpath = g_string_new(NULL);
             char    *dbase    = NULL;
             /* Calculate move destination path */
             dbase = g_path_get_basename(infile);
@@ -271,7 +310,7 @@ fd_lock_file(
     GString *lockpath = NULL;
     int      fd       = -1;
 
-    lockpath = g_string_new("");
+    lockpath = g_string_new(NULL);
 
     g_string_printf(lockpath, "%s.lock", filename);
 
@@ -299,7 +338,7 @@ fd_unlock_file(
 {
     GString *lockpath = NULL;
 
-    lockpath = g_string_new("");
+    lockpath = g_string_new(NULL);
 
     g_string_printf(lockpath, "%s.lock", filename);
 
@@ -461,7 +500,7 @@ main(
             }
 
             /* Generate lock path */
-            if (!filename_lock) {filename_lock = g_string_new("");}
+            if (!filename_lock) {filename_lock = g_string_new(NULL);}
             g_string_printf(filename_lock, "%s.lock", filename_in->str);
 
             /* Skip files locked at queue time */
@@ -474,7 +513,7 @@ main(
 
             if (child_args->len == 1) {
                 /* Do move or delete */
-                GString *destpath = g_string_new("");
+                GString *destpath = g_string_new(NULL);
                 char    *dbase    = NULL;
                 /* Calculate move destination path */
                 dbase = g_path_get_basename(filename_in->str);
@@ -516,7 +555,7 @@ main(
 
             g_io_channel_set_buffer_size(file_in, fd_bufsize);
 
-            filename_out = g_string_new("");
+            filename_out = g_string_new(NULL);
 
             if (fd_outspec == NULL) {
                 g_string_printf(filename_out, "%s", gbuf.gl_pathv[i]);

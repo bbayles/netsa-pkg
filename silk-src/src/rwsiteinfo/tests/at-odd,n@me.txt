@@ -1,0 +1,5 @@
+# sensors 3,4,5
+3-5
+     17   # sensor 17
+
+S

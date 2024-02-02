@@ -124,13 +124,15 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps =  \
 	$(top_srcdir)/m4/ax_check_aligned_access_required.m4 \
 	$(top_srcdir)/m4/ax_check_libz.m4 \
+	$(top_srcdir)/m4/ax_enable_warnings.m4 \
+	$(top_srcdir)/m4/ax_lib_openssl.m4 \
 	$(top_srcdir)/m4/ax_prog_doxygen.m4 \
 	$(top_srcdir)/m4/infomodel.m4 $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltargz.m4 $(top_srcdir)/m4/ltdl.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
 	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/m4/spread.m4 $(top_srcdir)/m4/yafsummary.m4 \
-	$(top_srcdir)/acinclude.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/yafutil.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
@@ -237,9 +239,9 @@ am__DIST_COMMON = $(srcdir)/Doxyfile.in $(srcdir)/Makefile.in \
 	$(top_srcdir)/include/yaf/config.h.in \
 	$(top_srcdir)/lua/src/lauxlib.h $(top_srcdir)/lua/src/lua.h \
 	$(top_srcdir)/lua/src/luaconf.h $(top_srcdir)/lua/src/lualib.h \
-	AUTHORS COPYING NEWS README autoconf/compile \
-	autoconf/config.guess autoconf/config.sub autoconf/depcomp \
-	autoconf/install-sh autoconf/ltmain.sh autoconf/missing
+	AUTHORS NEWS autoconf/compile autoconf/config.guess \
+	autoconf/config.sub autoconf/depcomp autoconf/install-sh \
+	autoconf/ltmain.sh autoconf/missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -335,7 +337,6 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-ENABLE_ZLIB = @ENABLE_ZLIB@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
@@ -388,6 +389,8 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OPENSSL_CPPFLAGS = @OPENSSL_CPPFLAGS@
+OPENSSL_LDFLAGS = @OPENSSL_LDFLAGS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -414,8 +417,11 @@ SPREAD_CFLAGS = @SPREAD_CFLAGS@
 SPREAD_LDFLAGS = @SPREAD_LDFLAGS@
 SPREAD_LIBS = @SPREAD_LIBS@
 STRIP = @STRIP@
+UPDATE_MARKINGS = @UPDATE_MARKINGS@
 VERSION = @VERSION@
+WARN_CFLAGS = @WARN_CFLAGS@
 XSLTPROC = @XSLTPROC@
+YAF_CPPFLAGS = @YAF_CPPFLAGS@
 YAF_HAS_DAG = @YAF_HAS_DAG@
 YAF_HAS_NAPATECH = @YAF_HAS_NAPATECH@
 YAF_HAS_NETRONOME = @YAF_HAS_NETRONOME@
@@ -502,9 +508,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 version_info = @version_info@
-AUTOMAKE_OPTIONS = check-news subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = infomodel lua libltdl airframe src include etc scripts
+SUBDIRS = libltdl infomodel lua airframe src include etc scripts doc
 @DX_COND_doc_TRUE@@DX_COND_html_TRUE@DX_CLEAN_HTML = @DX_DOCDIR@/html
 @DX_COND_chm_TRUE@@DX_COND_doc_TRUE@DX_CLEAN_CHM = @DX_DOCDIR@/chm
 @DX_COND_chi_TRUE@@DX_COND_chm_TRUE@@DX_COND_doc_TRUE@DX_CLEAN_CHI = @DX_DOCDIR@/@PACKAGE@.chi
@@ -533,22 +538,29 @@ MOSTLYCLEANFILES = $(DX_CLEANFILES)
 
 # Doxygen adds both id="foo" and name="foo" attributes.  Remove name.
 REPAIR_DOXY_DOCS = \
- if test -d doc/html/libyaf ; then \
-   for i in `find doc/html/libyaf -name '*.html'` ; do \
-     $(PERL) -i -lpwe 's/\b(id=("[^">]+")) +name=\2/$$1/g; s/\bname=("[^">]+") +(id=\1)/$$2/g;' $$i ; \
-   done ; \
- fi
+  if test -d "$${repair_dir}doc/html/libyaf" ; then \
+    for i in `find "$${repair_dir}doc/html/libyaf" -name '*.html'` ; do \
+      $(PERL) -i -lpwe 's/\b(id=("[^">]+")) +name=\2/$$1/g; s/\bname=("[^">]+") +(id=\1)/$$2/g;' $$i ; \
+    done ; \
+  fi
+
+
+# Run the document marking script on files in the distdir
+UPDATE_DOC_MARKINGS = \
+  if test -f "$(UPDATE_MARKINGS)" ; then \
+    find $(distdir) \
+      -path $(distdir)/doc/html/libyaf -prune -o \
+      -name libltdl -prune -o \
+      -name lua -prune -o \
+      -type f -print0 \
+    | xargs -0 $(PERL) $(UPDATE_MARKINGS) ; \
+  fi
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libyaf.pc
 DISTCLEANFILES = $(YAF_SUMMARY_FILE)
-EXTRA_DIST = Doxyfile.in DoxygenLayout.xml yaf.spec yaf.spec.in \
-	doc/add-header.pl doc/Doxyhead.html doc/Doxyfoot.html \
-	doc/doxygen.css doc/news2xhtml.pl doc/howto/yaf_pcap.md \
-	doc/howto/yaf_pcap2.md doc/howto/yaf_super_silk.md \
-	doc/howto/yaf_silk.md doc/howto/yaf_orcus.md \
-	doc/howto/yaf_super_pipeline.md doc/LICENSE.txt \
-	xml2fixbuf.xslt make-infomodel
+EXTRA_DIST = Doxyfile.in DoxygenLayout.xml LICENSE.txt yaf.spec \
+	yaf.spec.in xml2fixbuf.xslt make-infomodel
 all: all-recursive
 
 .SUFFIXES:
@@ -1009,7 +1021,7 @@ distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -f Makefile
 distclean-am: clean-am distclean-generic distclean-hdr \
-	distclean-libtool distclean-local distclean-tags
+	distclean-libtool distclean-tags
 
 dvi: dvi-recursive
 
@@ -1079,17 +1091,17 @@ uninstall-am: uninstall-pkgconfigDATA
 	dist-all dist-bzip2 dist-gzip dist-hook dist-lzip dist-shar \
 	dist-tarZ dist-xz dist-zip dist-zstd distcheck distclean \
 	distclean-generic distclean-hdr distclean-libtool \
-	distclean-local distclean-tags distcleancheck distdir \
-	distuninstallcheck dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-pkgconfigDATA install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-pkgconfigDATA
+	distclean-tags distcleancheck distdir distuninstallcheck dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-pkgconfigDATA install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	installdirs-am maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
+	ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-pkgconfigDATA
 
 .PRECIOUS: Makefile
 
@@ -1143,29 +1155,20 @@ uninstall-am: uninstall-pkgconfigDATA
 @DX_COND_doc_TRUE@	rm -rf $(DX_CLEANFILES)
 
 utils-doc:
-	(cd $(top_builddir)/src && $(MAKE) docs)
-	(cd $(top_builddir)/scripts && $(MAKE) docs)
-	(cd $(top_builddir)/airframe/doc && $(MAKE) docs)
-
-release-note-doc: NEWS
-	$(top_srcdir)/doc/news2xhtml.pl < $(top_srcdir)/NEWS > doc/releases.xml
+	(cd $(top_builddir)/src && $(MAKE) $(AM_MAKEFLAGS) docs)
+	(cd $(top_builddir)/scripts && $(MAKE) $(AM_MAKEFLAGS) docs)
+	(cd $(top_builddir)/airframe/doc && $(MAKE) $(AM_MAKEFLAGS) docs)
 
 make-doc-path:
 	mkdir -p $(top_builddir)/doc/html
 
-repair-doxy-docs:
-	$(REPAIR_DOXY_DOCS)
+dist-hook:
+	$(UPDATE_DOC_MARKINGS)
+	$(DX_ENV) SRCDIR=$(distdir) DOCDIR=$(distdir)/doc $(DX_DOXYGEN) $(DX_CONFIG)
+	repair_dir="$(distdir)/" ; $(REPAIR_DOXY_DOCS)
 
-copy-doxygen-doc:
-	cp -pr doc/html $(distdir)/doc
-
-dist-hook: docs copy-doxygen-doc
-	find $(distdir) -name .svn -type d -prune -exec rm -rf '{}' ';'
-
-distclean-local:
-	rm -f $(top_builddir)/doc/releases.xml
-
-docs: make-doc-path doxygen-doc repair-doxy-docs utils-doc release-note-doc
+docs: make-doc-path doxygen-doc utils-doc
+	repair_dir="" ; $(REPAIR_DOXY_DOCS)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

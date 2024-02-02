@@ -1,0 +1,8 @@
+# long (illegal) name
+AbcdefghijklmnopqrstuvwxyzBCDEFGAbcdefghijklmnopqrstuvwxyzBCDEFGAbcdefghijklmnopqrstuvwxyzBCDEFGAbcdefghijklmnopqrstuvwxyzBCDEFGAbcdefghijklmnopqrstuvwxyzBCDEFGAbcdefghijklmnopqrstuvwxyzBCDEFGAbcdefghijklmnopqrstuvwxyzBCDEFGAbcdefghijklmnopqrstuvwxyzBCDEFG
+
+# unknown name
+    Unknown
+
+# valid name
+S

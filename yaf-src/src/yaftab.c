@@ -1,63 +1,54 @@
-/**
- * @internal
+/*
+ *  Copyright 2006-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+/*
+ *  yaftab.c
+ *  YAF Active Flow Table
  *
- ** yaftab.c
- ** YAF Active Flow Table
- **
- ** ------------------------------------------------------------------------
- ** Copyright (C) 2006-2023 Carnegie Mellon University.
- ** All Rights Reserved.
- **
- ** ------------------------------------------------------------------------
- ** Authors: Brian Trammell, Chris Inacio
- ** ------------------------------------------------------------------------
- ** @OPENSOURCE_HEADER_START@
- ** Use of the YAF system and related source code is subject to the terms
- ** of the following licenses:
- **
- ** GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
- ** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
- **
- ** NO WARRANTY
- **
- ** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
- ** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
- ** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
- ** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
- ** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
- ** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
- ** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
- ** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
- ** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
- ** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
- ** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
- ** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
- ** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
- ** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
- ** DELIVERABLES UNDER THIS LICENSE.
- **
- ** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
- ** Mellon University, its trustees, officers, employees, and agents from
- ** all claims or demands made against them (and any related losses,
- ** expenses, or attorney's fees) arising out of, or relating to Licensee's
- ** and/or its sub licensees' negligent use or willful misuse of or
- ** negligent conduct or willful misconduct regarding the Software,
- ** facilities, or other rights or assistance granted by Carnegie Mellon
- ** University under this License, including, but not limited to, any
- ** claims of product liability, personal injury, death, damage to
- ** property, or violation of any laws or regulations.
- **
- ** Carnegie Mellon University Software Engineering Institute authored
- ** documents are sponsored by the U.S. Department of Defense under
- ** Contract FA8721-05-C-0003. Carnegie Mellon University retains
- ** copyrights in all material produced under this contract. The U.S.
- ** Government retains a non-exclusive, royalty-free license to publish or
- ** reproduce these documents, or allow others to do so, for U.S.
- ** Government purposes only pursuant to the copyright license under the
- ** contract clause at 252.227.7013.
- **
- ** @OPENSOURCE_HEADER_END@
- ** ------------------------------------------------------------------------
+ *  ------------------------------------------------------------------------
+ *  Authors: Brian Trammell, Chris Inacio
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
+ *
+ *  Copyright 2023 Carnegie Mellon University.
+ *
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
+ *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
+ *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ *  ------------------------------------------------------------------------
  */
 
 #define _YAF_SOURCE_
@@ -115,6 +106,12 @@
 #define YAF_STATE_FIN           0x000000F0
 #define YAF_STATE_ATO           0x00000100
 
+/* define and use these macros from YAF3 in this file */
+#define YAF_ATTR_SAME_SIZE          YAF_SAME_SIZE
+#define YAF_ATTR_OUT_OF_SEQUENCE    YAF_OUT_OF_SEQUENCE
+#define YAF_ATTR_MP_CAPABLE         YAF_MP_CAPABLE
+#define YAF_ATTR_FRAGMENTS          YAF_FRAGMENTS
+
 #define YF_FLUSH_DELAY 5000
 #define YF_MAX_CQ      2500
 
@@ -125,14 +122,19 @@
 static int pcap_meta_num = 0;
 static int pcap_meta_read = 0;
 
+/* Must keep yfFlowNodeIPv4_st in synch with this struct. */
 typedef struct yfFlowNode_st {
+    /* previous node */
     struct yfFlowNode_st  *p;
+    /* next node */
     struct yfFlowNode_st  *n;
+    /* FIXME: Nothing appears to reference the flowtab */
     struct yfFlowTab_t    *flowtab;
     uint32_t               state;
     yfFlow_t               f;
 } yfFlowNode_t;
 
+/* Must conform to description in picq.h. */
 typedef struct yfFlowQueue_st {
     yfFlowNode_t  *tail;
     yfFlowNode_t  *head;
@@ -158,6 +160,7 @@ typedef struct yfFlowKeyIPv4_st {
 #if YAF_ENABLE_DAG_SEPARATE_INTERFACES || YAF_ENABLE_SEPARATE_INTERFACES
     uint8_t    netIf;
 #endif
+    uint32_t   layer2Id;
     union {
         struct {
             uint32_t   sip;
@@ -222,6 +225,7 @@ struct yfFlowTabStats_st {
 #endif
 };
 
+/* typedef struct yfFlowTab_st yfFlowTab_t;   // include/yaf/yaftab.h */
 struct yfFlowTab_st {
     /* State */
     uint64_t                              ctime;
@@ -239,9 +243,13 @@ struct yfFlowTab_st {
 #if YAF_ENABLE_NDPI
     struct ndpi_detection_module_struct  *ndpi_struct;
 #endif
+    /* active flow queue */
     yfFlowQueue_t                         aq;
+    /* closed flow queue */
     yfFlowQueue_t                         cq;
+    /* length of `aq` */
     uint32_t                              count;
+    /* length of `cq` */
     uint32_t                              cq_count;
     /* Configuration */
     uint64_t                              idle_ms;
@@ -665,14 +673,11 @@ yfFlowKeyCopy(
 #if YAF_ENABLE_COMPACT_IP4
     if (src->version == 4) {
         memcpy(dst, src, sizeof(yfFlowKeyIPv4_t));
-    } else {
+    } else
 #endif
-    memcpy(dst, src, sizeof(yfFlowKey_t));
-#if YAF_ENABLE_COMPACT_IP4
-}
-
-
-#endif
+    {
+        memcpy(dst, src, sizeof(yfFlowKey_t));
+    }
 }
 
 #if 0
@@ -711,7 +716,7 @@ yfFlowDebug(
     static GString *str = NULL;
 
     if (!str) {
-        str = g_string_new("");
+        str = g_string_new(NULL);
     }
 
     g_string_printf(str, "%s ", msg);
@@ -854,14 +859,11 @@ yfFlowFree(
 #if YAF_ENABLE_COMPACT_IP4
     if (fn->f.key.version == 4) {
         g_slice_free(yfFlowNodeIPv4_t, (yfFlowNodeIPv4_t *)fn);
-    } else {
+    } else
 #endif
-    g_slice_free(yfFlowNode_t, fn);
-#if YAF_ENABLE_COMPACT_IP4
-}
-
-
-#endif
+    {
+        g_slice_free(yfFlowNode_t, fn);
+    }
 }
 
 /**
@@ -916,8 +918,6 @@ yfFlowLabelApp(
         fn->f.appLabel = 0;
     }
 }
-
-
 #endif /* if YAF_ENABLE_APPLABEL */
 
 
@@ -938,55 +938,71 @@ yfFlowDoEntropy(
     yfFlowTab_t   *flowtab,
     yfFlowNode_t  *fn)
 {
-    uint8_t  entropyDist[256];
+    yfFlowVal_t *val;
+    uint32_t entropyDist[256];
     double   entropyScratch;
+    double   logPaylen;
     uint32_t loop;
+    int      fwd_rev;
 
     /* if entropy is enabled, then we need to calculate it */
     /* FIXME deglobalize */
-    if (flowtab->entropymode == TRUE) {
-        /* forward entropy */
-        if (fn->f.val.paylen) {
-            entropyScratch = 0.0;
-            memset(entropyDist, 0, 256);
-            for (loop = 0; loop < fn->f.val.paylen; loop++) {
-                entropyDist[fn->f.val.payload[loop]]++;
-            }
-            for (loop = 0; loop < 256; loop++) {
-                if (0 == entropyDist[loop]) {
-                    continue;
-                }
-                entropyScratch += ((double)entropyDist[loop] /
-                                   (double)fn->f.val.paylen) *
-                    (log((double)entropyDist[loop] /
-                         (double)fn->f.val.paylen) / log(2.0));
-            }
-            entropyScratch *= -1;
-            fn->f.val.entropy = (uint8_t)((entropyScratch / 8.0) * 256.0);
-        }
-
-        /* reverse entropy */
-        if (fn->f.rval.paylen) {
-            entropyScratch = 0.0;
-            memset(entropyDist, 0, 256);
-            for (loop = 0; loop < fn->f.rval.paylen; loop++) {
-                entropyDist[fn->f.rval.payload[loop]]++;
-            }
-            for (loop = 0; loop < 256; loop++) {
-                if (0 == entropyDist[loop]) {
-                    continue;
-                }
-                entropyScratch += ((double)entropyDist[loop] /
-                                   (double)fn->f.rval.paylen) *
-                    (log((double)entropyDist[loop] /
-                         (double)fn->f.rval.paylen) / log(2.0));
-            }
-            entropyScratch *= -1;
-            fn->f.rval.entropy = (uint8_t)((entropyScratch / 8.0) * 256.0);
-        }
-    } else {
+    if (!flowtab->entropymode) {
         fn->f.val.entropy = 0;
         fn->f.rval.entropy = 0;
+        return;
+    }
+
+    /*
+     *  First loop through each octet of payload and increment the
+     *  entropyDist[] bin that corresponds to the octet.
+     *
+     *  Next compute the sum of these values across every bin:
+     *
+     *   ( bin[i] / SUM(bin[]) ) * log2( bin[i] / SUM(bin[]) )
+     *
+     *  where SUM(bin[]) is the payload length.  Using the properties of
+     *  logarithms: this can be changed to
+     *
+     *   SUM( ( bin[i] / paylen ) * ( log2(bin[i]) - log2(paylen) ) )
+     *
+     *  The division by paylen can be pulled outside the SUM():
+     *
+     *   SUM( bin[i] * ( log2(bin[i]) - log2(paylen) ) ) / paylen
+     *
+     *  Moving "/paylen" outside SUM() may affect result slightly: in testing,
+     *  of 364,385 entropy values computed in the data set, one value changed
+     *  from 103 to 104.
+     *
+     *  Finally, change the sign of the result, divide by 8 (bits per byte)
+     *  and multiply by 256 (to give a value in range 0 to 255).  This is
+     *  equivalent to:
+     *
+     *   -32.0 * SUM ( bin[i] * ( log2(bin[i]) - log2(paylen) ) ) / paylen
+     */
+
+    for (fwd_rev = 0; fwd_rev < 2; ++fwd_rev) {
+        val = ((0 == fwd_rev) ? &fn->f.val : &fn->f.rval);
+
+        if (val->paylen <= 1) {
+            val->entropy = 0;
+        } else {
+            logPaylen = log2((double)val->paylen);
+            entropyScratch = 0.0;
+            memset(entropyDist, 0, sizeof(entropyDist));
+            for (loop = 0; loop < val->paylen; loop++) {
+                entropyDist[val->payload[loop]]++;
+            }
+            for (loop = 0; loop < 256; loop++) {
+                if (entropyDist[loop] > 0) {
+                    entropyScratch +=
+                        ((double)entropyDist[loop] *
+                         (log2((double)entropyDist[loop]) - logPaylen));
+                }
+            }
+            val->entropy = (uint8_t)(entropyScratch * -32.0
+                                     / (double)val->paylen);
+        }
     }
 }
 
@@ -1110,17 +1126,13 @@ yfCloseActiveFlow(
 
 #if YAF_ENABLE_COMPACT_IP4
     if (fn->f.key.version == 4) {
-        tfn = (yfFlowNode_t *)g_slice_new0(yfFlowNodeIPv4_t);
-        memcpy(tfn, fn, sizeof(yfFlowNodeIPv4_t));
-    } else {
+        tfn = (yfFlowNode_t *)g_slice_dup(
+            yfFlowNodeIPv4_t, (yfFlowNodeIPv4_t *)fn);
+    } else
 #endif /* if YAF_ENABLE_COMPACT_IP4 */
-    tfn = g_slice_new0(yfFlowNode_t);
-    memcpy(tfn, fn, sizeof(yfFlowNode_t));
-#if YAF_ENABLE_COMPACT_IP4
-}
-
-
-#endif
+    {
+        tfn = g_slice_dup(yfFlowNode_t, fn);
+    }
 
     if (&(fn->f.rval) == val) {
         yfFlowKeyReverse(&(fn->f.key), &(tfn->f.key));
@@ -1221,21 +1233,18 @@ yfCloseActiveFlow(
 
 #if YAF_ENABLE_NDPI
 static void *
-yf_malloc(
+yf_ndpi_malloc(
     unsigned long   size)
 {
     return g_malloc(size);
 }
 
-
 static void
-yf_free(
+yf_ndpi_free(
     void  *mem)
 {
     g_free(mem);
 }
-
-
 #endif /* YAF_ENABLE_NDPI */
 
 
@@ -1310,11 +1319,11 @@ yfFlowTabAlloc(
     if (pcap_per_flow) {
         flowtab->pcap_dir = pcap_dir;
     } else if (pcap_dir) {
-        flowtab->pcap_roll = g_string_new("");
+        flowtab->pcap_roll = g_string_new(NULL);
     } else if (pcap_meta_file && index_pcap) {
         pcap_meta_read = -1;
     } else if (pcap_meta_file) {
-        flowtab->pcap_roll = g_string_new("");
+        flowtab->pcap_roll = g_string_new(NULL);
     }
 
     if (pcap_meta_file) {
@@ -1347,10 +1356,8 @@ yfFlowTabAlloc(
     flowtab->table = g_hash_table_new((GHashFunc)yfMPLSHash,
                                       (GEqualFunc)yfMPLSEqual);
 #else
-
     flowtab->table = g_hash_table_new(flowtab->hashfn,
                                       flowtab->hashequalfn);
-
 #endif /* if YAF_MPLS */
 
 #if YAF_ENABLE_HOOKS
@@ -1363,8 +1370,8 @@ yfFlowTabAlloc(
 #if YAF_ENABLE_NDPI
     if (ndpi) {
         NDPI_PROTOCOL_BITMASK all;
-        set_ndpi_malloc(yf_malloc);
-        set_ndpi_free(yf_free);
+        set_ndpi_malloc(yf_ndpi_malloc);
+        set_ndpi_free(yf_ndpi_free);
 #if HAVE_NDPI_INIT_PREFS
         flowtab->ndpi_struct = ndpi_init_detection_module(ndpi_no_prefs);
 #else
@@ -1446,8 +1453,10 @@ yfFlowTabFree(
 /**
  * yfMPLSGetNode
  *
- * finds an MPLS node entry in the MPLS table
- * based on the labels in the MPLS header.
+ *  Finds an MPLS node entry in the MPLS table
+ *  based on the labels in the MPLS header,
+ *  creating it if needed, and updates
+ *  `cur_mpls_node` on `flowtab`.
  */
 static yfMPLSNode_t *
 yfMPLSGetNode(
@@ -1485,9 +1494,9 @@ yfMPLSGetNode(
 
     return mpls;
 }
-
-
 #endif /* if YAF_MPLS */
+
+
 /**
  * yfFlowGetNode
  *
@@ -1531,14 +1540,12 @@ yfFlowGetNode(
 #if YAF_ENABLE_COMPACT_IP4
     if (key->version == 4) {
         fn = (yfFlowNode_t *)g_slice_new0(yfFlowNodeIPv4_t);
-    } else {
+    } else
 #endif
-    fn = g_slice_new0(yfFlowNode_t);
-#if YAF_ENABLE_COMPACT_IP4
-}
+    {
+        fn = g_slice_new0(yfFlowNode_t);
+    }
 
-
-#endif
     /* Copy key */
     yfFlowKeyCopy(key, &(fn->f.key));
 
@@ -1584,7 +1591,7 @@ static gboolean
 yfRotatePcapMetaFile(
     yfFlowTab_t  *flowtab)
 {
-    GString *namebuf = g_string_new("");
+    GString *namebuf = g_string_new(NULL);
 
     g_string_append_printf(namebuf, "%s", flowtab->pcap_meta_name);
     air_time_g_string_append(namebuf, time(NULL), AIR_TIME_SQUISHED);
@@ -1638,9 +1645,9 @@ yfUpdateRollingPcapFile(
     yfFlowTab_t  *flowtab,
     char         *new_file_name)
 {
-    g_string_truncate(flowtab->pcap_roll, 0);
-
-    g_string_append_printf(flowtab->pcap_roll, "%s", new_file_name);
+    if (flowtab->pcap_roll) {
+        g_string_printf(flowtab->pcap_roll, "%s", new_file_name);
+    }
 
     flowtab->pcap_file_no++;
 
@@ -1712,7 +1719,7 @@ yfWritePcap(
     }
 
     if (flow->pcap == NULL) {
-        namebuf = g_string_new("");
+        namebuf = g_string_new(NULL);
         rem_ms = (flow->stime % 1000);
         rem_ms = (rem_ms > 1000) ? (rem_ms / 10) : rem_ms;
         g_string_append_printf(namebuf, "%s/%03u", flowtab->pcap_dir,
@@ -1746,7 +1753,7 @@ yfWritePcap(
             pcap_dump_flush(flow->pcap);
             pcap_dump_close(flow->pcap);
             flow->pcap_serial += 1;
-            namebuf = g_string_new("");
+            namebuf = g_string_new(NULL);
             rem_ms = (flow->stime % 1000);
             rem_ms = (rem_ms > 1000) ? (rem_ms / 10) : rem_ms;
             g_string_append_printf(namebuf, "%s/%03u", flowtab->pcap_dir,
@@ -1947,9 +1954,9 @@ yfFlowPktGenericTpt(
     const uint8_t  *pkt,
     uint32_t        caplen)
 {
+#if YAF_ENABLE_PAYLOAD
     int p;
 
-#if YAF_ENABLE_PAYLOAD
     /* Short-circuit nth packet or no payload capture */
     if (!flowtab->max_payload || (val->pkt && !flowtab->udp_max_payload) ||
         !caplen)
@@ -2062,7 +2069,7 @@ yfFlowPktTCP(
     /** MPTCP stuff */
     if (tcpinfo->mptcp.flags & 0x01) {
         /* MP_CAPABLE */
-        val->attributes |= YAF_MP_CAPABLE;
+        val->attributes |= YAF_ATTR_MP_CAPABLE;
     }
 
     if (tcpinfo->flags & YF_TF_SYN) {
@@ -2223,9 +2230,9 @@ yfFlowStatistics(
             val->stats->pktsize[val->stats->nonemptypktct] = datalen;
         }
         val->stats->nonemptypktct++;
-        if (datalen < 60) {
+        if (datalen < YAF_SMALL_PKT_BOUND) {
             val->stats->smallpktct++;
-        } else if (datalen > 225) {
+        } else if (datalen > YAF_LARGE_PKT_BOUND) {
             val->stats->largepktct++;
         }
         val->stats->payoct += datalen;
@@ -2263,11 +2270,10 @@ yfAddOutOfSequence(
     uint32_t      pcap_len = 0;
     gboolean      rev = FALSE;
     GHashTable   *ht;
-#if YAF_MPLS
-    yfMPLSNode_t *mpls = NULL;
 
+#if YAF_MPLS
     ht = flowtab->cur_mpls_node->tab;
-    mpls = yfMPLSGetNode(flowtab, l2info);
+    yfMPLSGetNode(flowtab, l2info);
 #else /* if YAF_MPLS */
     ht = flowtab->table;
 #endif /* if YAF_MPLS */
@@ -2307,12 +2313,12 @@ yfAddOutOfSequence(
 #if YAF_ENABLE_COMPACT_IP4
         if (key->version == 4) {
             fn = (yfFlowNode_t *)g_slice_new0(yfFlowNodeIPv4_t);
-        } else {
+        } else
 #endif
-        fn = g_slice_new0(yfFlowNode_t);
-#if YAF_ENABLE_COMPACT_IP4
-    }
-#endif
+        {
+            fn = g_slice_new0(yfFlowNode_t);
+        }
+
         /* Copy key */
         yfFlowKeyCopy(key, &(fn->f.key));
 
@@ -2372,12 +2378,12 @@ yfAddOutOfSequence(
             } else {
                 if (datalen == val->first_pkt_size) {
                     if (val->appkt == 1) {
-                        val->attributes |= YAF_SAME_SIZE;
+                        val->attributes |= YAF_ATTR_SAME_SIZE;
                     }
                 } else {
                     /* Don't consider TCP KEEP ALIVE */
                     if (val->lsn != (tcpinfo->seq + 1)) {
-                        val->attributes &= 0xFE;
+                        val->attributes &= ~YAF_ATTR_SAME_SIZE;
                     }
                 }
             }
@@ -2395,10 +2401,10 @@ yfAddOutOfSequence(
         } else {
             if (pbuf->iplen == val->first_pkt_size) {
                 if (val->pkt == 1) {
-                    val->attributes |= YAF_SAME_SIZE;
+                    val->attributes |= YAF_ATTR_SAME_SIZE;
                 }
             } else {
-                val->attributes &= 0xFE;
+                val->attributes &= ~YAF_ATTR_SAME_SIZE;
             }
         }
         if ((val->pkt == 0 || flowtab->udp_max_payload)) {
@@ -2413,11 +2419,11 @@ yfAddOutOfSequence(
     }
 
     /* set flow attributes - this flow is out of order */
-    val->attributes |= YAF_OUT_OF_SEQUENCE;
+    val->attributes |= YAF_ATTR_OUT_OF_SEQUENCE;
 
     /* Mark if fragmented */
     if (pbuf->frag == 1) {
-        val->attributes |= YAF_FRAGMENTS;
+        val->attributes |= YAF_ATTR_FRAGMENTS;
     }
 
     /* Count packets and octets */
@@ -2564,7 +2570,7 @@ yfNDPIApplabel(
         return;
     }
 
-    nflow = yf_malloc(sizeof(*nflow));
+    nflow = yf_ndpi_malloc(sizeof(*nflow));
     memset(nflow, 0, sizeof(*nflow));
 
 #if !HAVE_STRUCT_NDPI_ID_STRUCT
@@ -2626,9 +2632,6 @@ yfFlowPBuf(
     uint32_t datalen = (pbuf->iplen - pbuf->allHeaderLen +
                         l2info->l2hlen);
     uint32_t pcap_len = 0;
-#if YAF_MPLS
-    yfMPLSNode_t *mpls = NULL;
-#endif
 #if YAF_ENABLE_APPLABEL
     uint16_t tapp = 0;
 #endif
@@ -2671,7 +2674,7 @@ yfFlowPBuf(
 #endif /* if YAF_ENABLE_HOOKS */
 
 #if YAF_MPLS
-    mpls = yfMPLSGetNode(flowtab, l2info);
+    yfMPLSGetNode(flowtab, l2info);
 #endif
     /* Get a flow node for this flow */
     fn = yfFlowGetNode(flowtab, key, &val);
@@ -2732,12 +2735,12 @@ yfFlowPBuf(
             } else {
                 if (datalen == val->first_pkt_size) {
                     if (val->appkt == 1) {
-                        val->attributes |= YAF_SAME_SIZE;
+                        val->attributes |= YAF_ATTR_SAME_SIZE;
                     }
                 } else {
                     /* Don't consider TCP KEEP ALIVE */
                     if (val->lsn != (tcpinfo->seq + 1)) {
-                        val->attributes &= 0xFE;
+                        val->attributes &= ~YAF_ATTR_SAME_SIZE;
                     }
                 }
             }
@@ -2755,10 +2758,10 @@ yfFlowPBuf(
         } else {
             if (pbuf->iplen == val->first_pkt_size) {
                 if (val->pkt == 1) {
-                    val->attributes |= YAF_SAME_SIZE;
+                    val->attributes |= YAF_ATTR_SAME_SIZE;
                 }
             } else {
-                val->attributes &= 0xFE;
+                val->attributes &= ~YAF_ATTR_SAME_SIZE;
             }
         }
         if ((val->pkt == 0 || flowtab->udp_max_payload)) {
@@ -2782,7 +2785,7 @@ yfFlowPBuf(
 
     /* Mark if fragmented */
     if (pbuf->frag == 1) {
-        val->attributes |= YAF_FRAGMENTS;
+        val->attributes |= YAF_ATTR_FRAGMENTS;
     }
 
     /* update flow end time */
@@ -2879,14 +2882,12 @@ yfUniflow(
 #if YAF_ENABLE_COMPACT_IP4
     if (bf->key.version == 4) {
         memcpy(uf, bf, sizeof(yfFlowIPv4_t));
-    } else {
+    } else
 #endif
-    memcpy(uf, bf, sizeof(yfFlow_t));
-#if YAF_ENABLE_COMPACT_IP4
-}
+    {
+        memcpy(uf, bf, sizeof(yfFlow_t));
+    }
 
-
-#endif
     memset(&(uf->rval), 0, sizeof(yfFlowVal_t));
     uf->rdtime = 0;
 }

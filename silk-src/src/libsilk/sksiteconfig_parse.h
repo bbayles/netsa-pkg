@@ -40,59 +40,59 @@
       know about them.  */
    enum yytokentype {
      TOK_NL = 258,
-     TOK_ATOM = 259,
-     TOK_INTEGER = 260,
-     TOK_STRING = 261,
-     TOK_CLASS = 262,
-     TOK_DEF_CLASS = 263,
-     TOK_DEF_TYPES = 264,
-     TOK_END_CLASS = 265,
-     TOK_END_GROUP = 266,
-     TOK_GROUP = 267,
-     TOK_INCLUDE = 268,
-     TOK_PATH_FORMAT = 269,
-     TOK_PACKING_LOGIC = 270,
-     TOK_SENSOR = 271,
-     TOK_SENSORS = 272,
-     TOK_TYPE = 273,
-     TOK_VERSION = 274,
-     ERR_UNK_CMD = 275,
-     ERR_UNREC = 276,
-     ERR_UNTERM_STRING = 277,
-     ERR_STR_TOO_LONG = 278,
-     ERR_INVALID_OCTAL_ESCAPE = 279
+     TOK_CLASS = 259,
+     TOK_DEF_CLASS = 260,
+     TOK_DEF_TYPES = 261,
+     TOK_END_CLASS = 262,
+     TOK_END_GROUP = 263,
+     TOK_GROUP = 264,
+     TOK_INCLUDE = 265,
+     TOK_PATH_FORMAT = 266,
+     TOK_PACKING_LOGIC = 267,
+     TOK_SENSOR = 268,
+     TOK_SENSORS = 269,
+     TOK_TYPE = 270,
+     TOK_VERSION = 271,
+     ERR_UNREC = 272,
+     ERR_UNTERM_STRING = 273,
+     ERR_STR_TOO_LONG = 274,
+     ERR_INVALID_OCTAL_ESCAPE = 275,
+     TOK_ATOM = 276,
+     TOK_INTEGER = 277,
+     TOK_STRING = 278,
+     ERR_UNK_CMD = 279
    };
 #endif
 /* Tokens.  */
 #define TOK_NL 258
-#define TOK_ATOM 259
-#define TOK_INTEGER 260
-#define TOK_STRING 261
-#define TOK_CLASS 262
-#define TOK_DEF_CLASS 263
-#define TOK_DEF_TYPES 264
-#define TOK_END_CLASS 265
-#define TOK_END_GROUP 266
-#define TOK_GROUP 267
-#define TOK_INCLUDE 268
-#define TOK_PATH_FORMAT 269
-#define TOK_PACKING_LOGIC 270
-#define TOK_SENSOR 271
-#define TOK_SENSORS 272
-#define TOK_TYPE 273
-#define TOK_VERSION 274
-#define ERR_UNK_CMD 275
-#define ERR_UNREC 276
-#define ERR_UNTERM_STRING 277
-#define ERR_STR_TOO_LONG 278
-#define ERR_INVALID_OCTAL_ESCAPE 279
+#define TOK_CLASS 259
+#define TOK_DEF_CLASS 260
+#define TOK_DEF_TYPES 261
+#define TOK_END_CLASS 262
+#define TOK_END_GROUP 263
+#define TOK_GROUP 264
+#define TOK_INCLUDE 265
+#define TOK_PATH_FORMAT 266
+#define TOK_PACKING_LOGIC 267
+#define TOK_SENSOR 268
+#define TOK_SENSORS 269
+#define TOK_TYPE 270
+#define TOK_VERSION 271
+#define ERR_UNREC 272
+#define ERR_UNTERM_STRING 273
+#define ERR_STR_TOO_LONG 274
+#define ERR_INVALID_OCTAL_ESCAPE 275
+#define TOK_ATOM 276
+#define TOK_INTEGER 277
+#define TOK_STRING 278
+#define ERR_UNK_CMD 279
 
 
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 115 "sksiteconfig_parse.y"
+#line 157 "sksiteconfig_parse.y"
 {
     int integer;
     char *str;

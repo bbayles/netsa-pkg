@@ -1,3 +1,145 @@
+SiLK-3.22.1 Release, 2023-Nov-16
+
+* Building
+  -- Fixed an error in the silk.spec file causing the requires for
+     silk-analysis and other RPMs to be "silk-common-3.22.0-1.el9.el9"
+     where the %dist value (".el9") appeared twice.
+  -- Modified the silk.spec file to fail early when the path to Python
+     ends with "python" instead of "python3" or "python2".
+
+
+SiLK-3.22.0 Release, 2023-Sep-14
+
+* rwaggbagcat
+  -- Added the --fields switch to select which key and/or counter
+     fields are printed and their order.
+  -- Added the --missing-field=FIELD=STRING switch to print STRING
+     when FIELD is listed in --fields but is not in the input file.
+  -- Added the --help-fields switch to list the possible fields and a
+     brief description of each.
+* rwaggbagtool
+  -- Added the --scalar-multiply switch.  When argument is
+     COUNTER=VALUE, multiplies COUNTER's value by VALUE; when argument
+     is only VALUE, multiplies all counters' values by VALUE.
+  -- Added the --divide switch to divide the counters in the first
+     Aggregate Bag file by those in the remaining files.
+  -- Added the --zero-divisor-result switch to specify the result when
+     the divisor's counter is zero or when the dividend has a
+     key-value that is not in the divisor.
+  -- Added the --help-fields switch to list the possible fields and a
+     brief description of each.
+* rwaggbag, rwaggbagbuild
+  -- Added the --help-fields switch to list the possible fields and a
+     brief description of each.
+* rwbagbuild
+  -- Modified rwbagbuild to set the counter to the maximum value on
+     overflow instead of raising an error.
+* rwflowappend, rwsender, rwpollexec
+  -- Made internal changes to the directory poller.
+* Building
+  -- Simplified the configure tests that check for python.
+  -- Changed how the packing-logic is set in silk.spec to address an
+     error when building an RPM with static-packing logic on RHEL8.
+
+
+SiLK-3.21.0 Release, 2023-May-18
+
+* rwsettool
+  -- Added --modify-inplace that allows the output file to be an input
+     file (output is written to a temporary file then moved).
+  -- Added --backup-path that may be used with --modify-inplace to
+     save the existing output file.
+* rwbagtool
+  -- Added --modify-inplace that allows the output file to be an input
+     file (output is written to a temporary file then moved).
+  -- Added --backup-path that may be used with --modify-inplace to
+     save the existing output file.
+  -- Changed how annotations (--note-add) are handled so those added
+     by rwbagtool appear after those read from the input file.
+     (Previously they appeared before those from input files.)
+* rwaggbagtool
+  -- Added --modify-inplace that allows the output file to be an input
+     file (output is written to a temporary file then moved).
+  -- Added --backup-path that may be used with --modify-inplace to
+     save the existing output file.
+  -- Fixed a bug where annotations (--note-add) were not stored.
+* rwaggbag, rwaggbagbuild
+  -- Fixed a bug where annotations (--note-add) were not stored.
+  -- Fixed a bug where invocation history was not stored.
+* rwfilter
+  -- Modified the --sensors switch to accept the name of sensor groups
+     defined by the group command in silk.conf.
+  -- Modified parsing of the file read by --sensors=@FILE to ignore
+     whitespace that appears around commas.
+* rwfglob
+  -- Modified the --sensors switch to accept the name of sensor groups
+     defined by the group command in silk.conf.
+  -- Modified parsing of the file read by --sensors=@FILE to ignore
+     whitespace that appears around commas.
+* rwsiteinfo
+  -- Modified the --sensors switch to accept the name of sensor groups
+     defined by the group command in silk.conf.
+  -- Updated --fields to support printing sensor group names.
+  -- Added a --group switch to limit the output to particular sensor
+     groups.
+  -- Modified parsing of the file read by --sensors=@FILE to ignore
+     whitespace that appears around commas.
+  -- Fixed a bug where --fields=flowtype,sensor (or the reverse) would
+     print all sensors for all flowtypes instead of limiting the
+     sensor column to those sensors in the current flowtype's class.
+* PySiLK
+  -- Fixed a bug in Python-plugins related to changes in Python 3.7.
+  -- Fixed a bug to address Python 3.10 compatibility.
+
+
+SiLK-3.20.0 Release, 2023-Mar-23
+
+* rwfilter
+  -- Enabled the file-selection and record-partitioning switches for
+     sensor, type, class, and flowtype to read values from a file by
+     using "@" followed by the file's path ("@PATHNAME") as an
+     argument to the switch.
+  -- In all TCP-flags related switches, allow "-" to mean all flags.
+     For example, use --flags-all=S/- to find SYN-only flows.
+  -- In the --attributes flag, allow "-" to mean all attributes.
+  -- Add "--types" as an alias for the "--type" switch.
+* rwfglob
+  -- Enabled the file-selection switches for sensor, type, class, and
+     flowtype to read values from a file by using "@" followed by the
+     file's path ("@PATHNAME") as an argument to the switch.
+  -- Add "--types" as an alias for the "--type" switch.
+* rwsiteinfo
+  -- Enabled the output-limiting switches for sensor, type, class, and
+     flowtype to read values from a file by using "@" followed by the
+     file's path ("@PATHNAME") as an argument to the switch.
+* rwsilk2ipfix
+  -- Add elements to the templates and records that use the site
+     configuration file (silk.conf) to get the names of the class,
+     type, sensor, and flowtype for each record.
+  -- Add the --no-site-name-elements switch to disable export of the
+     name elements.
+  -- Remove paddingOctets from all exported records.
+* PySiLK
+  -- Remove dependency on deprecated distutils module.
+  -- Fix detection of compilation flags for Python 3.11.
+* rwsender, rwreceiver
+  -- Fixed a crash that could occur during shutdown if GnuTLS fails to
+     initialize.
+* rwflowpack
+  -- Add support for setting the --post-archive-command in
+     rwflowpack.conf.
+
+
+SiLK-3.19.2 Release, 2022-Mar-03
+
+* PySiLK
+  -- Fix compatibility with Python 3.9 and later.
+* Building
+  -- Add support for libfixbuf-3.0.0 (v1.7.0 and later are supported).
+  -- When building with static packing-logic, include the appropriate
+     configure flag in the generated silk.spec file.
+
+
 SiLK-3.19.1 Release, 2020-Apr-16
 
 * PySiLK

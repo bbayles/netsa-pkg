@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2006-2020 by Carnegie Mellon University.
+** Copyright (C) 2006-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -14,7 +56,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: skmsg.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: skmsg.c b2b562f1ea39 2023-02-20 17:50:25Z mthomas $");
 
 #include "intdict.h"
 #include "multiqueue.h"
@@ -644,17 +686,17 @@ static struct option sk_tls_options[] = {
 /* Usage text for each command line switch */
 static const char *sk_tls_options_help[] = {
     ("Load the Certificate Authority from the file in PEM format\n"
-     "\tlocated at this complete path. Def. None. Either --tls-key\n"
-     "\tand --tls-key or --tls-pkcs12 must also be specified"),
-    ("Load the encryption cert from the file in PEM format\n"
-     "\tlocated at this complete path. Def. None.  Requires that --tls-ca\n"
-     "\tand --tls-key are also specified"),
+     "\tlocated at this complete path. Def. None. Either --tls-pkcs12 or\n"
+     "\tboth --tls-key and --tls-key must also be specified"),
+    ("Load the encryption cert and any intermediate certs from\n"
+     "\tthe file in PEM format located at this complete path. Def. None.\n"
+     "\tRequires that --tls-ca and --tls-key are also specified"),
     ("Load the encryption key from the file in PEM format\n"
      "\tlocated at this complete path. Def. None. Requires that --tls-ca\n"
      "\tand --tls-cert are also specified"),
-    ("Load the encryption cert and key from the file in\n"
-     "\tPKCS#12 format located at this complete path. Def. None. Requires\n"
-     "\tthat --tls-ca is also specified"),
+    ("Load the encryption cert and key and any intermediate\n"
+     "\tcerts from the file in PKCS#12 format located at this complete path.\n"
+     "\tDef. None. Requires that --tls-ca is also specified"),
     ("Specify the security level to use when the required\n"
      "\tfile options are provided. Def. '" TLS_SECURITY_DEFAULT "'.\n"
      "\tChoices:"),

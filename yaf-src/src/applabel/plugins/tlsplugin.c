@@ -1,63 +1,58 @@
-/**
- * @file tlsplugin.c
+/*
+ *  Copyright 2007-2023 Carnegie Mellon University
+ *  See license information in LICENSE.txt.
+ */
+
+/*
+ *  tlsplugin.c
  *
  *
- * This recognizes SSL & TLS packets
+ *  This recognizes SSL & TLS packets
  *
- * Remember to update proxyplugin.c with any changes.
- ** ------------------------------------------------------------------------
- ** Copyright (C) 2007-2023 Carnegie Mellon University. All Rights Reserved.
- ** ------------------------------------------------------------------------
- ** Authors: Chris Inacio, Emily Sarneso
- ** ------------------------------------------------------------------------
- ** @OPENSOURCE_HEADER_START@
- ** Use of the YAF system and related source code is subject to the terms
- ** of the following licenses:
- **
- ** GNU General Public License (GPL) Rights pursuant to Version 2, June 1991
- ** Government Purpose License Rights (GPLR) pursuant to DFARS 252.227.7013
- **
- ** NO WARRANTY
- **
- ** ANY INFORMATION, MATERIALS, SERVICES, INTELLECTUAL PROPERTY OR OTHER
- ** PROPERTY OR RIGHTS GRANTED OR PROVIDED BY CARNEGIE MELLON UNIVERSITY
- ** PURSUANT TO THIS LICENSE (HEREINAFTER THE "DELIVERABLES") ARE ON AN
- ** "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY
- ** KIND, EITHER EXPRESS OR IMPLIED AS TO ANY MATTER INCLUDING, BUT NOT
- ** LIMITED TO, WARRANTY OF FITNESS FOR A PARTICULAR PURPOSE,
- ** MERCHANTABILITY, INFORMATIONAL CONTENT, NONINFRINGEMENT, OR ERROR-FREE
- ** OPERATION. CARNEGIE MELLON UNIVERSITY SHALL NOT BE LIABLE FOR INDIRECT,
- ** SPECIAL OR CONSEQUENTIAL DAMAGES, SUCH AS LOSS OF PROFITS OR INABILITY
- ** TO USE SAID INTELLECTUAL PROPERTY, UNDER THIS LICENSE, REGARDLESS OF
- ** WHETHER SUCH PARTY WAS AWARE OF THE POSSIBILITY OF SUCH DAMAGES.
- ** LICENSEE AGREES THAT IT WILL NOT MAKE ANY WARRANTY ON BEHALF OF
- ** CARNEGIE MELLON UNIVERSITY, EXPRESS OR IMPLIED, TO ANY PERSON
- ** CONCERNING THE APPLICATION OF OR THE RESULTS TO BE OBTAINED WITH THE
- ** DELIVERABLES UNDER THIS LICENSE.
- **
- ** Licensee hereby agrees to defend, indemnify, and hold harmless Carnegie
- ** Mellon University, its trustees, officers, employees, and agents from
- ** all claims or demands made against them (and any related losses,
- ** expenses, or attorney's fees) arising out of, or relating to Licensee's
- ** and/or its sub licensees' negligent use or willful misuse of or
- ** negligent conduct or willful misconduct regarding the Software,
- ** facilities, or other rights or assistance granted by Carnegie Mellon
- ** University under this License, including, but not limited to, any
- ** claims of product liability, personal injury, death, damage to
- ** property, or violation of any laws or regulations.
- **
- ** Carnegie Mellon University Software Engineering Institute authored
- ** documents are sponsored by the U.S. Department of Defense under
- ** Contract FA8721-05-C-0003. Carnegie Mellon University retains
- ** copyrights in all material produced under this contract. The U.S.
- ** Government retains a non-exclusive, royalty-free license to publish or
- ** reproduce these documents, or allow others to do so, for U.S.
- ** Government purposes only pursuant to the copyright license under the
- ** contract clause at 252.227.7013.
- **
- ** @OPENSOURCE_HEADER_END@
- ** ------------------------------------------------------------------------
+ *  Remember to update proxyplugin.c with any changes.
+ *  ------------------------------------------------------------------------
+ *  Authors: Chris Inacio, Emily Sarneso
+ *  ------------------------------------------------------------------------
+ *  @DISTRIBUTION_STATEMENT_BEGIN@
+ *  YAF 2.15.0
  *
+ *  Copyright 2023 Carnegie Mellon University.
+ *
+ *  NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ *  INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+ *  UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+ *  AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+ *  PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+ *  THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+ *  ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+ *  INFRINGEMENT.
+ *
+ *  Licensed under a GNU GPL 2.0-style license, please see LICENSE.txt or
+ *  contact permission@sei.cmu.edu for full terms.
+ *
+ *  [DISTRIBUTION STATEMENT A] This material has been approved for public
+ *  release and unlimited distribution.  Please see Copyright notice for
+ *  non-US Government use and distribution.
+ *
+ *  GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+ *  Contract No.: FA8702-15-D-0002
+ *  Contractor Name: Carnegie Mellon University
+ *  Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+ *
+ *  The Government's rights to use, modify, reproduce, release, perform,
+ *  display, or disclose this software are restricted by paragraph (b)(2) of
+ *  the Rights in Noncommercial Computer Software and Noncommercial Computer
+ *  Software Documentation clause contained in the above identified
+ *  contract. No restrictions apply after the expiration date shown
+ *  above. Any reproduction of the software or portions thereof marked with
+ *  this legend must also reproduce the markings.
+ *
+ *  This Software includes and/or makes use of Third-Party Software each
+ *  subject to its own license.
+ *
+ *  DM23-2313
+ *  @DISTRIBUTION_STATEMENT_END@
+ *  ------------------------------------------------------------------------
  */
 
 #define _YAF_SOURCE_
@@ -95,6 +90,10 @@
  *  all of the other fields are.  Further, the client can send a v2
  *  client_hello stating that it is v3/TLS 1.0 capable, and the server
  *  can respond with v3/TLS 1.0 record formats
+ */
+
+/**
+ * SSL Declarations are refreced from paylloadScanner.h
  */
 
 
@@ -206,8 +205,10 @@ tlsplugin_LTX_ycTlsScanScan(
 
         /* SSLv2 (client_hello) */
 #if YAF_ENABLE_HOOKS
-        yfHookScanPayload(flow, payload, 1, NULL, 2, 88, TLS_PORT_NUMBER);
-        yfHookScanPayload(flow, payload, 2, NULL, tls_version, 94,
+        yfHookScanPayload(flow, payload, 1, NULL, 2, YF_SSL_CLIENT_VERSION,
+                          TLS_PORT_NUMBER);
+        yfHookScanPayload(flow, payload, 2, NULL, tls_version,
+                          YF_SSL_RECORD_VERSION,
                           TLS_PORT_NUMBER);
 #endif
         return TLS_PORT_NUMBER;
@@ -250,9 +251,10 @@ tlsplugin_LTX_ycTlsScanScan(
                 return 0;
             }
 #if YAF_ENABLE_HOOKS
-            yfHookScanPayload(flow, payload, 1, NULL, 2, 88,
+            yfHookScanPayload(flow, payload, 1, NULL, 2, YF_SSL_CLIENT_VERSION,
                               TLS_PORT_NUMBER);
-            yfHookScanPayload(flow, payload, 2, NULL, tls_version, 94,
+            yfHookScanPayload(flow, payload, 2, NULL, tls_version,
+                              YF_SSL_RECORD_VERSION,
                               TLS_PORT_NUMBER);
 #endif /* if YAF_ENABLE_HOOKS */
             return TLS_PORT_NUMBER;
@@ -284,9 +286,11 @@ tlsplugin_LTX_ycTlsScanScan(
 
                 /* SSLv3 / TLS */
 #if YAF_ENABLE_HOOKS
-                yfHookScanPayload(flow, payload, 1, NULL, 3, 88,
+                yfHookScanPayload(flow, payload, 1, NULL, 3,
+                                  YF_SSL_CLIENT_VERSION,
                                   TLS_PORT_NUMBER);
-                yfHookScanPayload(flow, payload, 2, NULL, tls_version, 94,
+                yfHookScanPayload(flow, payload, 2, NULL, tls_version,
+                                  YF_SSL_RECORD_VERSION,
                                   TLS_PORT_NUMBER);
 #endif /* if YAF_ENABLE_HOOKS */
                 return TLS_PORT_NUMBER;
@@ -316,11 +320,7 @@ decodeTLSv1(
     uint16_t cipher_suite_len;
     uint8_t  session_len;
     uint8_t  compression_len;
-    uint8_t  next_msg;
-    uint16_t ext_len = 0;
-    uint32_t ext_ptr;
-    uint16_t sub_ext_len;
-    uint16_t sub_ext_type;
+    uint16_t version;
 
     /* Both Client and Server Hello's start off the same way */
     /* 3 for Length, 2 for Version, 32 for Random, 1 for session ID Len*/
@@ -329,12 +329,13 @@ decodeTLSv1(
     }
 
     record_len = (ntohl(*(uint32_t *)(payload + offset)) & 0xFFFFFF00) >> 8;
-
-    offset += 2;
+    /* This might need to be 3 test and verify// */
+    offset += 3;
 
     cert_version = ntohs(*(uint16_t *)(payload + offset));
 
-    offset += 35; /* skip version & random */
+    version = offset;
+    offset += 34; /* skip version & random */
 
     session_len = *(payload + offset);
 
@@ -376,10 +377,13 @@ decodeTLSv1(
         offset += compression_len + 1;
 
 #if YAF_ENABLE_HOOKS
-        yfHookScanPayload(flow, payload, 2, NULL, cert_version, 94,
+        yfHookScanPayload(flow, payload, 2, NULL, cert_version,
+                          YF_SSL_RECORD_VERSION,
                           TLS_PORT_NUMBER);
         yfHookScanPayload(flow, payload, cipher_suite_len, NULL, ciphers,
-                          91, TLS_PORT_NUMBER);
+                          YF_SSL_CIPHER_LIST, TLS_PORT_NUMBER);
+        yfHookScanPayload(flow, payload, 2, NULL, version,
+                          YF_SSL_VERSION, TLS_PORT_NUMBER);
 #endif /* if YAF_ENABLE_HOOKS */
     } else if (type == 2) {
         /* Server Hello */
@@ -388,68 +392,114 @@ decodeTLSv1(
         }
         /* cipher is here */
 #if YAF_ENABLE_HOOKS
-        yfHookScanPayload(flow, payload, 2, NULL, offset, 89,
+        yfHookScanPayload(flow, payload, 2, NULL, offset, YF_SSL_SERVER_CIPHER,
                           TLS_PORT_NUMBER);
 #endif
         offset += 2;
         /* compression method */
 #if YAF_ENABLE_HOOKS
-        yfHookScanPayload(flow, payload, 2, NULL, cert_version, 94,
+        yfHookScanPayload(flow, payload, 2, NULL, cert_version,
+                          YF_SSL_RECORD_VERSION,
                           TLS_PORT_NUMBER);
-        yfHookScanPayload(flow, payload, 1, NULL, offset, 90,
+        yfHookScanPayload(flow, payload, 1, NULL, offset, YF_SSL_COMPRESSION,
                           TLS_PORT_NUMBER);
+        yfHookScanPayload(flow, payload, 2, NULL, version,
+                          YF_SSL_SERVER_VERSION, TLS_PORT_NUMBER);
 #endif /* if YAF_ENABLE_HOOKS */
         offset++;
     }
 
     if (((size_t)offset - header_len) < record_len) {
         /* extensions? */
-        uint32_t tot_ext = 0;
-        ext_len = ntohs(*(uint16_t *)(payload + offset));
-        ext_ptr = offset + 2;
+
+        const uint16_t ext_len = ntohs(*(uint16_t *)(payload + offset));
+#if YAF_ENABLE_HOOKS
+        uint32_t       ext_ptr = offset;
+#endif
+
         offset += 2 + ext_len;
 #if YAF_ENABLE_HOOKS
         /* only want Client Hello's server name */
         if (type == 1) {
-            while (ext_ptr < payloadSize && (tot_ext < ext_len)) {
+            yfHookScanPayload(flow, payload, 2, NULL, ext_ptr,
+                              YF_SSL_CLIENT_EXTENSION, TLS_PORT_NUMBER);
+        } else if (type == 2) {
+            yfHookScanPayload(flow, payload, 2, NULL, ext_ptr,
+                              YF_SSL_SERVER_EXTENSION, TLS_PORT_NUMBER);
+        }
+        ext_ptr += 2;
+
+        if (type == 1) {
+            uint16_t sub_ext_len;
+            uint16_t sub_ext_type;
+            uint32_t tot_ext = 0;
+            uint32_t ext_ptr2;
+            uint16_t eli_curv_len;
+            uint8_t  eli_form_len;
+
+            while ((ext_ptr < payloadSize) && (tot_ext < ext_len)) {
                 sub_ext_type = ntohs(*(uint16_t *)(payload + ext_ptr));
                 ext_ptr += 2;
                 sub_ext_len = ntohs(*(uint16_t *)(payload + ext_ptr));
                 ext_ptr += 2;
                 tot_ext += sizeof(uint16_t) + sizeof(uint16_t) + sub_ext_len;
-                if (sub_ext_type != 0) {
-                    ext_ptr += sub_ext_len;
-                    continue;
-                }
-                if (sub_ext_len == 0) {
-                    /* no server name listed */
+                ext_ptr2 = ext_ptr;
+                ext_ptr += sub_ext_len;
+
+                switch (sub_ext_type) {
+                  case 0:
+                    /* server name */
+                    /* jump past list length and type to get name length and
+                     * name */
+                    ext_ptr2 += 3; /* 2 for length, 1 for type */
+                    sub_ext_len = ntohs(*(uint16_t *)(payload + ext_ptr2));
+                    ext_ptr2 += 2;
+                    if ((ext_ptr2 + sub_ext_len) < payloadSize) {
+                        yfHookScanPayload(
+                            flow, payload, sub_ext_len, NULL, ext_ptr2,
+                            YF_SSL_SERVER_NAME, TLS_PORT_NUMBER);
+                    }
+                    break;
+
+                  case 10:
+                    /* elliptic curve list */
+                    /* After grabing the length jump past it and grab the
+                     * desired list */
+                    eli_curv_len = ntohs(*(uint16_t *)(payload + ext_ptr2));
+                    ext_ptr2 += 2;
+                    if ((ext_ptr2 + eli_curv_len) < payloadSize) {
+                        yfHookScanPayload(
+                            flow, payload, eli_curv_len, NULL, ext_ptr2,
+                            YF_SSL_ELIPTIC_CURVE, TLS_PORT_NUMBER);
+                    }
+                    break;
+
+                  case 11:
+                    /* elliptic curve point format list */
+                    /* After grabing the length jump past it and grab the
+                     * desired list */
+                    eli_form_len = *(payload + ext_ptr2);
+                    ext_ptr2 += 1;
+                    if ((ext_ptr2 + eli_form_len) < payloadSize) {
+                        yfHookScanPayload(
+                            flow, payload, eli_form_len, NULL, ext_ptr2,
+                            YF_SSL_ELIPTIC_FORMAT, TLS_PORT_NUMBER);
+                    }
                     break;
                 }
-                /* grab server name */
-                /* jump past list length and type to get name length and name
-                 * */
-                ext_ptr += 3; /* 2 for length, 1 for type */
-                sub_ext_len = ntohs(*(uint16_t *)(payload + ext_ptr));
-                ext_ptr += 2;
-                if ((ext_ptr + sub_ext_len) < payloadSize) {
-                    yfHookScanPayload(flow, payload, sub_ext_len, NULL, ext_ptr,
-                                      95, TLS_PORT_NUMBER);
-                }
-                break;
             }
         }
 #endif /* if YAF_ENABLE_HOOKS */
     }
+
     while (payloadSize > offset) {
-        next_msg = *(payload + offset);
-        if (next_msg == 11) {
+        switch (*(payload + offset)) {
+          case 11:
             /* certificate */
             if ((size_t)offset + 7 > payloadSize) {
                 return TRUE; /* prob should be false */
             }
-
             offset++;
-
             record_len = (ntohl(*(uint32_t *)(payload + offset)) &
                           0xFFFFFF00) >> 8;
             offset += 3;
@@ -459,7 +509,7 @@ decodeTLSv1(
                         0xFFFFFF00) >> 8;
             offset += 3;
 
-            while (payloadSize > ((size_t)offset + 4)) {
+            while (payloadSize > (offset + 4)) {
                 sub_cert_len = (ntohl(*(uint32_t *)(payload + offset)) &
                                 0xFFFFFF00) >> 8;
 
@@ -472,46 +522,45 @@ decodeTLSv1(
                 }
 
                 /* offset of certificate */
-                if (cert_count < MAX_CERTS) {
-#if YAF_ENABLE_HOOKS
-                    if (((size_t)offset + sub_cert_len + 3) < payloadSize) {
-                        yfHookScanPayload(flow, payload, 1, NULL, offset,
-                                          93, TLS_PORT_NUMBER);
-                    }
-#endif /* if YAF_ENABLE_HOOKS */
-                } else {
+                if (cert_count >= MAX_CERTS) {
                     return TRUE;
                 }
-
+#if YAF_ENABLE_HOOKS
+                if (((size_t)offset + sub_cert_len + 3) <= payloadSize) {
+                    yfHookScanPayload(flow, payload, 1, NULL, offset,
+                                      YF_SSL_CERT_START, TLS_PORT_NUMBER);
+                }
+#endif /* if YAF_ENABLE_HOOKS */
                 cert_count++;
                 offset += 3 + sub_cert_len;
             }
-        } else if (next_msg == 22) {
+            break;
+
+          case 22:
             /* 1 for type, 2 for version, 2 for length - we know it's long */
             offset += 5;
-        } else if (next_msg == 20 || next_msg == 21 || next_msg == 23) {
+            break;
+          case 20:
+          case 21:
+          case 23:
             offset += 3; /* 1 for type, 2 for version */
-
             if (((size_t)offset + 2) > payloadSize) {
                 return TRUE; /* prob should be false */
             }
-
             record_len = ntohs(*(uint16_t *)(payload + offset));
-
             if (record_len > payloadSize) {
                 return TRUE;
             }
-
             offset += record_len + 2;
-        } else {
+            break;
+
+          default:
             return TRUE;
         }
     }
 
     return TRUE;
 }
-
-
 static gboolean
 decodeSSLv2(
     const uint8_t  *payload,
@@ -552,7 +601,8 @@ decodeSSLv2(
     }
 
 #if YAF_ENABLE_HOOKS
-    yfHookScanPayload(flow, payload, cipher_spec_length, NULL, offset, 92,
+    yfHookScanPayload(flow, payload, cipher_spec_length, NULL, offset,
+                      YF_SSL_V2_CIPHER_LIST,
                       TLS_PORT_NUMBER);
 #endif
     offset += cipher_spec_length + challenge_length;
@@ -594,7 +644,7 @@ decodeSSLv2(
 #if YAF_ENABLE_HOOKS
                     if (((size_t)offset + sub_cert_len + 3) < payloadSize) {
                         yfHookScanPayload(flow, payload, 1, NULL, offset,
-                                          93, TLS_PORT_NUMBER);
+                                          YF_SSL_CERT_START, TLS_PORT_NUMBER);
                     }
 #endif /* if YAF_ENABLE_HOOKS */
                 } else {

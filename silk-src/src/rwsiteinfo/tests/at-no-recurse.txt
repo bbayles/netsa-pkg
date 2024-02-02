@@ -1,0 +1,5 @@
+# Should complain that recursion is not allowed
+   1
+Sensor5
+@at-sensor.txt
+11

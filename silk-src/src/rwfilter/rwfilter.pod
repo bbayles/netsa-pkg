@@ -170,6 +170,44 @@ what types of output to produce.
 Finally, there are L</Miscellaneous Switches> that control other
 aspects of B<rwfilter>.
 
+=head2 Read Selection Argument Values from a File
+
+As of SiLK 3.20, the L</Selection Switches> B<--class>, B<--type>,
+B<--flowtypes>, and B<--sensors> accept a value in the form
+"@I<PATH>", where C<@> is the "at" character (ASCII 0x40) and I<PATH>
+names a file or a path to a file. For example, the following reads the
+name of types from the file F<t.txt> and uses the sensors C<S3>,
+C<S7>, and the names and/or IDs read from F</tmp/sensor.txt>:
+
+ rwfilter --type=@t.txt --sensors=S3,@/tmp/sensor.txt,S7 ...
+
+Multiple @I<PATH> values are allowed within a single argument.  If the
+name of the file is C<->, the names are read from the standard input.
+
+The file must be a text file.  Blank lines are ignored as are
+comments, which begin with the C<#> character and continue to the end
+of the line.  Whitespace at the beginning and end of a line is ignored as
+is whitespace that surrounds commas; all other whitespace within a line
+is significant.
+
+A file may contain a value on each line and/or multiple values on a
+line separated by commas and optional whitespace.  For example:
+
+ # Sensor 4
+       S4
+ # The first sensors
+ S0, S1,S2
+ S3     # Sensor 3
+
+An attempt to use an @I<PATH> directive in a file is an error.
+
+When B<rwfilter> is parsing the name of a file, it converts the
+sequences C<@,> and C<@@> to C<,> and C<@>, respectively.  For
+example, B<--class=@cl@@ss.txt@,v> reads the class from the file
+F<cl@ss.txt,v>.  It is an error if any other character follows an
+embedded C<@> (B<--flowtypes=@f@il> contains C<@i>) or if a single
+C<@> occurs at the end of the name (B<--sensor=@errat@>).
+
 
 =head1 OPTIONS
 
@@ -190,47 +228,60 @@ error.
 
 =over 4
 
-=item B<--class>=I<CLASS>
+=item B<--class>={I<CLASS> | @I<PATH>}
 
-The B<--class> switch is used to specify a group of data to process.
-Only a single class may be selected with the B<--class> switch; for
-multiple classes, use the B<--flowtypes> switch.  Classes are defined
-in the B<silk.conf(5)> site configuration file.  If the B<--class>
-option is not given, the default-class as specified in F<silk.conf> is
-used.  To see the available classes and the default class, either
-examine the output from B<rwfilter --help> or invoke B<rwsiteinfo(1)>
-with the switch B<--fields=class,default-class>.
+The B<--class> switch is used to specify a group of data files to
+process.  Only a single class may be selected with the B<--class>
+switch; for multiple classes, use the B<--flowtypes> switch.  The
+argument may be "@I<PATH>" which causes B<rwfilter> to open the file
+I<PATH> and read the class name from it; see L<Read Selection Argument
+Values from a File> for details.  Classes are defined in the
+B<silk.conf(5)> site configuration file.  If neither the B<--class>
+nor B<--flowtypes> option is given, the default-class as specified in
+F<silk.conf> is used.  To see the available classes and the default
+class, either examine the output from B<rwfilter --help> or invoke
+B<rwsiteinfo(1)> with the switch B<--fields=class,default-class>.
 
-=item B<--type>={C<all> | I<TYPE>[,I<TYPE>]}
+=item B<--type>={C<all> | I<TYPE>[,I<TYPE>,@I<PATH> ...]}
 
 The B<--type> predicate further specifies data within the selected
 I<CLASS> by listing the I<TYPE>s of traffic to process.  The switch
-takes a comma-separated list of types or the keyword C<all> which
-specifies all types for the specified I<CLASS>.  Types are defined in
-F<silk.conf>, they typically refer to the direction of the flow, and
-they may vary by class.  When the B<--type> switch is not specified, a
-list of default types is used.  The default-type list is determined by
-the value of I<CLASS>, and the default types generally include only
-incoming traffic.  To see the available types and the default types
-for each class, examine the B<--help> output of B<rwfilter> or run
-B<rwsiteinfo> with B<--fields=class,type,default-type>.
+takes either the keyword C<all> to select all types for I<CLASS> or a
+comma-separated list of types names and "@I<PATH>" directives, where
+@I<PATH> tells B<rwfilter> to read type names from the file I<PATH>;
+see L</Read Selection Argument Values from a File> for details.  Types
+are defined in F<silk.conf>, they typically refer to the direction of
+the flow, and they may vary by class.  When neither the B<--type> nor
+B<--flowtypes> switch is given, a list of default types is used: The
+default-type list is determined by the value of I<CLASS>, and the
+default types often include only incoming traffic.  To see the
+available types and the default types for each class, examine the
+B<--help> output of B<rwfilter> or run B<rwsiteinfo> with
+B<--fields=class,type,default-type>.
 
-=item B<--flowtypes>=I<CLASS>/I<TYPE>[,I<CLASS>/I<TYPE> ...]
+=item B<--flowtypes>=I<CLASS>/I<TYPE>[,I<CLASS>/I<TYPE>,@I<PATH> ...]
 
 The B<--flowtypes> predicate provides an alternate way to specify
 class/type pairs.  The B<--flowtypes> switch allows a single
 B<rwfilter> invocation to process data from multiple classes.  The
 keyword C<all> may be used for the I<CLASS> and/or I<TYPE> to select
-all classes and/or types.
+all classes and/or types.  As of SiLK 3.20.0, the arguments may also
+include "@I<PATH>" which causes B<rwfilter> to open the file I<PATH>
+and read the class/type pairs from it; see L</Read Selection Argument
+Values from a File>.
 
-=item B<--sensors>=I<SENSOR>[,I<SENSOR> ...]
+=item B<--sensors>=I<SENSOR>[,I<SENSOR>,I<SENSOR-GROUP>,@I<PATH> ...]
 
-The B<--sensor> switch is used to select data from specific sensors.
+The B<--sensors> switch is used to select data from specific sensors.
 The parameter is a comma separated list of sensor names, sensor IDs
-(integers), and/or ranges of sensor IDs.  Sensors are defined in the
-B<silk.conf(5)> site configuration file, and the B<rwsiteinfo(1)> command
-can be used to print a mapping of sensor names to IDs and classes.
-When the B<--sensor> switch is not specified, the default is to use
+(integers), ranges of sensor IDs, sensor group names, and/or
+"@I<PATH>" directives.  As described in L</Read Selection Argument
+Values from a File>, @I<PATH> tells B<rwfilter> to read the names of
+the sensors from the file I<PATH>.  Sensors and sensor groups are
+defined in the B<silk.conf(5)> site configuration file, and the
+B<rwsiteinfo(1)> command can be used to print a mapping of sensor
+names to IDs and classes (B<--fields=sensor,id-sensor,class:list>)).
+When the B<--sensors> switch is not specified, the default is to use
 all sensors which are valid for the specified class(es).
 
 =item B<--start-date>=I<YYYY/MM/DD[:HH]>
@@ -484,10 +535,11 @@ IP, the next hop IP, or either source or destination IP.  Each family
 includes a B<--not-*> variant to reverse the sense of the test.
 
 The B<--*cidr>-family takes as its argument an I<IP_OR_CIDR_LIST>,
-which is a single IP address C<10.1.2.3>, a single CIDR block
-C<FF01::/16>, or a comma separated list of IPs and/or CIDR blocks
-C<10.0.1.0/24,10.0.2.3,10.0.4.0/24>.  The I<IP_OR_CIDR_LIST> supports
-IPv4 and IPv6 addresses.
+which is a one or more of the following separated by commas: an IPv4
+address (C<10.1.2.3>), an IPv6 address (C<2001:db8::10.1.2.3>), an
+unsigned 32-bit integer representing an IPv4 address (C<167838211>),
+or any of those with a CIDR block designation (C<192.168.0.0/16>,
+C<2001:db8::/32>, C<167772160/8>).
 
 The B<--*set>-family requires that you store the IPs in a binary IPset
 file and pass the name of the file to the switch.  IPset files are
@@ -812,7 +864,8 @@ To partition records based on their TCP flags values, there is a
 recommended set of switches and legacy-supported switches.  The
 switches accept the following letters to represent the named TCP flag:
 C<F>=FIN; C<S>=SYN; C<R>=RST; C<P>=PSH; C<A>=ACK; C<U>=URG; C<E>=ECE;
-C<C>=CWR.
+C<C>=CWR.  As of SiLK 3.20.0, the symbol C<-> is accepted and
+represents all TCP flags (C<FSRPAUEC>).
 
 The recommended set of switches take a comma separated list of pairs
 of TCP flags, where the pair is separated by a slash (B</>).  The
@@ -857,43 +910,50 @@ The TCP-flag partitioning switches supported for legacy reasons are:
 =item B<--tcp-flags>=I<TCP_FLAGS>
 
 Pass the record if, for any one of its packets, I<any> of the
-specified I<TCP_FLAGS> was on, where I<TCP_FLAGS> contains the letters
-C<F>,C<S>,C<R>,C<P>,C<A>,C<U>,C<E>,C<C>.  For example,
+specified I<TCP_FLAGS> was set (high), where I<TCP_FLAGS> contains the
+letters C<F>,C<S>,C<R>,C<P>,C<A>,C<U>,C<E>,C<C>.  For example,
 B<--tcp-flags=ASF> passes records where ACK is set, or SYN is set, or
-FIN is set.
+FIN is set (this is equivalent to B<--flags-all=A/A,S/S,F/F>).
 
 =item B<--ack-flag>={B<0>|B<1>}
 
-Set to 0, only passes records where the ACK Flag is Low,
-Set to 1, only passes records where the ACK Flag is high.
+Pass the record when either the argument is 1 and the ACK flag is set
+(high) or the argument is 0 and the ACK flag is unset (low).
 
 =item B<--cwr-flag>={B<0>|B<1>}
 
-As B<--ack-flag> for the CWR Flag
+Pass the record when either the argument is 1 and the CWR flag is set
+(high) or the argument is 0 and the CWR flag is unset (low).
 
 =item B<--ece-flag>={B<0>|B<1>}
 
-As B<--ack-flag> for the ECE Flag
+Pass the record when either the argument is 1 and the ECE flag is set
+(high) or the argument is 0 and the ECE flag is unset (low).
 
 =item B<--fin-flag>={B<0>|B<1>}
 
-As B<--ack-flag> for the ACK Flag
+Pass the record when either the argument is 1 and the FIN flag is set
+(high) or the argument is 0 and the FIN flag is unset (low).
 
 =item B<--psh-flag>={B<0>|B<1>}
 
-As B<--ack-flag> for the PSH Flag
+Pass the record when either the argument is 1 and the PSH flag is set
+(high) or the argument is 0 and the PSH flag is unset (low).
 
 =item B<--rst-flag>={B<0>|B<1>}
 
-As B<--ack-flag> for the RST Flag
+Pass the record when either the argument is 1 and the RST flag is set
+(high) or the argument is 0 and the RST flag is unset (low).
 
 =item B<--syn-flag>={B<0>|B<1>}
 
-As B<--ack-flag> for the SYN Flag
+Pass the record when either the argument is 1 and the SYN flag is set
+(high) or the argument is 0 and the SYN flag is unset (low).
 
 =item B<--urg-flag>={B<0>|B<1>}
 
-As B<--ack-flag> for the URG Flag
+Pass the record when either the argument is 1 and the URG flag is set
+(high) or the argument is 0 and the URG flag is unset (low).
 
 =back
 
@@ -950,10 +1010,11 @@ I<ATTRIBUTES_LIST> is a comma separated list of up to 8
 I<HIGH_ATTRIBUTES>/I<MASK_ATTRIBUTES> pairs, where I<HIGH_ATTRIBUTES>
 and I<MASK_ATTRIBUTES> are strings of the characters
 C<S>,C<T>,C<C>,C<F>, and I<HIGH_ATTRIBUTES> is a subset of
-I<MASK_ATTRIBUTES>.  B<rwfilter> passes the record if, for any pair of
-attributes in the list, the attributes listed in I<HIGH_ATTRIBUTES>
-are set and the remaining attributes in I<MASK_ATTRIBUTES> are
-not-set.  The valid I<attributes> are:
+I<MASK_ATTRIBUTES>.  As of SiLK 3.20.0, the symbol C<-> is accepted
+and represents all attributes (C<STCF>).  B<rwfilter> passes the
+record if, for any pair of attributes in the list, the attributes
+listed in I<HIGH_ATTRIBUTES> are set and the remaining attributes in
+I<MASK_ATTRIBUTES> are not-set.  The valid I<attributes> are:
 
 =over 4
 
@@ -1016,44 +1077,51 @@ I<INTEGER_LIST>.
 
 B<Selection Switches Acting as Partitioning Switches>
 
-The following four switches are normally file selection switches, that
-is they select which files B<rwfilter> reads within the data
-repository.  However, when B<rwfilter> gets input without querying the
-data repository (that is, from files listed on the command line, from
-files specified by B<--xargs>, or from the B<--input-pipe>), these
-switches become partitioning switches and determine whether a record
-is written to the pass-destination or fail-destination.
+The following four switches are normally L<file selection
+switches|/Selection Switches> that select which files B<rwfilter>
+reads within the data repository.  However, when B<rwfilter> gets
+input without querying the data repository (that is, from files listed
+on the command line, from files specified by B<--xargs>, or from the
+B<--input-pipe>), these switches become partitioning switches and
+determine whether a record is written to the pass-destination or
+fail-destination.
 
 =over
 
-=item B<--class>=I<CLASS>
+=item B<--class>={I<CLASS> | @I<PATH>}
 
-Pass the record if its class is I<CLASS> and its type is listed in the
-B<--type> switch, or its type is in the default type list for I<CLASS>
-when B<--type> is not specified.  Use B<rwfilter --help> to see the
-list of available classes and types, and the defaults.
+Pass the record if its class is I<CLASS> or the class named in I<PATH>
+and its type is listed in the B<--type> switch, or its type is in the
+default type list for I<CLASS> when B<--type> is not specified.
+Examine the output of B<rwfilter --help> to see the list of available
+classes, available types, and their default values, or use
+B<rwsiteinfo --fields=class,type,mark-defaults>.
 
-=item B<--flowtypes>=I<CLASS>/I<TYPE>[,I<CLASS>/I<TYPE> ...]
+=item B<--flowtypes>=I<CLASS>/I<TYPE>[,I<CLASS>/I<TYPE>,@I<PATH> ...]
 
-Pass the record its if class/type value is one of those listed.  The
-keyword C<all> may be used for the I<CLASS> and/or I<TYPE> to select
-all classes and/or types.  This switch cannot be used when either
-B<--class> or B<--type> is used.  Use B<rwfilter --help> to see the
+Pass the record its if class/type value is one of those listed or read
+from the file I<PATH>.  The keyword C<all> may be used for the
+I<CLASS> and/or I<TYPE> to select all classes and/or types.  This
+switch cannot be used when either B<--class> or B<--type> is used.
+Use B<rwfilter --help> or B<rwsiteinfo --fields=class,type> to see the
 list of available classes and types.
 
-=item B<--sensors>=I<SENSOR>[,I<SENSOR> ...]
+=item B<--sensors>=I<SENSOR>[,I<SENSOR>,I<SENSOR-GROUP>,@I<PATH> ...]
 
 Pass the record if its sensor is one of those listed.  The parameter
 is a comma separated list of sensor names, sensor IDs (integers),
-and/or ranges of sensor IDs.  Use the B<rwsiteinfo(1)> command to see the
-list of sensors.
+ranges of sensor IDs, sensor group names, and "@I<PATH>" directives.
+Use the B<rwsiteinfo(1)> command to see the list of sensors.  Support
+for sensor group names was added in SiLK 3.21.0.
 
-=item B<--type>={C<all> | I<TYPE>[,I<TYPE>]}
+=item B<--type>={C<all> | I<TYPE>[,I<TYPE>,@I<PATH> ...]}
 
-Pass the record if its type is one of those listed and its class is
-specified by B<--class>, or its class is the default class when the
-B<--class> switch is not specified.  Use B<rwfilter --help> to see
-the list of available classes and types, and the defaults.
+Pass the record if its type is one of those listed or read from the
+file I<PATH> and its class is specified by B<--class>, or its class is
+the default class when the B<--class> switch is not specified.  Use
+B<rwfilter --help> to see the list of available classes, available
+types, and their defaults, or use B<rwsiteinfo
+--fields=class,type,mark-defaults>.
 
 =back
 
@@ -1971,6 +2039,14 @@ Directories that B<rwfilter> checks when attempting to load a plug-in.
 
 =head1 NOTES
 
+The ability to use @I<PATH> in B<--class>, B<--type>, B<--flowtypes>,
+and B<--sensors> was added in SiLK 3.20.0.
+
+As of SiLK 3.20.0, B<--types> is an alias for B<--type>.
+
+The B<--sensors> switch also accepts the names of groups defined in
+the B<silk.conf(5)> file as of SiLK 3.21.0.
+
 B<rwfilter> is the most commonly used application in the suite.  It
 provides access to the data files and performs all the basic
 queries.
@@ -2015,7 +2091,7 @@ Analysis>
 
 =cut
 
-$SiLK: rwfilter.pod c95fb6174130 2018-04-13 20:33:46Z mthomas $
+$SiLK: rwfilter.pod 3b66f16540fa 2023-06-02 19:00:07Z mthomas $
 
 Local Variables:
 mode:text

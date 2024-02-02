@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2001-2020 by Carnegie Mellon University.
+** Copyright (C) 2001-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -19,7 +61,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: rwfiltercheck.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: rwfiltercheck.c 35b901fd2f56 2023-03-10 19:46:07Z mthomas $");
 
 #include "rwfilter.h"
 #include <silk/skipset.h>
@@ -357,8 +399,24 @@ static filter_switch_t filterSwitch[] = {
       "\tA comma separated list of numbers and ranges between 0 and 65535.")},
 
     {{"tcp-flags",          REQUIRED_ARG, 0, OPT_TCP_FLAGS},
-     ("TCP flags are in the list in [FSRPAUEC] where\n"
-      "\tF=FIN;S=SYN;R=RST;P=PSH;A=ACK;U=URG;E=ECE;C=CWR")},
+     ("TCP flags match any value in the list [FSRPAUEC] where\n"
+      "\tF=FIN, S=SYN, R=RST, P=PSH, A=ACK, U=URG, E=ECE, C=CWR")},
+
+    {{"flags-all",          REQUIRED_ARG, 0, OPT_FLAGS_ALL},
+     ("Union of TCP flags on all packets match the masked flags\n"
+      "\tcollection specified by <high-flags>/<mask-flags>, where <mask> may\n"
+      "\tbe any combination of 'FSRPAUEC-' (where '-' means all flags) and\n"
+      "\tmust not be empty, and <high> must be a subset of <mask> and may be\n"
+      "\tempty. May specify a comma-separated list of up to "
+      SK_EXPAND_STRINGIFY(MAX_TCPFLAG_CHECKS) " <high>/<mask>\n"
+      "\tpairs.")},
+    {{"flags-initial",      REQUIRED_ARG, 0, OPT_FLAGS_INITIAL},
+     ("TCP flags on first packet match <high>/<mask>.  See\n"
+      "\tthe description of --flags-all for details.")},
+    {{"flags-session",      REQUIRED_ARG, 0, OPT_FLAGS_SESSION},
+     ("TCP flags on all but first packet match <high>/<mask>.\n"
+      "\tSee the description of --flags-all for details.")},
+
     {{"fin-flag",           REQUIRED_ARG, 0, OPT_FIN_FLAG},
      ("FIN flag is present if arg is 1, absent if arg is 0")},
     {{"syn-flag",           REQUIRED_ARG, 0, OPT_SYN_FLAG},
@@ -376,23 +434,12 @@ static filter_switch_t filterSwitch[] = {
     {{"cwr-flag",           REQUIRED_ARG, 0, OPT_CWR_FLAG},
      ("CWR flag is present if arg is 1, absent if arg is 0")},
 
-    {{"flags-all",          REQUIRED_ARG, 0, OPT_FLAGS_ALL},
-     ("Union of TCP flags on all packets match the masked flags\n"
-      "\tcollection specified by <high-flags>/<mask-flags>.  May specify a\n"
-      "\tcomma-separated list of up to "
-      SK_EXPAND_STRINGIFY(MAX_TCPFLAG_CHECKS) " <high>/<mask> pairs")},
-    {{"flags-initial",      REQUIRED_ARG, 0, OPT_FLAGS_INITIAL},
-     ("TCP flags on first packet match <high>/<mask>.  May\n"
-      "\tspecify a comma-separated list of up to "
-      SK_EXPAND_STRINGIFY(MAX_TCPFLAG_CHECKS) " <high>/<mask> pairs")},
-    {{"flags-session",      REQUIRED_ARG, 0, OPT_FLAGS_SESSION},
-     ("TCP flags on all but first packet match <high>/<mask>.\n"
-      "\tMay specify a comma-separated list of up to "
-      SK_EXPAND_STRINGIFY(MAX_TCPFLAG_CHECKS) " <high>/<mask> pairs")},
-
     {{"attributes",         REQUIRED_ARG, 0, OPT_ATTRIBUTES},
-     ("Flow attributes match the mask list <high>/<mask>. These\n"
-      "\tare characteristics determined by the flow generation sofware:\n"
+     ("Flow attributes match the masked collection <high>/<mask>,\n"
+      "\twhere <mask> may be any combination of 'CFST-' (where '-' means\n"
+      "\tall flags) and must not be empty, and <high> must be a subset of\n"
+      "\t<mask> and may be empty.  Flow attributes are characteristics\n"
+      "\tdetermined by the flow generation sofware:\n"
       "\tC - Flow is a continuation of timed-out flow record (see 'T')\n"
       "\tF - Additional non-ACK packets were seen after a FIN packet\n"
       "\tS - All packets that comprise the flow record are the same size\n"

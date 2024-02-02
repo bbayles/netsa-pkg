@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2017-2020 by Carnegie Mellon University.
+** Copyright (C) 2017-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -20,7 +62,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: rwaggbagtool.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: rwaggbagtool.c 6a1929dbf54d 2023-09-13 14:12:09Z mthomas $");
 
 #include <silk/skaggbag.h>
 #include <silk/skbag.h>
@@ -70,7 +112,7 @@ RCSIDENT("$SiLK: rwaggbagtool.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
 
 /* what action the user wants to do */
 typedef enum action_en {
-    AB_ACTION_UNSET, AB_ACTION_ADD, AB_ACTION_SUBTRACT
+    AB_ACTION_UNSET, AB_ACTION_ADD, AB_ACTION_DIVIDE, AB_ACTION_SUBTRACT
 } action_t;
 
 /* parsed_value_t is a structure to hold the unparsed value, an
@@ -116,11 +158,56 @@ typedef struct setmask_value_st {
     skipset_t          *sv_ipset;
 } setmask_value_t;
 
+/* smultiply_value_t holds a field ID and the factor to multiply that field
+ * by.  since this only deals with counters, a parsed_value_t is not
+ * needed. */
+typedef struct smultiply_value_st {
+    /* the field ID */
+    uint32_t            sm_field;
+    /* the factor */
+    uint64_t            sm_factor;
+} smultiply_value_t;
+
 
 /* LOCAL VARIABLES */
 
 /* where to write the resulting AggBag, Bag, or IPset file */
 static skstream_t *out_stream = NULL;
+
+/* the filename of the output file */
+static const char *output_path = NULL;
+
+/* whether --modify-inplace was given */
+static int modify_inplace = 0;
+
+/* when --modify-inplace is given, the name of the --backup-path if
+ * requested */
+static const char *backup_path = NULL;
+
+/* when --modify-inplace is given, the stat() of the original file; used to
+ * copy permission, owner, group to new file */
+static struct stat stat_orig;
+
+/* whether to remove the temporary file in the atexit() handler */
+static volatile sig_atomic_t remove_temp_file = 0;
+
+/* whether signals are being paused during file move */
+static volatile sig_atomic_t signal_deferred = 0;
+
+/* the ID of a signal that arrives while signals are defered */
+static volatile sig_atomic_t signal_pending = 0;
+
+/* whether a signal arrives while processing a signal */
+static volatile sig_atomic_t signal_signaled = 0;
+
+/* set of signals that are handled or blocked */
+static int sig_list[] = {
+    SIGHUP, SIGINT, SIGQUIT, SIGPIPE, SIGTERM,
+#ifdef SIGPWR
+    SIGPWR,
+#endif
+    0  /* sentinel */
+};
 
 /* the output AggBag that we create or that is used as the basis for
  * the Bag or IPset */
@@ -160,6 +247,13 @@ static sk_vector_t *minmax_fields = NULL;
  * setmask_value_t */
 static sk_vector_t *setmask_fields = NULL;
 
+/* arguments to the --scalar-multiply=FIELD=VALUE switch; vector of
+ * smultiply_value_t */
+static sk_vector_t *smultiply_fields = NULL;
+
+/* arguments to the --scalar-multiply=VALUE switch */
+static uint64_t scalar_multiplier = 1;
+
 /* an array capable of holding a parsed value for every possible
  * sk_aggbag_type_t, indexed by that ID.  It holds the parsed values
  * for fields set by --insert-field. */
@@ -177,61 +271,87 @@ static skipset_options_t ipset_options;
 /* whether the --note-strip flag was specified */
 static int note_strip = 0;
 
+/* for division, the action to take on divide by zero */
+static sk_aggbag_div_zero_t div_zero = {SKAGGBAG_DIV_ZERO_ERROR, 0};
+
 
 /* OPTIONS SETUP */
 
 typedef enum {
-    OPT_ADD,
-    OPT_SUBTRACT,
-    OPT_INSERT_FIELD,
+    OPT_HELP_FIELDS,
     OPT_REMOVE_FIELDS,
     OPT_SELECT_FIELDS,
-    OPT_TO_BAG,
-    OPT_TO_IPSET,
+    OPT_INSERT_FIELD,
+    OPT_ADD,
+    OPT_SUBTRACT,
+    OPT_DIVIDE,
+    OPT_ZERO_DIVISOR_RESULT,
+    OPT_SCALAR_MULTIPLY,
     OPT_MIN_FIELD,
     OPT_MAX_FIELD,
     OPT_SET_INTERSECT,
     OPT_SET_COMPLEMENT,
-    OPT_OUTPUT_PATH
+    OPT_TO_BAG,
+    OPT_TO_IPSET,
+    OPT_OUTPUT_PATH,
+    OPT_MODIFY_INPLACE,
+    OPT_BACKUP_PATH
 } appOptionsEnum;
 
 static struct option appOptions[] = {
-    {"add",                  NO_ARG,       0, OPT_ADD},
-    {"subtract",             NO_ARG,       0, OPT_SUBTRACT},
-    {"insert-field",         REQUIRED_ARG, 0, OPT_INSERT_FIELD},
+    {"help-fields",          NO_ARG,       0, OPT_HELP_FIELDS},
     {"remove-fields",        REQUIRED_ARG, 0, OPT_REMOVE_FIELDS},
     {"select-fields",        REQUIRED_ARG, 0, OPT_SELECT_FIELDS},
-    {"to-bag",               REQUIRED_ARG, 0, OPT_TO_BAG},
-    {"to-ipset",             REQUIRED_ARG, 0, OPT_TO_IPSET},
+    {"insert-field",         REQUIRED_ARG, 0, OPT_INSERT_FIELD},
+    {"add",                  NO_ARG,       0, OPT_ADD},
+    {"subtract",             NO_ARG,       0, OPT_SUBTRACT},
+    {"divide",               NO_ARG,       0, OPT_DIVIDE},
+    {"zero-divisor-result",  REQUIRED_ARG, 0, OPT_ZERO_DIVISOR_RESULT},
+    {"scalar-multiply",      REQUIRED_ARG, 0, OPT_SCALAR_MULTIPLY},
     {"min-field",            REQUIRED_ARG, 0, OPT_MIN_FIELD},
     {"max-field",            REQUIRED_ARG, 0, OPT_MAX_FIELD},
     {"set-intersect",        REQUIRED_ARG, 0, OPT_SET_INTERSECT},
     {"set-complement",       REQUIRED_ARG, 0, OPT_SET_COMPLEMENT},
+    {"to-bag",               REQUIRED_ARG, 0, OPT_TO_BAG},
+    {"to-ipset",             REQUIRED_ARG, 0, OPT_TO_IPSET},
     {"output-path",          REQUIRED_ARG, 0, OPT_OUTPUT_PATH},
+    {"modify-inplace",       NO_ARG,       0, OPT_MODIFY_INPLACE},
+    {"backup-path",          REQUIRED_ARG, 0, OPT_BACKUP_PATH},
     {0,0,0,0}                /* sentinel entry */
 };
 
 static const char *appHelp[] = {
-    ("Add the counters for each key across all Aggregate Bag files.\n"
-     "\tKey-fields in all Aggregate Bag files must match"),
-    ("Subtract from first Aggregate Bag file all subsequent\n"
-     "\tAggregate Bag files. Key-fields in all Aggregate Bag files must match"),
-    ("Given an argument of FIELD=VALUE, if an input\n"
-     "\tAggregate Bag file does not contain FIELD or if FIELD has been\n"
-     "\tremoved by --remove-fields, insert FIELD into the Aggregate Bag\n"
-     "\tand set its value to VALUE.  May be repeated to set multiple FIELDs"),
+    "Describe each supported field and exit. Def. no",
     ("Remove this comma-separated list of fields from each\n"
      "\tAggregate Bag input file.  May not be used with --select-fields,\n"
      "\t--to-bag, or --to-ipset"),
     ("Remove all fields from each Aggregate Bag input file\n"
      "\tEXCEPT those in this comma-separated list of fields.  May not be\n"
      "\tused with --remove-fields, --to-bag, or --to-ipset"),
-    ("Given an argument of FIELD,FIELD, use these two fields\n"
-     "\tas the key and counter, respectively, for a new Bag file.  May not\n"
-     "\tbe used with --select-fields, --remove-fields, or --to-ipset"),
-    ("Given an argument of FIELD, use the values in this field\n"
-     "\tof the Aggregate Bag file to create a new IPset file.  May not be\n"
-     "\tused with --select-fields, --remove-fields, or --to-bag"),
+    ("Given an argument of FIELD=VALUE, if an input\n"
+     "\tAggregate Bag file does not contain FIELD or if FIELD has been\n"
+     "\tremoved by --remove-fields, insert FIELD into the Aggregate Bag\n"
+     "\tand set its value to VALUE.  May be repeated to set multiple FIELDs"),
+    ("Add the counters for each key across all Aggregate Bag files.\n"
+     "\tKey-fields in all Aggregate Bag files must match"),
+    ("Subtract from first Aggregate Bag file all subsequent\n"
+     "\tAggregate Bag files. Key-fields in all Aggregate Bag files must match"),
+    ("Divide each counter in the first Aggregate Bag file by the\n"
+     "\tcounters in each subsequent Aggregate Bag file. Division by zero and\n"
+     "\tmissing key in the divisor is resolved per --zero-divisor-result.\n"
+     "\tKey-fields in all Aggregate Bag files must match"),
+    ("Use this result for a zero divisor or a missing\n"
+     "\tkey when --divide is used. Def. error. Choices: 'error', 'remove',\n"
+     "\t'nochange' 'maximum', or a non-negative integer value, where:\n"
+     "\t* 'error'    - Cause the program to exit with an error code\n"
+     "\t* 'remove'   - Remove the dividend's key (the row) from the result\n"
+     "\t* 'nochange' - Leave the dividend's counter unchanged\n"
+     "\t* 'maximum'  - Set the quotient to the maximum supported value\n"
+     "\t* a value    - Set the quotient to the specified value"),
+    ("Multiply counter(s) by a value. If given an integer\n"
+     "\targument, multiply all counters by that value. If given an argument\n"
+     "\tof FIELD=VALUE, multiply the counter for FIELD by VALUE, an integer.\n"
+     "\tMay be repeated. Occurs after add/subtract and before filtering"),
     ("Given an argument of FIELD=VALUE, remove from the\n"
      "\tAggregate Bag all rows where FIELD has a value less than VALUE.\n"
      "\tThis occurs immediately before producing output. May be repeated"),
@@ -244,7 +364,17 @@ static const char *appHelp[] = {
     ("Given an argument of FIELD=SET_FILE, remove from the\n"
      "\tAggregate Bag all rows where FIELD is in the IPset file SET_NAME.\n"
      "\tThis occurs immediately before producing output. May be repeated"),
-    "Write the output to this stream or file. Def. stdout",
+    ("Given an argument of FIELD,FIELD, use these two fields\n"
+     "\tas the key and counter, respectively, for a new Bag file.  May not\n"
+     "\tbe used with --select-fields, --remove-fields, or --to-ipset"),
+    ("Given an argument of FIELD, use the values in this field\n"
+     "\tof the Aggregate Bag file to create a new IPset file.  May not be\n"
+     "\tused with --select-fields, --remove-fields, or --to-bag"),
+    ("Write the output to this stream or file. Def. stdout"),
+    ("Allow overwriting an existing file and properly handle\n"
+     "\tthe case when --output-path names an input file"),
+    ("Move the existing OUTPUT-PATH to this location prior to\n"
+     "\toverwriting when --modify-inplace is given"),
     (char *)NULL
 };
 
@@ -252,12 +382,15 @@ static const char *appHelp[] = {
 /* LOCAL FUNCTION PROTOTYPES */
 
 static int  appOptionsHandler(clientData cData, int opt_index, char *opt_arg);
+static void setUpModifyInplace(void);
+static void helpFields(FILE *fh);
 static int  createStringmap(void);
 static int  chooseAction(int opt_index);
 static int  abtoolCheckFields(void);
 static int  writeOutput(void);
 static int  parseInsertField(const char *argument);
 static int  parseMinMax(int opt_index, const char *str_argument);
+static int  parseScalarMultiply(int opt_index, const char *str_argument);
 static ssize_t parseSetMask(int opt_index, const char *str_argument);
 static int  parseFieldList(sk_vector_t **vec, int opt_idx, const char *fields);
 
@@ -333,6 +466,7 @@ appTeardown(
     (void)skStringMapDestroy(field_map);
     field_map = NULL;
     skIPSetOptionsTeardown();
+    skOptionsNotesTeardown();
 
     /* free all vectors */
     skVectorDestroy(insert_field);
@@ -437,10 +571,29 @@ appSetup(
         skAppUsage();
     }
 
-    /* Set the default output location */
-    if (out_stream == NULL) {
+    /* default to stdout if no --output-path */
+    if (NULL == output_path) {
+        output_path = "-";
+    }
+
+    /* handle --modify-inplace if given: Disable if output-path is stdout or
+     * does not exist, and otherwise error if output-path is not a file. Error
+     * when --backup-path given but --modify-inplace is not.  */
+    if (modify_inplace) {
+        /* this function exits on error */
+        setUpModifyInplace();
+    } else if (backup_path) {
+        skAppPrintErr("May only use --%s when --%s is given",
+                      appOptions[OPT_BACKUP_PATH].name,
+                      appOptions[OPT_MODIFY_INPLACE].name);
+        skAppUsage();
+    }
+
+    /* Handle the typical (not modify-inplace) case */
+    if (NULL == out_stream) {
         if ((rv = skStreamCreate(&out_stream, SK_IO_WRITE, SK_CONTENT_SILK))
-            || (rv = skStreamBind(out_stream, "-")))
+            || (rv = skStreamBind(out_stream, output_path))
+            || (rv = skStreamOpen(out_stream)))
         {
             skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
             skStreamDestroy(&out_stream);
@@ -448,15 +601,12 @@ appSetup(
         }
     }
 
-    /* Open the output file */
-    if ((rv = skStreamSetCompressionMethod(out_stream, comp_method))
-        || (rv = skStreamOpen(out_stream)))
-    {
+    /* Set compression method */
+    if ((rv = skStreamSetCompressionMethod(out_stream, comp_method))) {
         skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
         skStreamDestroy(&out_stream);
         exit(EXIT_FAILURE);
     }
-    skOptionsNotesTeardown();
 
     return;                     /* OK */
 }
@@ -485,12 +635,23 @@ appOptionsHandler(
     int                 opt_index,
     char               *opt_arg)
 {
-    int rv;
+    size_t  len;
 
     switch ((appOptionsEnum)opt_index) {
+      case OPT_HELP_FIELDS:
+        helpFields(USAGE_FH);
+        exit(EXIT_SUCCESS);
+
       case OPT_ADD:
       case OPT_SUBTRACT:
+      case OPT_DIVIDE:
         if (chooseAction(opt_index)) {
+            return 1;
+        }
+        break;
+
+      case OPT_SCALAR_MULTIPLY:
+        if (parseScalarMultiply(opt_index, opt_arg)) {
             return 1;
         }
         break;
@@ -556,22 +717,87 @@ appOptionsHandler(
         break;
 
       case OPT_OUTPUT_PATH:
-        if (out_stream) {
+        if (output_path) {
             skAppPrintErr("Invalid %s: Switch used multiple times",
                           appOptions[opt_index].name);
             return 1;
         }
-        if ((rv = skStreamCreate(&out_stream, SK_IO_WRITE, SK_CONTENT_SILK))
-            || (rv = skStreamBind(out_stream, opt_arg)))
-        {
-            skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
-            skStreamDestroy(&out_stream);
+        output_path = opt_arg;
+        break;
+
+      case OPT_MODIFY_INPLACE:
+        modify_inplace = 1;
+        break;
+
+      case OPT_BACKUP_PATH:
+        if (backup_path) {
+            skAppPrintErr("Invalid %s: Switch used multiple times",
+                          appOptions[opt_index].name);
             return 1;
+        }
+        backup_path = opt_arg;
+        break;
+
+      case OPT_ZERO_DIVISOR_RESULT:
+        len = strlen(opt_arg);
+        if (0 == strncmp(opt_arg, "error", len)) {
+            div_zero.action = SKAGGBAG_DIV_ZERO_ERROR;
+            div_zero.value = 0;
+        } else if (0 == strncmp(opt_arg, "remove", len)) {
+            div_zero.action = SKAGGBAG_DIV_ZERO_DELETE;
+            div_zero.value = 0;
+        } else if (0 == strncmp(opt_arg, "nochange", len)) {
+            div_zero.action = SKAGGBAG_DIV_ZERO_NOCHANGE;
+            div_zero.value = 0;
+        } else if (0 == strncmp(opt_arg, "maximum", len)) {
+            div_zero.action = SKAGGBAG_DIV_ZERO_VALUE;
+            div_zero.value = UINT64_MAX;
+        } else {
+            ssize_t rv;
+            rv = skStringParseUint64(&div_zero.value, opt_arg, 0, 0);
+            switch (rv) {
+              case SKUTILS_OK:
+                div_zero.action = SKAGGBAG_DIV_ZERO_VALUE;
+                break;
+              case SKUTILS_ERR_INVALID:
+              case SKUTILS_ERR_EMPTY:
+              case SKUTILS_ERR_BAD_CHAR:
+                skAppPrintErr(("Invalid %s '%s': Expected 'error', 'remove',"
+                               " 'maximum', or non-negative integer"),
+                              appOptions[opt_index].name, opt_arg);
+                return 1;
+              default:
+                skAppPrintErr("Invalid %s '%s': %s",
+                              appOptions[opt_index].name, opt_arg,
+                              skStringParseStrerror(rv));
+                return 1;
+            }
         }
         break;
     }
 
     return 0;                   /* OK */
+}
+
+
+/*
+ *  helpFields(fh);
+ *
+ *    Print a description of each field to the 'fh' file pointer
+ */
+static void
+helpFields(
+    FILE               *fh)
+{
+#define HELP_FIELDS_MSG                                                 \
+    ("The following names may be used for FIELD"                        \
+    " in the command line options that take\n"                          \
+     "a field name. Names are case-insensitive and may be"              \
+     " abbreviated to the shortest unique prefix.\n")
+
+    fprintf(fh, HELP_FIELDS_MSG);
+
+    skStringMapPrintDetailedUsage(field_map, fh);
 }
 
 
@@ -606,6 +832,7 @@ createStringmap(
                != NULL)
         {
             sm_entry.id = type;
+            sm_entry.description = skAggBagFieldTypeGetDescription(type);
             sm_err = skStringMapAddEntries(field_map, 1, &sm_entry);
             if (sm_err) {
                 skAppPrintErr("Unable to add %s field named '%s': %s",
@@ -613,9 +840,6 @@ createStringmap(
                                ? "key" : "counter"),
                               sm_entry.name, skStringMapStrerror(sm_err));
                 return -1;
-            }
-            if (SKAGGBAG_FIELD_ANY_COUNTRY == type) {
-                break;
             }
         }
     }
@@ -638,6 +862,7 @@ chooseAction(
         appOptionsEnum      am_option;
     } action_map[] = {
         {AB_ACTION_ADD,         OPT_ADD},
+        {AB_ACTION_DIVIDE,      OPT_DIVIDE},
         {AB_ACTION_SUBTRACT,    OPT_SUBTRACT}
     };
     action_t new_act;
@@ -997,6 +1222,100 @@ parseMinMax(
     return 0;
 }
 
+
+/*
+ *    Update `a` to be the product of `a` and `b` or UINT64_MAX if the product
+ *    overflows a 64-bit number.
+ */
+static void
+abtoolMultiplyBy(
+    uint64_t   *a,
+    uint64_t    b)
+{
+    uint64_t tmp = *a * b;
+
+    /* The product of `a` and `b` can legitimately be less than `a` when `b`
+     * is zero and vice versa; otherwise overflow has occurred. */
+    if ((tmp < *a && b != 0) || (tmp < b && *a != 0)) {
+        *a = UINT64_MAX;
+    } else {
+        *a = tmp;
+    }
+}
+
+
+static int
+parseScalarMultiply(
+    int                 opt_index,
+    const char         *str_argument)
+{
+    smultiply_value_t sm;
+    parsed_value_t pv;
+    ssize_t rv;
+
+    assert(OPT_SCALAR_MULTIPLY == opt_index);
+
+    memset(&sm, 0, sizeof(sm));
+
+    if (NULL == strchr(str_argument, '=')) {
+        uint64_t val;
+
+        rv = skStringParseUint64(&val, str_argument, 1, 0);
+        switch (rv) {
+          case SKUTILS_OK:
+            break;
+          case SKUTILS_ERR_MINIMUM:
+          case SKUTILS_ERR_MAXIMUM:
+          case SKUTILS_ERR_OVERFLOW:
+          case SKUTILS_ERR_UNDERFLOW:
+            skAppPrintErr(("Invalid %s '%s': %s"),
+                          appOptions[opt_index].name, str_argument,
+                          skStringParseStrerror(rv));
+            return -1;
+          default:
+            skAppPrintErr(("Invalid %s '%s': Does not contain '=' and found"
+                           " an error when parsing as a value: %s"),
+                          appOptions[opt_index].name, str_argument,
+                          skStringParseStrerror(rv));
+            return -1;
+        }
+        /* The switch may be repeated; final multiplier is the product of all
+         * arguments, and watch for overflow. */
+        abtoolMultiplyBy(&scalar_multiplier, val);
+        return 0;
+    }
+
+    /* Store the field in 'sm' and the value in 'pv' */
+    if (parseSingleField(opt_index, str_argument, &sm.sm_field, &pv)) {
+        return -1;
+    }
+    sm.sm_factor = pv.pv.pv_int;
+
+    /* Check to ensure the field is a counter */
+    if (skAggBagFieldTypeGetDisposition((sk_aggbag_type_t)sm.sm_field)
+        != SK_AGGBAG_COUNTER)
+    {
+        skAppPrintErr("Ignoring --%s=%s: Cannot apply switch to key fields",
+                      appOptions[opt_index].name, str_argument);
+        return 0;
+    }
+
+    /* Create vector if needed and add the new element */
+    if (NULL == smultiply_fields) {
+        smultiply_fields = skVectorNew(sizeof(smultiply_value_t));
+        if (NULL == smultiply_fields) {
+            skAppPrintOutOfMemory("vector");
+            return -1;
+        }
+    }
+
+    if (skVectorAppendValue(smultiply_fields, &sm)) {
+        skAppPrintOutOfMemory("vector element");
+        return -1;
+    }
+
+    return 0;
+}
 
 /*
  *    Parse the NAME=SETFILE argument to the --set-intersect or
@@ -1417,21 +1736,26 @@ abtoolCheckFields(
 
 
 /*
- *    Reorder the fields in the minmax_fields and setmask_fields
- *    vectors to be in the same order as the keys and values in the
- *    output aggbag, and remove any fields from the vectors that are
- *    not present in the aggbag.
+ *    Reorder the fields in the minmax_fields, setmask_fields, and
+ *    smultiply_fields vectors to be in the same order as the keys and values
+ *    in the output aggbag, and remove any fields from the vectors that are
+ *    not present in the aggbag.  For scalar-multiply fields, combine repeated
+ *    FIELD names by computing the product of the values.
  */
 static void
-reorderFilterFields(
+reorderFilterMultiplyFields(
     void)
 {
     sk_aggbag_field_t f;
     uint32_t pos[AGGBAGTOOL_ARRAY_SIZE];
+    size_t count;
     size_t i;
     size_t j;
 
-    if (NULL == minmax_fields && NULL == setmask_fields) {
+    if (NULL == minmax_fields
+        && NULL == setmask_fields
+        && NULL == smultiply_fields)
+    {
         return;
     }
 
@@ -1451,11 +1775,13 @@ reorderFilterFields(
     }
 
     if (minmax_fields) {
-        /* remove fields not in the aggbag */
         minmax_value_t mmv, mmv2;
 
+        count = skVectorGetCount(minmax_fields);
+
+        /* remove fields not in the aggbag */
         j = 0;
-        for (i = 0; i < skVectorGetCount(minmax_fields); ++i) {
+        for (i = 0; i < count; ++i) {
             skVectorGetValue(&mmv, minmax_fields, i);
             if (pos[mmv.mmv_field]) {
                 if (i != j) {
@@ -1468,11 +1794,14 @@ reorderFilterFields(
             skVectorDestroy(minmax_fields);
             minmax_fields = NULL;
         } else {
-            /* remove all elements >= j */
-            skVectorSetCapacity(minmax_fields, j);
+            if (j != count) {
+                count = j;
+                /* remove all elements >= j */
+                skVectorSetCapacity(minmax_fields, count);
+            }
 
             /* use insertion sort to order the vector's elements */
-            for (i = 1; i < skVectorGetCount(minmax_fields); ++i) {
+            for (i = 1; i < count; ++i) {
                 skVectorGetValue(&mmv, minmax_fields, i);
                 for (j = i; j > 0; --j) {
                     skVectorGetValue(&mmv2, minmax_fields, j-1);
@@ -1489,11 +1818,13 @@ reorderFilterFields(
     }
 
     if (setmask_fields) {
-        /* remove fields not in the aggbag */
         setmask_value_t sv, sv2;
 
+        count = skVectorGetCount(setmask_fields);
+
+        /* remove fields not in the aggbag */
         j = 0;
-        for (i = 0; i < skVectorGetCount(setmask_fields); ++i) {
+        for (i = 0; i < count; ++i) {
             skVectorGetValue(&sv, setmask_fields, i);
             if (pos[sv.sv_field]) {
                 if (i != j) {
@@ -1508,9 +1839,12 @@ reorderFilterFields(
             skVectorDestroy(setmask_fields);
             setmask_fields = NULL;
         } else {
-            skVectorSetCapacity(setmask_fields, j);
+            if (j != count) {
+                count = j;
+                skVectorSetCapacity(setmask_fields, count);
+            }
 
-            for (i = 1; i < skVectorGetCount(setmask_fields); ++i) {
+            for (i = 1; i < count; ++i) {
                 skVectorGetValue(&sv, setmask_fields, i);
                 for (j = i; j > 0; --j) {
                     skVectorGetValue(&sv2, setmask_fields, j-1);
@@ -1521,6 +1855,70 @@ reorderFilterFields(
                 }
                 if (i != j) {
                     skVectorSetValue(setmask_fields, j, &sv);
+                }
+            }
+        }
+    }
+
+    if (smultiply_fields) {
+        smultiply_value_t sm, sm2;
+
+        count = skVectorGetCount(smultiply_fields);
+
+        j = 0;
+        for (i = 0; i < count; ++i) {
+            skVectorGetValue(&sm, smultiply_fields, i);
+            if (pos[sm.sm_field]) {
+                if (i != j) {
+                    skVectorSetValue(smultiply_fields, j, &sm);
+                }
+                ++j;
+            }
+        }
+        if (0 == j) {
+            skVectorDestroy(smultiply_fields);
+            smultiply_fields = NULL;
+        } else {
+            if (j != count) {
+                count = j;
+                skVectorSetCapacity(smultiply_fields, count);
+            }
+
+            for (i = 1; i < count; ++i) {
+                skVectorGetValue(&sm, smultiply_fields, i);
+                for (j = i; j > 0; --j) {
+                    skVectorGetValue(&sm2, smultiply_fields, j-1);
+                    if (pos[sm.sm_field] >= pos[sm2.sm_field]) {
+                        break;
+                    }
+                    skVectorSetValue(smultiply_fields, j, &sm2);
+                }
+                if (i != j) {
+                    skVectorSetValue(smultiply_fields, j, &sm);
+                }
+            }
+
+            if (count > 1) {
+                j = 0;
+                skVectorGetValue(&sm2, smultiply_fields, j);
+                for (i = 1; i < count; ++i) {
+                    skVectorGetValue(&sm, smultiply_fields, i);
+                    if (sm2.sm_field == sm.sm_field) {
+                        /* combine */
+                        abtoolMultiplyBy(&sm2.sm_factor, sm.sm_factor);
+                    } else {
+                        skVectorSetValue(smultiply_fields, j, &sm2);
+                        ++j;
+                        sm2 = sm;
+                    }
+                }
+                skVectorSetValue(smultiply_fields, j, &sm2);
+                ++j;
+                skVectorSetCapacity(smultiply_fields, j);
+
+                count = skVectorGetCount(smultiply_fields);
+                for (i = 0; i < count; ++i) {
+                    skVectorGetValue(&sm, smultiply_fields, i);
                 }
             }
         }
@@ -1550,8 +1948,6 @@ applyFilters(
     uint64_t number;
     skipaddr_t ip;
     int zero_row = 0;
-
-    reorderFilterFields();
 
     minmax_count = (minmax_fields ? skVectorGetCount(minmax_fields) : 0);
     setmask_count = (setmask_fields ? skVectorGetCount(setmask_fields) : 0);
@@ -1660,6 +2056,144 @@ applyFilters(
     skAggBagIteratorFree(it);
 }
 
+
+static void
+scalarMultiply(
+    void)
+{
+    sk_aggbag_iter_t iter = SK_AGGBAG_ITER_INITIALIZER;
+    sk_aggbag_iter_t *it = &iter;
+    size_t sm_pos = 0;
+    const smultiply_value_t *sm = NULL;
+    sk_aggbag_type_t sm_id;
+    sk_aggbag_type_t id;
+    uint64_t max_counter;
+    uint64_t number;
+
+    if (0 == scalar_multiplier) {
+        /* zero all counters in the aggbag */
+        skAggBagIteratorBind(it, out_ab);
+        while (skAggBagIteratorNext(it) == SK_ITERATOR_OK) {
+            do {
+                skAggBagAggregateSetUnsigned(
+                    &it->counter, &it->counter_field_iter, 0);
+            } while (skAggBagFieldIterNext(&it->counter_field_iter)
+                     == SK_ITERATOR_OK);
+            skAggBagKeyCounterSet(out_ab, &it->key, &it->counter);
+        }
+
+        skAggBagIteratorFree(it);
+        return;
+    }
+
+    /* find the counter value that would cause overflow when multiplied by the
+     * scalar_multiplier */
+    max_counter = UINT64_MAX / scalar_multiplier;
+
+    if (NULL == smultiply_fields || 0 == skVectorGetCount(smultiply_fields)) {
+        /* there are no per-field multipliers */
+        if (1 == scalar_multiplier) {
+            /* nothing to do */
+            return;
+        }
+
+        /* there is only a scalar_multiplier across all counters to deal with;
+         * apply it to all counters in all aggbag entries */
+        skAggBagIteratorBind(it, out_ab);
+        while (skAggBagIteratorNext(it) == SK_ITERATOR_OK) {
+            do {
+                skAggBagAggregateGetUnsigned(
+                    &it->counter, &it->counter_field_iter, &number);
+                if (number > max_counter) {
+                    number = UINT64_MAX;
+                } else {
+                    number *= scalar_multiplier;
+                }
+                skAggBagAggregateSetUnsigned(
+                    &it->counter, &it->counter_field_iter, number);
+            } while (skAggBagFieldIterNext(&it->counter_field_iter)
+                     == SK_ITERATOR_OK);
+            skAggBagKeyCounterSet(out_ab, &it->key, &it->counter);
+        }
+
+        skAggBagIteratorFree(it);
+        return;
+    }
+
+    /* there are per-field values for the scalar-multiply option */
+
+    if (1 == scalar_multiplier) {
+        /* there are ONLY per-field values */
+
+        skAggBagIteratorBind(it, out_ab);
+        while (skAggBagIteratorNext(it) == SK_ITERATOR_OK) {
+            sm_pos = 0;
+            sm = ((smultiply_value_t *)
+                  skVectorGetValuePointer(smultiply_fields, sm_pos));
+
+            number = 0;
+            do {
+                id = skAggBagFieldIterGetType(&it->counter_field_iter);
+                skAggBagAggregateGetUnsigned(
+                    &it->counter, &it->counter_field_iter, &number);
+                if ((0 != number) && sm->sm_field == id) {
+                    abtoolMultiplyBy(&number, sm->sm_factor);
+                    ++sm_pos;
+                    sm = ((smultiply_value_t *)
+                          skVectorGetValuePointer(smultiply_fields, sm_pos));
+                    skAggBagAggregateSetUnsigned(
+                        &it->counter, &it->counter_field_iter, number);
+                }
+            } while ((NULL != sm)
+                     && (skAggBagFieldIterNext(&it->counter_field_iter)
+                         == SK_ITERATOR_OK));
+            skAggBagKeyCounterSet(out_ab, &it->key, &it->counter);
+        }
+
+        skAggBagIteratorFree(it);
+        return;
+    }
+
+    skAggBagIteratorBind(it, out_ab);
+    while (skAggBagIteratorNext(it) == SK_ITERATOR_OK) {
+        sm_pos = 0;
+        sm = ((smultiply_value_t *)
+               skVectorGetValuePointer(smultiply_fields, sm_pos));
+        sm_id = (sk_aggbag_type_t)sm->sm_field;
+
+        number = 0;
+        do {
+            id = skAggBagFieldIterGetType(&it->counter_field_iter);
+            skAggBagAggregateGetUnsigned(
+                &it->counter, &it->counter_field_iter, &number);
+            if (0 != number) {
+                /* apply per-field multiplier if IDs match */
+                if (sm_id == id) {
+                    abtoolMultiplyBy(&number, sm->sm_factor);
+                    ++sm_pos;
+                    sm = ((smultiply_value_t *)
+                          skVectorGetValuePointer(smultiply_fields, sm_pos));
+                    sm_id = ((sm)
+                             ? (sk_aggbag_type_t)sm->sm_field
+                             : SKAGGBAG_FIELD_INVALID);
+                }
+                /* apply scalar_multiplier for every counter */
+                if (number > max_counter) {
+                    number = UINT64_MAX;
+                } else {
+                    number *= scalar_multiplier;
+                }
+                skAggBagAggregateSetUnsigned(
+                    &it->counter, &it->counter_field_iter, number);
+            }
+        } while (skAggBagFieldIterNext(&it->counter_field_iter)
+                 == SK_ITERATOR_OK);
+
+        skAggBagKeyCounterSet(out_ab, &it->key, &it->counter);
+    }
+
+    skAggBagIteratorFree(it);
+}
 
 /*
  *    Create a (normal) Bag file from the global AggBag 'out_ab'.
@@ -2112,15 +2646,11 @@ static int
 manipulateFields(
     sk_aggbag_t       **ab_param)
 {
-    sk_aggbag_type_iter_t iter;
-    sk_aggbag_type_t field_type;
     parsed_value_t *pv;
     sk_vector_t *key_vec = NULL;
     sk_vector_t *counter_vec = NULL;
     sk_aggbag_type_t *id_array;
     unsigned int id_count;
-    sk_bitmap_t *key_bitmap = NULL;
-    sk_bitmap_t *counter_bitmap = NULL;
     sk_aggbag_field_t field;
     sk_aggbag_type_t t;
     sk_vector_t *field_vec = NULL;
@@ -2165,30 +2695,6 @@ manipulateFields(
         }
     }
 #endif  /* 0 */
-
-    /* we have a list of fields, but do not yet know which are
-     * considered keys and which are counters.  the following code
-     * determines that. */
-
-    /* create bitmaps to hold key ids and counter ids */
-    if (skBitmapCreate(&key_bitmap, AGGBAGTOOL_ARRAY_SIZE)) {
-        skAppPrintOutOfMemory("bitmap");
-        goto END;
-    }
-    if (skBitmapCreate(&counter_bitmap, AGGBAGTOOL_ARRAY_SIZE)) {
-        skAppPrintOutOfMemory("bitmap");
-        goto END;
-    }
-    skAggBagFieldTypeIteratorBind(&iter, SK_AGGBAG_KEY);
-    while (skAggBagFieldTypeIteratorNext(&iter, &field_type)) {
-        assert(AGGBAGTOOL_ARRAY_SIZE > (int)field_type);
-        skBitmapSetBit(key_bitmap, field_type);
-    }
-    skAggBagFieldTypeIteratorBind(&iter, SK_AGGBAG_COUNTER);
-    while (skAggBagFieldTypeIteratorNext(&iter, &field_type)) {
-        assert(AGGBAGTOOL_ARRAY_SIZE > (int)field_type);
-        skBitmapSetBit(counter_bitmap, field_type);
-    }
 
     /* create vectors to hold the IDs that are being used */
     key_vec = skVectorNew(sizeof(sk_aggbag_type_t));
@@ -2295,14 +2801,22 @@ manipulateFields(
         /* for any field that remains in tmp_vec, add it to the
          * destination AggBag */
         for (i = 0; 0 == skVectorGetValue(&id, tmp_vec, i); ++i) {
-            if (skBitmapGetBit(key_bitmap, id) == 1) {
+            switch (skAggBagFieldTypeGetDisposition((sk_aggbag_type_t)id)) {
+              case SK_AGGBAG_KEY:
                 t = (sk_aggbag_type_t)id;
                 skVectorAppendValue(key_vec, &t);
-            } else if (skBitmapGetBit(counter_bitmap, id) == 1) {
+                break;
+              case SK_AGGBAG_COUNTER:
                 t = (sk_aggbag_type_t)id;
                 skVectorAppendValue(counter_vec, &t);
-            } else {
+                break;
+              case 0:
                 skAppPrintErr("Unknown field id %u", id);
+                skAbort();
+              default:
+                skAppPrintErr(
+                    "Unsupported type %u for field id %u",
+                    skAggBagFieldTypeGetDisposition((sk_aggbag_type_t)id), id);
                 skAbort();
             }
         }
@@ -2364,8 +2878,6 @@ manipulateFields(
     }
     skVectorDestroy(key_vec);
     skVectorDestroy(counter_vec);
-    skBitmapDestroy(&key_bitmap);
-    skBitmapDestroy(&counter_bitmap);
     return rv;
 }
 
@@ -2380,17 +2892,6 @@ writeOutput(
     void)
 {
     ssize_t rv;
-
-    /* Remove anything that's not in range or not in the intersecting
-     * set (or complement) as appropriate */
-    applyFilters();
-
-    /* add any notes (annotations) to the output */
-    rv = skOptionsNotesAddToStream(out_stream);
-    if (rv) {
-        skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
-        exit(EXIT_FAILURE);
-    }
 
     /* add the invocation to the Bag */
 
@@ -2512,6 +3013,228 @@ appNextInput(
 }
 
 
+/*
+ *    Removes the temp file if remove_temp_file is non-zero.  Installed as an
+ *    at-exit handler and called by the signal handler.
+ */
+static void
+removeTempFileCallback(
+    void)
+{
+    if (remove_temp_file && out_stream && skStreamGetPathname(out_stream)) {
+        unlink(skStreamGetPathname(out_stream));
+    }
+}
+
+
+/*
+ *    Signal handler that calls removeTempFileCallback().
+ */
+static void
+signalHandler(
+    int recv_signal)
+{
+    struct sigaction s_action;
+
+    if (signal_deferred) {
+        /* we are moving temp-file over output-path */
+        signal_pending = recv_signal;
+
+    } else if (signal_signaled) {
+        /* we received another signal while in the handler */
+        raise(recv_signal);
+
+    } else {
+        /* handle the signal */
+        signal_signaled = 1;
+
+        /* remove the temp file */
+        removeTempFileCallback();
+
+        /* restore the default behavior for the signal and raise it */
+        memset(&s_action, 0, sizeof(s_action));
+        s_action.sa_handler = SIG_DFL;
+        sigaction(recv_signal, &s_action, NULL);
+
+        raise(recv_signal);
+    }
+}
+
+
+/*
+ *    Sets up the application to handle --modify-inplace and --backup-path.
+ *    Exits the application on error.
+ */
+static void
+setUpModifyInplace(
+    void)
+{
+    char temp_file[PATH_MAX+1];
+    struct sigaction s_action;
+    unsigned int i;
+    ssize_t rv;
+
+    assert(modify_inplace);
+
+    /* check for non-file output */
+    if (0 == strcmp(output_path, "-")
+        || 0 == strcmp(output_path, "stdout")
+        || 0 == strcmp(output_path, "stderr"))
+    {
+        skAppPrintErr(
+            "Ignoring --%s since the output-path is the standard %s",
+            appOptions[OPT_MODIFY_INPLACE].name,
+            ((0 == strcmp(output_path, "stderr")) ? "error" : "output"));
+        modify_inplace = 0;
+        backup_path = NULL;
+        return;
+    }
+
+    /* ask file system about the output-path */
+    rv = lstat(output_path, &stat_orig);
+    if (-1 == rv) {
+        if (ENOENT != errno) {
+            skAppPrintSyserror("Error getting status of %s '%s'",
+                               appOptions[OPT_OUTPUT_PATH].name, output_path);
+            exit(EXIT_FAILURE);
+        }
+        /* Named file does not exist and there is no output-path to worry
+         * about overwriting */
+        skAppPrintErr("Ignoring --%s since '%s' does not exist",
+                      appOptions[OPT_MODIFY_INPLACE].name,
+                      appOptions[OPT_OUTPUT_PATH].name);
+        modify_inplace = 0;
+        backup_path = NULL;
+        return;
+    }
+
+    if (0 == S_ISREG(stat_orig.st_mode)) {
+        skAppPrintErr("May use --%s only when --%s is a regular file",
+                      appOptions[OPT_MODIFY_INPLACE].name,
+                      appOptions[OPT_OUTPUT_PATH].name);
+        exit(EXIT_FAILURE);
+    }
+
+    /* create a temporary file and open its stream */
+    memset(temp_file, 0, sizeof(temp_file));
+    rv = snprintf(temp_file, sizeof(temp_file) - 1, "%s.XXXXXXXX",
+                  output_path);
+    if ((size_t)rv > sizeof(temp_file) - 1) {
+        skAppPrintErr("Length of temporary file name is too long");
+        exit(EXIT_FAILURE);
+    }
+
+    if ((rv = skStreamCreate(&out_stream, SK_IO_WRITE, SK_CONTENT_SILK))
+        || (rv = skStreamBind(out_stream, temp_file))
+        || (rv = skStreamMakeTemp(out_stream)))
+    {
+        skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
+        skStreamDestroy(&out_stream);
+        exit(EXIT_FAILURE);
+    }
+
+    /* install an atexit handler to remove the temp file */
+    remove_temp_file = 1;
+    if (atexit(removeTempFileCallback) < 0) {
+        skAppPrintSyserror("Unable to set atexit handlder");
+        unlink(skStreamGetPathname(out_stream));
+        skStreamDestroy(&out_stream);
+        exit(EXIT_FAILURE);
+    }
+
+    /* set up the single handler to remove the temp file */
+    memset(&s_action, 0, sizeof(s_action));
+    s_action.sa_handler = signalHandler;
+    s_action.sa_flags = SA_RESTART;
+
+    /* add all interesting signals to the mask */
+    sigemptyset(&s_action.sa_mask);
+    for (i = 0; sig_list[i] != 0; ++i) {
+        sigaddset(&s_action.sa_mask, sig_list[i]);
+    }
+
+    /* install the signal handler for each interesting signal */
+    for (i = 0; sig_list[i] != 0; ++i) {
+        if (sigaction(sig_list[i], &s_action, NULL) == -1) {
+            skAppPrintSyserror("Warning: Unable to set handler for %s",
+                               skSignalToName(sig_list[i]));
+        }
+    }
+}
+
+
+/*
+ *    Moves the output files into place.
+ *
+ *    If backup_path is set, first moves the existing output_path to
+ *    backup_path.  Moves the temp file to output_path.  Returns 0 on success
+ *    and -1 on failure.
+ */
+static int
+moveTempFileToOutputPath(
+    void)
+{
+    const char *src;
+    const char *dst;
+    const char *tmp;
+    int err;
+
+    /* Tell atexit() not to remove temp file if file moves fail */
+    remove_temp_file = 0;
+
+    /* Get name of temp file and set its permissions, owner, and group to
+     * match the original file.  Warn on permissions failure; ignore
+     * owner/group failure. */
+    tmp = skStreamGetPathname(out_stream);
+    if (-1 == chmod(tmp, stat_orig.st_mode)) {
+        skAppPrintSyserror("Warning: Unable to set permission flags on '%s'",
+                           tmp);
+    }
+    if (-1 == chown(tmp, stat_orig.st_uid, stat_orig.st_gid)) {
+        /* changing owner failed; try setting group only */
+        (void)chown(tmp, -1, stat_orig.st_gid);
+    }
+
+    /* Move existing output-path to the backup-path */
+    if (backup_path) {
+        src = output_path;
+        dst = backup_path;
+        err = skMoveFile(src, dst);
+        if (err) {
+            goto ERROR;
+        }
+    }
+
+    /* Prepare to move temp-file to output-path */
+    src = tmp;
+    dst = output_path;
+
+    /* Defer signals */
+    ++signal_deferred;
+
+    /* move the file */
+    err = skMoveFile(src, dst);
+
+    /* return to default signal handling */
+    --signal_deferred;
+    if (signal_pending) {
+        raise(signal_pending);
+    }
+
+    if (err) {
+        goto ERROR;
+    }
+
+    return 0;
+
+  ERROR:
+    skAppPrintErr("Error moving '%s' to '%s': %s",
+                  src, dst, strerror(err));
+    skAppPrintErr("Leaving resulting IPset in '%s'", tmp);
+    return -1;
+}
+
+
 int main(int argc, char **argv)
 {
     sk_aggbag_t *ab;
@@ -2540,6 +3263,16 @@ int main(int argc, char **argv)
             }
             break;
 
+          case AB_ACTION_DIVIDE:
+            rv = skAggBagDivideAggBag(out_ab, ab, &div_zero);
+            if (SKAGGBAG_OK != rv) {
+                skAppPrintErr("Error when dividing aggbags: %s",
+                              skAggBagStrerror(rv));
+                skAggBagDestroy(&ab);
+                return EXIT_FAILURE;
+            }
+            break;
+
           case AB_ACTION_SUBTRACT:
             rv = skAggBagSubtractAggBag(out_ab, ab);
             if (SKAGGBAG_OK != rv) {
@@ -2554,8 +3287,49 @@ int main(int argc, char **argv)
         skAggBagDestroy(&ab);
     }
 
+    /* Now that the notes from all input streams have been seen, add the
+     * notes to the output stream */
+    rv = skOptionsNotesAddToStream(out_stream);
+    if (rv) {
+        skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
+    }
+    skOptionsNotesTeardown();
+
+
+    /* Before doing filtering or scalar-multiply operations on the output
+     * aggbag, reorder the argument fields to match the order in the aggbag */
+    reorderFilterMultiplyFields();
+
+    /* Handle the --scalar-multiply switch(es) */
+    scalarMultiply();
+
+    /* Remove anything that's not in range or not in the intersecting
+     * set (or complement) as appropriate */
+    applyFilters();
+
     /* Write the output */
     if (writeOutput()) {
+        return EXIT_FAILURE;
+    }
+
+    rv = skStreamClose(out_stream);
+    if (rv) {
+        skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
+        skStreamDestroy(&out_stream);
+        return EXIT_FAILURE;
+    }
+
+    if (modify_inplace) {
+        rv = moveTempFileToOutputPath();
+        if (rv) {
+            skStreamDestroy(&out_stream);
+            return EXIT_FAILURE;
+        }
+    }
+
+    rv = skStreamDestroy(&out_stream);
+    if (rv) {
+        skStreamPrintLastErr(out_stream, rv, &skAppPrintErr);
         return EXIT_FAILURE;
     }
 

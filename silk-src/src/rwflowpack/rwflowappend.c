@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2006-2020 by Carnegie Mellon University.
+** Copyright (C) 2006-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -14,7 +56,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: rwflowappend.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: rwflowappend.c d0634a5fb86d 2023-09-07 15:45:51Z mthomas $");
 
 #include <silk/redblack.h>
 #include <silk/rwrec.h>
@@ -1180,41 +1222,41 @@ appender_main(
         }
 
         /* Determine the pathname of the hourly file to which the
-         * incremental file will be appended; attempt to use the
-         * packed-file header in the file, but fall back to the file
-         * naming convention if we must.  The 'relative_dir' that is
-         * set here is used when archiving the file. */
+         * incremental file will be appended.  If the file has a
+         * packed-file header, attempt to use it.  If that fails,
+         * attempt to parse the name assuming it uses the file
+         * naming convention.  If that also fails, print a warning
+         * and give up on this file.  The 'relative_dir' that is set
+         * here is used when archiving the file. */
         hentry = skHeaderGetFirstMatch(in_hdr, SK_HENTRY_PACKEDFILE_ID);
-        if (!(hentry
-              && sksiteGeneratePathname(
-                  state->out_path, sizeof(state->out_path),
-                  skHentryPackedfileGetFlowtypeID(hentry),
-                  skHentryPackedfileGetSensorID(hentry),
-                  skHentryPackedfileGetStartTime(hentry),
-                  "", /* no suffix */
-                  &state->relative_dir, &state->out_basename)))
-        {
-            if (hentry) {
-                DEBUGMSG(("Falling back to file naming convention for '%s':"
-                          " Unable to generate path from packed-file header"),
-                         state->in_basename);
-            } else {
-                DEBUGMSG(("Falling back to file naming convention for '%s':"
-                          " File does not have a packed-file header"),
-                         state->in_basename);
-            }
-            if (!sksiteParseGeneratePath(
+        if (((hentry == NULL)
+             || (sksiteGeneratePathname(
+                     state->out_path, sizeof(state->out_path),
+                     skHentryPackedfileGetFlowtypeID(hentry),
+                     skHentryPackedfileGetSensorID(hentry),
+                     skHentryPackedfileGetStartTime(hentry),
+                     "", /* no suffix */
+                     &state->relative_dir, &state->out_basename) == NULL))
+            && (sksiteParseGeneratePath(
                     state->out_path, sizeof(state->out_path),
                     state->in_basename, "", /* no suffix */
-                    &state->relative_dir, &state->out_basename))
-            {
-                WARNINGMSG(("Error initializing incremental file:"
-                            " File does not have the necessary header and"
-                            " does not match SiLK naming convention: '%s'."
-                            " Repository unchanged"), state->in_path);
-                destroyInputStream(state, APPENDER_FILE_ERROR);
-                continue;
+                    &state->relative_dir, &state->out_basename) == NULL))
+        {
+            /* Failed. Set part of warning based on header presence */
+            const char *pfh_error;
+            if (hentry) {
+                pfh_error = ("File's packed-file header contains an unknown"
+                             " sensor or flowtype");
+            } else {
+                pfh_error = "File does not have a packed-file header";
             }
+            WARNINGMSG(("Error initializing incremental file '%s':"
+                        " %s, file name does not match SiLK convention or"
+                        " names an unknown sensor or flowtype, or resulting"
+                        " pathname is too long. Repository unchanged"),
+                       state->in_basename, pfh_error);
+            destroyInputStream(state, APPENDER_FILE_ERROR);
+            continue;
         }
 
         /* Read the first record from the incremental file */

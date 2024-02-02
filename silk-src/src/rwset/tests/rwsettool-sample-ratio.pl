@@ -34,8 +34,7 @@ $cmd = ("$rwsettool --sample --ratio=0.02 --seed=2749473 $temp{sipset}"
 check_md5_output($empty_md5, $cmd);
 
 # Intersection of sample set with source set should be sample set
-$cmd = "cat $temp{sampleset}";
-compute_md5(\$md5, $cmd);
+compute_md5_file(\$md5, $temp{sampleset});
 
 $cmd = ("$rwsettool --intersect $temp{sipset} $temp{sampleset}"
         ." --compression=none --invocation-strip --record-version=4");

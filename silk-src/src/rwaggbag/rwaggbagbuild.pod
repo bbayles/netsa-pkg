@@ -17,6 +17,8 @@ B<rwaggbagbuild> - Create a binary aggregate bag from non-flow data
 
   rwaggbagbuild --help
 
+  rwaggbagbuild --help-fields
+
   rwaggbagbuild --version
 
 =head1 DESCRIPTION
@@ -337,14 +339,15 @@ a generic counter
 
 =item B<--constant-field>=I<FIELD>B<=>I<VALUE>
 
-For each entry read from the input file(s), insert a field named
-I<FIELD> and set its value to I<VALUE>.  I<VALUE> is a textual
-representation of the field's value as described in the description of
-the B<--fields> switch above.  When I<FIELD> is a counter field and
-the same key appears multiple times in the input, I<VALUE> is added to
-the counter multiple times.  If a field named I<FIELD> appears in an
-input file, its value from that file is ignored.  Specify the
-B<--constant-field> switch multiple times to insert multiple fields.
+For each entry (row) read from the input file(s), insert or replace a
+field named I<FIELD> and set its value to I<VALUE>.  I<VALUE> is a
+textual representation of the field's value as described in the
+description of the B<--fields> switch above.  When I<FIELD> is a
+counter field and the same key appears multiple times in the input,
+I<VALUE> is added to the counter multiple times.  If a field named
+I<FIELD> appears in an input file, its value from that file is
+ignored.  Specify the B<--constant-field> switch multiple times to
+insert multiple fields.
 
 =item B<--column-separator>=I<CHAR>
 
@@ -491,6 +494,12 @@ listed on the command line.
 =item B<--help>
 
 Print the available options and exit.
+
+=item B<--help-fields>
+
+Print the names and descriptions of the keys and counters that may be
+used in the B<--fields> and B<--constant-field> switches and exit.
+I<Since SiLK 3.22.0.>
 
 =item B<--version>
 
@@ -641,7 +650,7 @@ SiLK 3.15.0.
 
 =cut
 
-$SiLK: rwaggbagbuild.pod c56bd724bfc8 2019-10-11 19:38:12Z mthomas $
+$SiLK: rwaggbagbuild.pod e95eb8cd5b0c 2023-09-05 21:09:53Z mthomas $
 
 Local Variables:
 mode:text

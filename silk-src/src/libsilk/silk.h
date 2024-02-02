@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2001-2020 by Carnegie Mellon University.
+** Copyright (C) 2001-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 #ifndef _SILK_H
@@ -13,6 +55,7 @@ extern "C" {
 
 #include <silk/silk_config.h>
 
+#include <stddef.h>
 #include <stdio.h>
 #ifdef    SK_HAVE_SYS_TYPES_H
 #  include <sys/types.h>
@@ -20,21 +63,10 @@ extern "C" {
 #ifdef    SK_HAVE_SYS_STAT_H
 #  include <sys/stat.h>
 #endif
-#ifdef    SK_STDC_HEADERS
+#ifdef    SK_HAVE_STDLIB_H
 #  include <stdlib.h>
-#  include <stddef.h>
-#else
-#  ifdef  SK_HAVE_STDLIB_H
-#    include <stdlib.h>
-#  endif
-#  ifdef  SK_HAVE_MALLOC_H
-#    include <malloc.h>
-#  endif
 #endif
 #ifdef    SK_HAVE_STRING_H
-#  if     !defined SK_STDC_HEADERS && defined SK_HAVE_MEMORY_H
-#    include <memory.h>
-#  endif
 #  include <string.h>
 #endif
 #ifdef    SK_HAVE_STRINGS_H
@@ -108,30 +140,14 @@ extern "C" {
 #  include <arpa/inet.h>
 #endif
 
-#ifdef    SK_TIME_WITH_SYS_TIME
+#ifdef    SK_HAVE_SYS_TIME_H
 #  include <sys/time.h>
-#  include <time.h>
-#else
-#  ifdef  SK_HAVE_SYS_TIME_H
-#    include <sys/time.h>
-#  else
-#    include <time.h>
-#  endif
 #endif
-
+#if       SK_HAVE_TIME_H
+#  include <time.h>
+#endif
 #ifdef    SK_HAVE_DIRENT_H
 #  include <dirent.h>
-#else
-#  define dirent direct
-#  ifdef  SK_HAVE_SYS_NDIR_H
-#    include <sys/ndir.h>
-#  endif
-#  ifdef  SK_HAVE_SYS_DIR_H
-#    include <sys/dir.h>
-#  endif
-#  ifdef  SK_HAVE_NDIR_H
-#    include <ndir.h>
-#  endif
 #endif
 
 #ifdef    SK_HAVE_SYS_MMAN_H
@@ -498,7 +514,7 @@ extern "C" {
 #define RCSIDENT(id) RCSIDENTVAR(_rcsID, (id))
 
 
-RCSIDENTVAR(rcsID_SILK_H, "$SiLK: silk.h ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENTVAR(rcsID_SILK_H, "$SiLK: silk.h b2b562f1ea39 2023-02-20 17:50:25Z mthomas $");
 
 
 /* Name of environment variable pointing to the root of install */

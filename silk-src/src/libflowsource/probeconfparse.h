@@ -116,7 +116,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 170 "probeconfparse.y"
+#line 212 "probeconfparse.y"
 {
     char               *string;
     sk_vector_t        *vector;

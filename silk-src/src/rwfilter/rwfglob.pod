@@ -21,18 +21,62 @@ B<rwfglob> - Print files that B<rwfilter>'s File Selection switches will access
 
 =head1 DESCRIPTION
 
-B<rwfglob> accepts the normal File Selection options of B<rwfilter(1)>
-and prints, to the standard output, the names of the files that would
-normally be accessed, one file name per line.  At the end, a summary
-is printed, to the standard output, of the number of files that
-B<rwfglob> found.  To suppress the printing of the file names and/or
-the summary, specify the B<--no-file-names> and/or B<--no-summary>
-switches, respectively.
+B<rwfglob> accepts the same File L</Selection Switches> of
+B<rwfilter(1)> and prints, to the standard output, the pathnames of
+the files that B<rwfilter> would process, one file name per line.  At
+the end, a summary is printed to the standard output of the number of
+files that B<rwfglob> found.  To suppress the printing of the file
+names and/or the summary, specify the B<--no-file-names> and/or
+B<--no-summary> switches, respectively.
 
 By default, B<rwfglob> only prints the names of files that exist.
 When the B<--print-missing-files> switch is provided, B<rwfglob>
 prints, to the standard error, the names of files that it did not
-find, one file name per line, preceded by the text S<'Missing '>.
+find, one file name per line, preceded by the text S<'Missing '>.  To
+redirect the output of B<--print-missing-files> to the standard
+output, use the following in a Bourne-compatible shell:
+
+ $ rwfglob --print-missing-files ... 2>&1
+
+=head2 Read Selection Argument Values from a File
+
+As of SiLK 3.20, the L</Selection Switches> B<--class>, B<--type>,
+B<--flowtypes>, and B<--sensors> accept a value in the form
+"@I<PATH>", where C<@> is the "at" character (ASCII 0x40) and I<PATH>
+names a file or a path to a file. For example, the following reads the
+name of types from the file F<t.txt> and uses the sensors C<S3>,
+C<S7>, and the names and/or IDs read from F</tmp/sensor.txt>:
+
+ rwfglob --type=@t.txt --sensors=S3,@/tmp/sensor.txt,S7
+
+Multiple @I<PATH> values are allowed within a single argument.  If the
+name of the file is C<->, the names are read from the standard input.
+
+The file must be a text file.  Blank lines are ignored as are
+comments, which begin with the C<#> character and continue to the end
+of the line.  Whitespace at the beginning and end of a line is ignored as
+is whitespace that surrounds commas; all other whitespace within a line
+is significant.
+
+A file may contain a value on each line and/or multiple values on a
+line separated by commas and optional whitespace.  For example:
+
+ # Sensor 4
+       S4
+ # The first sensors
+ S0, S1,S2
+ S3     # Sensor 3
+
+An attempt to use an @I<PATH> directive in a file is an error.
+
+When B<rwfglob> is parsing the name of a file, it converts the
+sequences C<@,> and C<@@> to C<,> and C<@>, respectively.  For
+example, B<--class=@cl@@ss.txt@,v> reads the class from the file
+F<cl@ss.txt,v>.  It is an error if any other character follows an
+embedded C<@> (B<--flowtypes=@f@il> contains C<@i>) or if a single
+C<@> occurs at the end of the name (B<--sensor=@errat@>).
+
+=head2 Offline Storage Support
 
 For each file it finds, B<rwfglob> will check the size of the file and
 the number of blocks allocated to the file.  If the block count is
@@ -59,48 +103,62 @@ provided.
 
 =over 4
 
-=item B<--class>=I<CLASS>
+=item B<--class>={I<CLASS> | @I<PATH>}
 
 The B<--class> switch is used to specify a group of files to print.
 Only a single class may be selected with the B<--class> switch; for
-multiple classes, use the B<--flowtypes> switch.  Classes are defined
-in the B<silk.conf(5)> site configuration file.  If the B<--class>
-option is not given, the default-class as specified in F<silk.conf> is
+multiple classes, use the B<--flowtypes> switch.  The argument may be
+"@I<PATH>" which causes B<rwfglob> to open the file I<PATH> and read
+the class name from it; see L<Read Selection Argument Values from a
+File> for details.  Classes are defined in the B<silk.conf(5)> site
+configuration file.  If neither the B<--class> nor B<--flowtypes>
+option is given, the default-class as specified in F<silk.conf> is
 used.  To see the available classes and the default class, either
 examine the output from B<rwfglob --help> or invoke B<rwsiteinfo(1)>
 with the switch B<--fields=class,default-class>.
 
-=item B<--type>={C<all> | I<TYPE>[,I<TYPE>]}
+=item B<--type>={C<all> | I<TYPE>[,I<TYPE>,@I<PATH> ...]}
 
 The B<--type> predicate further specifies data within the selected
 I<CLASS> by listing the I<TYPE>s of traffic to process.  The switch
-takes a comma-separated list of types or the keyword C<all> which
-specifies all types for the specified I<CLASS>.  Types are defined in
-F<silk.conf>, they typically refer to the direction of the flow, and
-they may vary by class.  When the B<--type> switch is not specified, a
-list of default types is used.  The default-type list is determined by
-the value of I<CLASS>, and the default types generally include only
-incoming traffic.  To see the available types and the default types
-for each class, examine the B<--help> output of B<rwfglob> or run
-B<rwsiteinfo> with B<--fields=class,type,default-type>.
+takes either the keyword C<all> to select all types for I<CLASS> or a
+comma-separated list of type names and "@I<PATH>" directives, where
+@I<PATH> tells B<rwfglob> to read type names from the file I<PATH>;
+see L</Read Selection Argument Values from a File> for details.  Types
+are defined in F<silk.conf>, they typically refer to the direction of
+the flow, and they may vary by class.  When neither the B<--type> nor
+B<--flowtypes> switch is given, a list of default types is used: The
+default-type list is determined by the value of I<CLASS>, and the
+default types often include only incoming traffic.  To see the
+available types and the default types for each class, examine the
+B<--help> output of B<rwfglob> or run B<rwsiteinfo> with
+B<--fields=class,type,default-type>.
 
-=item B<--flowtypes>=I<CLASS>/I<TYPE>[,I<CLASS>/I<TYPE> ...]
+=item B<--flowtypes>=I<CLASS>/I<TYPE>[,I<CLASS>/I<TYPE>,@I<PATH> ...]
 
 The B<--flowtypes> predicate provides an alternate way to specify
 class/type pairs.  The B<--flowtypes> switch allows a single
-B<rwfglob> invocation to print data from multiple classes.  The
+B<rwfglob> invocation to print filenames from multiple classes.  The
 keyword C<all> may be used for the I<CLASS> and/or I<TYPE> to select
-all classes and/or types.
+all classes and/or types.  As of SiLK 3.20.0, the arguments may also
+include "@I<PATH>" which causes B<rwfglob> to open the file I<PATH>
+and read the class/type pairs from it; see L</Read Selection Argument
+Values from a File>.
 
-=item B<--sensors>=I<SENSOR>[,I<SENSOR> ...]
+=item B<--sensors>=I<SENSOR>[,I<SENSOR>,I<SENSOR-GROUP>,@I<PATH> ...]
 
-The B<--sensor> switch is used to select data from specific sensors.
+The B<--sensors> switch is used to select data from specific sensors.
 The parameter is a comma separated list of sensor names, sensor IDs
-(integers), and/or ranges of sensor IDs.  Sensors are defined in the
-B<silk.conf(5)> site configuration file, and the B<rwsiteinfo(1)> command
-can be used to print a mapping of sensor names to IDs and classes.
-When the B<--sensor> switch is not specified, the default is to use
-all sensors which are valid for the specified class(es).
+(integers), ranges of sensor IDs, sensor group names, and/or
+"@I<PATH>" directives.  As described in L</Read Selection Argument
+Values from a File>, @I<PATH> tells B<rwfglob> to read the names of
+the sensors from the file I<PATH>.  Sensors and sensor groups are
+defined in the B<silk.conf(5)> site configuration file, and the
+B<rwsiteinfo(1)> command can be used to print a mapping of sensor
+names to IDs and classes (B<--fields=sensor,id-sensor,class:list>).
+When the B<--sensors> switch is not specified, the default is to use
+all sensors which are valid for the specified class(es).  Support for
+using sensor group names was added in SiLK 3.21.0.
 
 =item B<--start-date>=I<YYYY/MM/DD[:HH]>
 
@@ -362,10 +420,15 @@ B<--data-rootdir> switch is not specified.
 B<rwfilter(1)>, B<rwsiteinfo(1)>, B<silk.conf(5)>, B<silk(7)>,
 B<tzset(3)>, B<environ(7)>
 
-=head1 BUGS
+=head1 NOTES
 
-The B<--print-missing-files> option needs to be smarter about what
-files are really missing.
+The ability to use @I<PATH> in B<--class>, B<--type>, B<--flowtypes>,
+and B<--sensors> was added in SiLK 3.20.0.
+
+As of SiLK 3.20.0, B<--types> is an alias for B<--type>.
+
+The B<--sensors> switch also accepts the names of groups defined in
+the B<silk.conf(5)> file as of SiLK 3.21.0.
 
 The output of B<--print-missing-files> goes to the standard error,
 while all other output goes to the standard output.  To redirect the
@@ -374,12 +437,15 @@ following in a Bourne-compatible shell:
 
  $ rwfglob --print-missing-files ... 2>&1
 
+The B<--print-missing-files> option needs to be smarter about what
+files are really missing.
+
 The block count check is of unknown portability across different
 tape-farm systems.
 
 =cut
 
-$SiLK: rwfglob.pod 7c452d1f409f 2016-09-23 21:00:08Z mthomas $
+$SiLK: rwfglob.pod d5c2aee1abcc 2023-05-01 21:10:21Z mthomas $
 
 Local Variables:
 mode:text

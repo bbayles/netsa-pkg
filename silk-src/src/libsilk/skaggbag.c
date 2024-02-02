@@ -1,14 +1,56 @@
 /*
-** Copyright (C) 2016-2020 by Carnegie Mellon University.
+** Copyright (C) 2016-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: skaggbag.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: skaggbag.c fa795ed4016d 2023-09-05 20:52:36Z mthomas $");
 
 #include <silk/skaggbag.h>
 #include <silk/skipaddr.h>
@@ -116,6 +158,7 @@ struct ab_type_info_st {
     uint8_t             ti_octets;
     sk_aggbag_type_t    ti_type;
     uint8_t             ti_key_counter;
+    const char         *ti_description;
 };
 typedef struct ab_type_info_st ab_type_info_t;
 
@@ -143,61 +186,110 @@ static unsigned int layouts_count;
 
 
 static const ab_type_info_t ab_type_info_key[] = {
-    {"sIPv4",            4, SKAGGBAG_FIELD_SIPv4,           SK_AGGBAG_KEY},
-    {"dIPv4",            4, SKAGGBAG_FIELD_DIPv4,           SK_AGGBAG_KEY},
-    {"sPort",            2, SKAGGBAG_FIELD_SPORT,           SK_AGGBAG_KEY},
-    {"dPort",            2, SKAGGBAG_FIELD_DPORT,           SK_AGGBAG_KEY},
-    {"protocol",         1, SKAGGBAG_FIELD_PROTO,           SK_AGGBAG_KEY},
-    {"packets",          4, SKAGGBAG_FIELD_PACKETS,         SK_AGGBAG_KEY},
-    {"bytes",            4, SKAGGBAG_FIELD_BYTES,           SK_AGGBAG_KEY},
-    {"flags",            1, SKAGGBAG_FIELD_FLAGS,           SK_AGGBAG_KEY},
-    {"sTime",            4, SKAGGBAG_FIELD_STARTTIME,       SK_AGGBAG_KEY},
-    {"duration",         4, SKAGGBAG_FIELD_ELAPSED,         SK_AGGBAG_KEY},
-    {"eTime",            4, SKAGGBAG_FIELD_ENDTIME,         SK_AGGBAG_KEY},
-    {"sensor",           2, SKAGGBAG_FIELD_SID,             SK_AGGBAG_KEY},
-    {"input",            2, SKAGGBAG_FIELD_INPUT,           SK_AGGBAG_KEY},
-    {"output",           2, SKAGGBAG_FIELD_OUTPUT,          SK_AGGBAG_KEY},
-    {"nhIPv4",           4, SKAGGBAG_FIELD_NHIPv4,          SK_AGGBAG_KEY},
-    {"initialFlags",     1, SKAGGBAG_FIELD_INIT_FLAGS,      SK_AGGBAG_KEY},
-    {"sessionFlags",     1, SKAGGBAG_FIELD_REST_FLAGS,      SK_AGGBAG_KEY},
-    {"attributes",       1, SKAGGBAG_FIELD_TCP_STATE,       SK_AGGBAG_KEY},
-    {"application",      2, SKAGGBAG_FIELD_APPLICATION,     SK_AGGBAG_KEY},
-    {"class",            1, SKAGGBAG_FIELD_FTYPE_CLASS,     SK_AGGBAG_KEY},
-    {"type",             1, SKAGGBAG_FIELD_FTYPE_TYPE,      SK_AGGBAG_KEY},
-    {NULL,/*sTime-ms*/   0, SKAGGBAG_FIELD_INVALID,         SK_AGGBAG_KEY},
-    {NULL,/*eTime-ms*/   0, SKAGGBAG_FIELD_INVALID,         SK_AGGBAG_KEY},
-    {NULL,/*dur-ms*/     0, SKAGGBAG_FIELD_INVALID,         SK_AGGBAG_KEY},
-    {"icmpType",         1, SKAGGBAG_FIELD_ICMP_TYPE,       SK_AGGBAG_KEY},
-    {"icmpCode",         1, SKAGGBAG_FIELD_ICMP_CODE,       SK_AGGBAG_KEY},
-    {"sIPv6",           16, SKAGGBAG_FIELD_SIPv6,           SK_AGGBAG_KEY},
-    {"dIPv6",           16, SKAGGBAG_FIELD_DIPv6,           SK_AGGBAG_KEY},
-    {"nhIPv6",          16, SKAGGBAG_FIELD_NHIPv6,          SK_AGGBAG_KEY},
-    {"any-IPv4",         4, SKAGGBAG_FIELD_ANY_IPv4,        SK_AGGBAG_KEY},
-    {"any-IPv6",        16, SKAGGBAG_FIELD_ANY_IPv6,        SK_AGGBAG_KEY},
-    {"any-port",         2, SKAGGBAG_FIELD_ANY_PORT,        SK_AGGBAG_KEY},
-    {"any-snmp",         2, SKAGGBAG_FIELD_ANY_SNMP,        SK_AGGBAG_KEY},
-    {"any-time",         4, SKAGGBAG_FIELD_ANY_TIME,        SK_AGGBAG_KEY},
-    {"custom-key",       8, SKAGGBAG_FIELD_CUSTOM_KEY,      SK_AGGBAG_KEY},
-    {"scc",              2, SKAGGBAG_FIELD_SIP_COUNTRY,     SK_AGGBAG_KEY},
-    {"dcc",              2, SKAGGBAG_FIELD_DIP_COUNTRY,     SK_AGGBAG_KEY},
-    {"any-cc",           2, SKAGGBAG_FIELD_ANY_COUNTRY,     SK_AGGBAG_KEY},
-    {"sip-pmap",         4, SKAGGBAG_FIELD_SIP_PMAP,        SK_AGGBAG_KEY},
-    {"dip-pmap",         4, SKAGGBAG_FIELD_DIP_PMAP,        SK_AGGBAG_KEY},
-    {"any-ip-pmap",      4, SKAGGBAG_FIELD_ANY_IP_PMAP,     SK_AGGBAG_KEY},
-    {"sport-pmap",       4, SKAGGBAG_FIELD_SPORT_PMAP,      SK_AGGBAG_KEY},
-    {"dport-pmap",       4, SKAGGBAG_FIELD_DPORT_PMAP,      SK_AGGBAG_KEY},
-    {"any-port-pmap",    4, SKAGGBAG_FIELD_ANY_PORT_PMAP,   SK_AGGBAG_KEY}
+    {"sIPv4",            4, SKAGGBAG_FIELD_SIPv4,           SK_AGGBAG_KEY,
+     "source IP address, IPv4 only"},
+    {"dIPv4",            4, SKAGGBAG_FIELD_DIPv4,           SK_AGGBAG_KEY,
+     "destination IP address, IPv4 only"},
+    {"sPort",            2, SKAGGBAG_FIELD_SPORT,           SK_AGGBAG_KEY,
+     "source port"},
+    {"dPort",            2, SKAGGBAG_FIELD_DPORT,           SK_AGGBAG_KEY,
+     "destination port"},
+    {"protocol",         1, SKAGGBAG_FIELD_PROTO,           SK_AGGBAG_KEY,
+     "IP protocol"},
+    {"packets",          4, SKAGGBAG_FIELD_PACKETS,         SK_AGGBAG_KEY,
+     "packet count in an individual record"},
+    {"bytes",            4, SKAGGBAG_FIELD_BYTES,           SK_AGGBAG_KEY,
+     "byte (octet) count in an individual record"},
+    {"flags",            1, SKAGGBAG_FIELD_FLAGS,           SK_AGGBAG_KEY,
+     "bit-wise OR of TCP flags over all packets"},
+    {"sTime",            4, SKAGGBAG_FIELD_STARTTIME,       SK_AGGBAG_KEY,
+     "starting time of the flow in seconds"},
+    {"duration",         4, SKAGGBAG_FIELD_ELAPSED,         SK_AGGBAG_KEY,
+     "duration of the flow in seconds"},
+    {"eTime",            4, SKAGGBAG_FIELD_ENDTIME,         SK_AGGBAG_KEY,
+     "ending time of the flow in seconds"},
+    {"sensor",           2, SKAGGBAG_FIELD_SID,             SK_AGGBAG_KEY,
+     "sensor name or ID at the collection point"},
+    {"input",            2, SKAGGBAG_FIELD_INPUT,           SK_AGGBAG_KEY,
+     "router SNMP ingress interface or vlanId"},
+    {"output",           2, SKAGGBAG_FIELD_OUTPUT,          SK_AGGBAG_KEY,
+     "router SNMP egress interface or postVlanId"},
+    {"nhIPv4",           4, SKAGGBAG_FIELD_NHIPv4,          SK_AGGBAG_KEY,
+     "next-hop IP address, IPv4 only"},
+    {"initialFlags",     1, SKAGGBAG_FIELD_INIT_FLAGS,      SK_AGGBAG_KEY,
+     "TCP flags on the first packet"},
+    {"sessionFlags",     1, SKAGGBAG_FIELD_REST_FLAGS,      SK_AGGBAG_KEY,
+     "bit-wise OR of TCP flags on the second through final packet"},
+    {"attributes",       1, SKAGGBAG_FIELD_TCP_STATE,       SK_AGGBAG_KEY,
+     "flow attributes set by the flow generator"},
+    {"application",      2, SKAGGBAG_FIELD_APPLICATION,     SK_AGGBAG_KEY,
+     "guess as to the content of the flow set by flow generator"},
+    {"class",            1, SKAGGBAG_FIELD_FTYPE_CLASS,     SK_AGGBAG_KEY,
+     "the class at collection point"},
+    {"type",             1, SKAGGBAG_FIELD_FTYPE_TYPE,      SK_AGGBAG_KEY,
+     "the type within the class at the collection point"},
+    {NULL,/*sTime-ms*/   0, SKAGGBAG_FIELD_INVALID,         SK_AGGBAG_KEY,
+     "unused"},
+    {NULL,/*eTime-ms*/   0, SKAGGBAG_FIELD_INVALID,         SK_AGGBAG_KEY,
+     "unused"},
+    {NULL,/*dur-ms*/     0, SKAGGBAG_FIELD_INVALID,         SK_AGGBAG_KEY,
+     "unused"},
+    {"icmpType",         1, SKAGGBAG_FIELD_ICMP_TYPE,       SK_AGGBAG_KEY,
+     "ICMP type"},
+    {"icmpCode",         1, SKAGGBAG_FIELD_ICMP_CODE,       SK_AGGBAG_KEY,
+     "ICMP code"},
+    {"sIPv6",           16, SKAGGBAG_FIELD_SIPv6,           SK_AGGBAG_KEY,
+     "source IP address, IPv6 only"},
+    {"dIPv6",           16, SKAGGBAG_FIELD_DIPv6,           SK_AGGBAG_KEY,
+     "destination IP address, IPv6 only"},
+    {"nhIPv6",          16, SKAGGBAG_FIELD_NHIPv6,          SK_AGGBAG_KEY,
+     "next-hop IP address, IPv6 only"},
+    {"any-IPv4",         4, SKAGGBAG_FIELD_ANY_IPv4,        SK_AGGBAG_KEY,
+     "a generic IPv4 address"},
+    {"any-IPv6",        16, SKAGGBAG_FIELD_ANY_IPv6,        SK_AGGBAG_KEY,
+     "a generic IPv6 address"},
+    {"any-port",         2, SKAGGBAG_FIELD_ANY_PORT,        SK_AGGBAG_KEY,
+     "a generic port"},
+    {"any-snmp",         2, SKAGGBAG_FIELD_ANY_SNMP,        SK_AGGBAG_KEY,
+     "a generic SNMP value"},
+    {"any-time",         4, SKAGGBAG_FIELD_ANY_TIME,        SK_AGGBAG_KEY,
+     "a generic time in seconds"},
+    {"custom-key",       8, SKAGGBAG_FIELD_CUSTOM_KEY,      SK_AGGBAG_KEY,
+     "a generic key"},
+    {"scc",              2, SKAGGBAG_FIELD_SIP_COUNTRY,     SK_AGGBAG_KEY,
+     "the country code of the source"},
+    {"dcc",              2, SKAGGBAG_FIELD_DIP_COUNTRY,     SK_AGGBAG_KEY,
+     "the country code of the destination"},
+    {"any-cc",           2, SKAGGBAG_FIELD_ANY_COUNTRY,     SK_AGGBAG_KEY,
+     "a generic country code"},
+    {"sip-pmap",         4, SKAGGBAG_FIELD_SIP_PMAP,        SK_AGGBAG_KEY,
+     "unimplemented"},
+    {"dip-pmap",         4, SKAGGBAG_FIELD_DIP_PMAP,        SK_AGGBAG_KEY,
+     "unimplemented"},
+    {"any-ip-pmap",      4, SKAGGBAG_FIELD_ANY_IP_PMAP,     SK_AGGBAG_KEY,
+     "unimplemented"},
+    {"sport-pmap",       4, SKAGGBAG_FIELD_SPORT_PMAP,      SK_AGGBAG_KEY,
+     "unimplemented"},
+    {"dport-pmap",       4, SKAGGBAG_FIELD_DPORT_PMAP,      SK_AGGBAG_KEY,
+     "unimplemented"},
+    {"any-port-pmap",    4, SKAGGBAG_FIELD_ANY_PORT_PMAP,   SK_AGGBAG_KEY,
+     "unimplemented"}
 };
 
 static const size_t ab_type_info_key_max = (sizeof(ab_type_info_key)
                                             / sizeof(ab_type_info_key[0]));
 
 static const ab_type_info_t ab_type_info_counter[] = {
-    {"records",          8, SKAGGBAG_FIELD_RECORDS,         SK_AGGBAG_COUNTER},
-    {"sum-packets",      8, SKAGGBAG_FIELD_SUM_PACKETS,     SK_AGGBAG_COUNTER},
-    {"sum-bytes",        8, SKAGGBAG_FIELD_SUM_BYTES,       SK_AGGBAG_COUNTER},
-    {"sum-duration",     8, SKAGGBAG_FIELD_SUM_ELAPSED,     SK_AGGBAG_COUNTER},
-    {"custom-counter",   8, SKAGGBAG_FIELD_CUSTOM_COUNTER,  SK_AGGBAG_COUNTER}
+    {"records",          8, SKAGGBAG_FIELD_RECORDS,         SK_AGGBAG_COUNTER,
+     "count of records that match the key"},
+    {"sum-packets",      8, SKAGGBAG_FIELD_SUM_PACKETS,     SK_AGGBAG_COUNTER,
+     "sum of packet counts for records that match the key"},
+    {"sum-bytes",        8, SKAGGBAG_FIELD_SUM_BYTES,       SK_AGGBAG_COUNTER,
+     "sum of byte (octet) counts for records that match the key"},
+    {"sum-duration",     8, SKAGGBAG_FIELD_SUM_ELAPSED,     SK_AGGBAG_COUNTER,
+     "sum of durations (in seconds) for records that match the key"},
+    {"custom-counter",   8, SKAGGBAG_FIELD_CUSTOM_COUNTER,  SK_AGGBAG_COUNTER,
+     "a generic counter"}
 };
 
 static const size_t ab_type_info_counter_max =
@@ -209,7 +301,8 @@ static const size_t ab_type_info_counter_max =
 #define KEY_VALUE               (SK_AGGBAG_KEY | SK_AGGBAG_COUNTER)
 
 static const ab_type_info_t ab_custom_info = {
-    "custom",           0,  SKAGGBAG_FIELD_CUSTOM,          KEY_VALUE
+    "custom",           0,  SKAGGBAG_FIELD_CUSTOM,          KEY_VALUE,
+    "unimplemented"
 };
 #endif  /* AB_SUPPORT_CUSTOM */
 
@@ -248,6 +341,25 @@ aggBagHentryGetFieldType(
     const sk_header_entry_t    *hentry,
     unsigned int                key_counter,
     unsigned int                pos);
+static void
+aggBagKeyCounterAdd(
+    sk_aggbag_t                    *ab,
+    const sk_aggbag_aggregate_t    *key,
+    const sk_aggbag_aggregate_t    *counter,
+    sk_aggbag_aggregate_t          *new_counter);
+static int
+aggBagKeyCounterDivide(
+    sk_aggbag_t                    *ab,
+    const sk_aggbag_aggregate_t    *key,
+    const sk_aggbag_aggregate_t    *counter,
+    const sk_aggbag_div_zero_t     *div_zero,
+    sk_aggbag_aggregate_t          *new_counter);
+static void
+aggBagKeyCounterSubtract(
+    sk_aggbag_t                    *ab,
+    const sk_aggbag_aggregate_t    *key,
+    const sk_aggbag_aggregate_t    *counter,
+    sk_aggbag_aggregate_t          *new_counter);
 
 
 /*  ****************************************************************  */
@@ -1804,6 +1916,71 @@ abLayoutFieldSorter(
 /*  ****************************************************************  */
 
 
+
+/**
+ *    Confirms that AggBags `ab1_` and `ab2_` have the same keys and counters.
+ *    Returns from the function if they do not.
+ */
+#define aggBagReturnIfMismatchAggBagKeyCounter(ab1_, ab2_)      \
+    do {                                                        \
+        if ((ab1_)->layout[0] != (ab2_)->layout[0]) {           \
+            return SKAGGBAG_E_FIELDS_DIFFER_KEY;                \
+        }                                                       \
+        if ((ab1_)->layout[1] != (ab2_)->layout[1]) {           \
+            return SKAGGBAG_E_FIELDS_DIFFER_COUNTER;            \
+        }                                                       \
+    } while (0)
+
+
+/**
+ *    Confirms that AggBag `ab_` is not NULL and has defined the fields in its
+ *    key and counter.  Returns from the function if it has not.
+ */
+#define aggBagReturnIfUndefinedKeyCounter(ab_)                  \
+    if ((ab_) && (ab_)->layout[0] && (ab_)->layout[1]) {        \
+        /* all good */                                          \
+    } else if (NULL == (ab_)) {                                 \
+        return SKAGGBAG_E_NULL_PARM;                            \
+    } else if (NULL == (ab_)->layout[0]) {                      \
+        return SKAGGBAG_E_UNDEFINED_KEY;                        \
+    } else if (NULL == (ab_)->layout[1]) {                      \
+        return SKAGGBAG_E_UNDEFINED_COUNTER;                    \
+    } else {                                                    \
+        skAbort();                                              \
+    }
+
+/**
+ *    Confirms that `key_` is not NULL and matches the key on AggBag `ab_`.
+ *    Returns from the function if it has not.
+ */
+#define aggBagReturnIfMismatchedKey(ab_, key_)                  \
+    if ((key_) && ((ab_)->layout[0] == (key_)->opaque)) {       \
+        /* all good */                                          \
+    } else if (NULL == (key_)) {                                \
+        return SKAGGBAG_E_NULL_PARM;                            \
+    } else if ((ab_)->layout[0] != (key_)->opaque) {            \
+        return SKAGGBAG_E_FIELDS_DIFFER_KEY;                    \
+    } else {                                                    \
+        skAbort();                                              \
+    }
+
+
+/**
+ *    Confirms that `counter_` is not NULL and matches the counter on AggBag
+ *    `ab_`.  Returns from the function if it has not.
+ */
+#define aggBagReturnIfMismatchedCounter(ab_, counter_)                  \
+    if ((counter_) && ((ab_)->layout[1] == (counter_)->opaque)) {       \
+        /* all good */                                                  \
+    } else if (NULL == (counter_)) {                                    \
+        return SKAGGBAG_E_NULL_PARM;                                    \
+    } else if ((ab_)->layout[1] != (counter_)->opaque) {                \
+        return SKAGGBAG_E_FIELDS_DIFFER_COUNTER;                        \
+    } else {                                                            \
+        skAbort();                                                      \
+    }
+
+
 /**
  *    Initialize the aggregate 'agg' and the field iterator
  *    'field_iter' to work on the key or counter fields of 'ab'
@@ -2022,20 +2199,13 @@ skAggBagAddAggBag(
     const sk_aggbag_t  *ab_addend)
 {
     sk_aggbag_iter_t iter = SK_AGGBAG_ITER_INITIALIZER;
-    unsigned int i;
 
-    for (i = 0; i < 2; ++i) {
-        if (ab_augend->layout[i] != ab_addend->layout[i]) {
-            return ((0 == i)
-                    ? SKAGGBAG_E_FIELDS_DIFFER_KEY
-                    : SKAGGBAG_E_FIELDS_DIFFER_COUNTER);
-        }
-    }
+    aggBagReturnIfMismatchAggBagKeyCounter(ab_augend, ab_addend);
 
     skAggBagIteratorBind(&iter, ab_addend);
 
     while (skAggBagIteratorNext(&iter) == SK_ITERATOR_OK) {
-        skAggBagKeyCounterAdd(ab_augend, &iter.key, &iter.counter, NULL);
+        aggBagKeyCounterAdd(ab_augend, &iter.key, &iter.counter, NULL);
     }
     skAggBagIteratorFree(&iter);
 
@@ -2049,26 +2219,186 @@ skAggBagSubtractAggBag(
     const sk_aggbag_t  *ab_subtrahend)
 {
     sk_aggbag_iter_t iter = SK_AGGBAG_ITER_INITIALIZER;
+    const ab_layout_t *layout;
+    const ab_field_t *f;
+    const rbtree_node_t *node;
+    sk_rbtree_iter_t *it;
+    unsigned int key_len;
     unsigned int i;
+    uint64_t dst;
+    uint64_t src;
+    uint8_t *data;
 
-    for (i = 0; i < 2; ++i) {
-        if (ab_minuend->layout[i] != ab_subtrahend->layout[i]) {
-            return ((0 == i)
-                    ? SKAGGBAG_E_FIELDS_DIFFER_KEY
-                    : SKAGGBAG_E_FIELDS_DIFFER_COUNTER);
+    /*
+     *  This function iterates over the ab_minuend and search for its keys in
+     *  ab_subtrahend.  It uses the sk_rbtree_t functions to allow modifying
+     *  values directly, which the sk_aggbag_iter_t does not allow.
+     *
+     *  Question: Instead of searching for each key in ab_subtrahend, would it
+     *  make more sense to have iterators for each sk_rbtree?
+     */
+
+    aggBagReturnIfMismatchAggBagKeyCounter(ab_minuend, ab_subtrahend);
+
+    /* Iterate over the data in the destination file */
+    skAggBagIteratorBind(&iter, ab_minuend);
+
+    /* Length of key and location where counters begin */
+    key_len = ab_minuend->layout[0]->field_octets;
+
+    /* Order of the counters */
+    layout = ab_minuend->layout[1];
+
+    /* Get a handle to the low-level red-black iterator */
+    it = (sk_rbtree_iter_t *)iter.opaque;
+
+    /* Iterate over the tree */
+    while ((data = (uint8_t *)sk_rbtree_iter_next(it))) {
+        /* Fill the AggBag iterator */
+        memcpy(iter.key.data, data, key_len);
+        /* Find the key in the other AggBag */
+        node = sk_rbtree_find(ab_subtrahend, iter.key.data);
+        if (node) {
+            /* If found, loop over counters and subtract them */
+            for (i = 0, f = layout->fields; i < layout->field_count; ++i, ++f)
+            {
+                assert(sizeof(uint64_t) == f->f_len);
+                memcpy(&dst, data + key_len + f->f_offset, f->f_len);
+                memcpy(&src, node->data_color+ key_len+ f->f_offset,
+                       f->f_len);
+                dst = ntoh64(dst);
+                src = ntoh64(src);
+                if (dst <= src) {
+                    dst = 0;
+                } else {
+                    dst -= src;
+                }
+                dst = hton64(dst);
+                memcpy(data + key_len + f->f_offset, &dst, f->f_len);
+            }
         }
     }
 
-    skAggBagIteratorBind(&iter, ab_subtrahend);
-
-    while (skAggBagIteratorNext(&iter) == SK_ITERATOR_OK) {
-        skAggBagKeyCounterSubtract(ab_minuend, &iter.key, &iter.counter, NULL);
-    }
     skAggBagIteratorFree(&iter);
-
     return SKAGGBAG_OK;
 }
 
+int
+skAggBagDivideAggBag(
+    sk_aggbag_t                *ab_dividend,
+    const sk_aggbag_t          *ab_divisor,
+    const sk_aggbag_div_zero_t *div_zero)
+{
+    sk_aggbag_iter_t iter = SK_AGGBAG_ITER_INITIALIZER;
+    const ab_layout_t *layout;
+    const ab_field_t *f;
+    const rbtree_node_t *node;
+    sk_rbtree_iter_t *it;
+    unsigned int key_len;
+    unsigned int i;
+    uint64_t dst;
+    uint64_t src;
+    uint8_t *data;
+    int rv;
+
+    /*
+     *  This function iterates over the ab_dividend and searches for its keys
+     *  in ab_divisor.  It uses the sk_rbtree_t functions to allow modifying
+     *  values directly, which the sk_aggbag_iter_t does not allow.  This is
+     *  also needed to handle errors when ab_dividend has a key that is not
+     *  present in ab_divisor.
+     */
+
+    aggBagReturnIfMismatchAggBagKeyCounter(ab_dividend, ab_divisor);
+
+    rv = SKAGGBAG_OK;
+
+    /* Iterator over the data in the destination file */
+    skAggBagIteratorBind(&iter, ab_dividend);
+
+    /* Length of key and location where counters begin */
+    key_len = ab_dividend->layout[0]->field_octets;
+
+    /* Order of the counters */
+    layout = ab_dividend->layout[1];
+
+    /* Get a handle to the low-level red-black iterator */
+    it = (sk_rbtree_iter_t *)iter.opaque;
+
+    /* Iterate over the tree */
+    while ((data = (uint8_t *)sk_rbtree_iter_next(it))) {
+        /* Fill the AggBag iterator */
+        memcpy(iter.key.data, data, key_len);
+        /* Find the key in the other AggBag */
+        node = sk_rbtree_find(ab_divisor, iter.key.data);
+        /* If found, loop over counters and divide them; if not found, handle
+         * according to div_zero->action */
+        if (node) {
+            for (i = 0, f = layout->fields; i < layout->field_count; ++i, ++f)
+            {
+                assert(sizeof(uint64_t) == f->f_len);
+                memcpy(&dst, data + key_len + f->f_offset, f->f_len);
+                memcpy(&src, node->data_color+ key_len+ f->f_offset,
+                       f->f_len);
+                dst = ntoh64(dst);
+                src = ntoh64(src);
+
+                if (src > 0) {
+                    /* divide and add one if (remainder >= 0.5 * src) */
+                    dst = ((dst / src)
+                           + ((dst % src) >= (src >> 1) + (src & 1)));
+                } else {
+                    switch (div_zero->action) {
+                      case SKAGGBAG_DIV_ZERO_NOCHANGE:
+                        break;
+                      case SKAGGBAG_DIV_ZERO_VALUE:
+                        dst = div_zero->value;
+                        break;
+                      case SKAGGBAG_DIV_ZERO_ERROR:
+                        rv = SKAGGBAG_E_DIVIDE_BY_ZERO;
+                        goto END;
+                      case SKAGGBAG_DIV_ZERO_DELETE:
+                        /* set all counters to 0 */
+                        memset(data + key_len, 0, layout->field_octets);
+                        /* try the next key */
+                        goto AFTER_FOR;
+                    }
+                }
+                dst = hton64(dst);
+                memcpy(data + key_len + f->f_offset, &dst, f->f_len);
+            }
+          AFTER_FOR:
+            ; /* empty */
+        } else {
+            switch (div_zero->action) {
+              case SKAGGBAG_DIV_ZERO_NOCHANGE:
+                break;
+              case SKAGGBAG_DIV_ZERO_VALUE:
+                /* set each counter to the specified value */
+                for (i = 0, f = layout->fields;
+                     i < layout->field_count;
+                     ++i, ++f)
+                {
+                    dst = hton64(div_zero->value);
+                    memcpy(data + key_len + f->f_offset, &dst, f->f_len);
+                }
+                break;
+              case SKAGGBAG_DIV_ZERO_ERROR:
+                rv = SKAGGBAG_E_DIVIDE_BY_ZERO;
+                goto END;
+              case SKAGGBAG_DIV_ZERO_DELETE:
+                /* cannot delete from tree while iterating over it; set all
+                 * counters to 0 instead */
+                memset(data + key_len, 0, layout->field_octets);
+                break;
+            }
+        }
+    }
+
+  END:
+    skAggBagIteratorFree(&iter);
+    return rv;
+}
 
 int
 skAggBagAggregateGetDatetime(
@@ -2485,6 +2815,33 @@ skAggBagFieldIterReset(
 
 
 const char *
+skAggBagFieldTypeGetDescription(
+    sk_aggbag_type_t    field_type)
+{
+    const ab_type_info_t *info;
+
+    info = aggBagGetTypeInfo(field_type);
+    if (info) {
+        return info->ti_description;
+    }
+    return NULL;
+}
+
+
+unsigned int
+skAggBagFieldTypeGetDisposition(
+    sk_aggbag_type_t    field_type)
+{
+    const ab_type_info_t *info;
+
+    info = aggBagGetTypeInfo(field_type);
+    if (info) {
+        return info->ti_key_counter;
+    }
+    return 0;
+}
+
+const char *
 skAggBagFieldTypeGetName(
     sk_aggbag_type_t    field_type)
 {
@@ -2546,7 +2903,10 @@ skAggBagFieldTypeIteratorNext(
         info = &ab_type_info_key[cur];
         /* update type_iter for next iteration */
         for (++cur; cur < ab_type_info_key_max; ++cur) {
-            if (ab_type_info_key[cur].ti_octets > 0) {
+            if (ab_type_info_key[cur].ti_octets > 0
+                && 0 != strcmp(ab_type_info_key[cur].ti_description,
+                               "unimplemented"))
+            {
                 type_iter->pos = (sk_aggbag_type_t)cur;
                 goto END;
             }
@@ -2562,7 +2922,10 @@ skAggBagFieldTypeIteratorNext(
         }
         info = &ab_type_info_counter[cur];
         for (++cur; cur < ab_type_info_counter_max; ++cur) {
-            if (ab_type_info_counter[cur].ti_octets > 0) {
+            if (ab_type_info_counter[cur].ti_octets > 0
+                && 0 != strcmp(ab_type_info_counter[cur].ti_description,
+                               "unimplemented"))
+            {
                 type_iter->pos
                     = (sk_aggbag_type_t)(SKAGGBAG_FIELD_RECORDS + cur);
                 goto END;
@@ -2714,27 +3077,33 @@ skAggBagKeyCounterAdd(
     const sk_aggbag_aggregate_t    *counter,
     sk_aggbag_aggregate_t          *new_counter)
 {
+    aggBagReturnIfUndefinedKeyCounter(ab);
+    aggBagReturnIfMismatchedKey(ab, key);
+    aggBagReturnIfMismatchedCounter(ab, counter);
+
+    aggBagKeyCounterAdd(ab, key, counter, new_counter);
+
+    return SKAGGBAG_OK;
+}
+
+/*
+ *  Helper for skAggBagKeyCounterAdd() that does no error checking.
+ */
+static void
+aggBagKeyCounterAdd(
+    sk_aggbag_t                    *ab,
+    const sk_aggbag_aggregate_t    *key,
+    const sk_aggbag_aggregate_t    *counter,
+    sk_aggbag_aggregate_t          *new_counter)
+{
     const ab_layout_t *layout;
     const ab_field_t *f;
     rbtree_node_t *node;
     unsigned int i;
     uint64_t dst;
     uint64_t src;
+    uint64_t tmp;
 
-    if (NULL == ab || NULL == key || NULL == counter) {
-        return SKAGGBAG_E_NULL_PARM;
-    }
-    if (NULL == ab->layout[0] || NULL == ab->layout[1]) {
-        return ((NULL == ab->layout[0])
-                ? SKAGGBAG_E_UNDEFINED_KEY : SKAGGBAG_E_UNDEFINED_COUNTER);
-    }
-
-    if (ab->layout[0] != key->opaque) {
-        return SKAGGBAG_E_FIELDS_DIFFER_KEY;
-    }
-    if (ab->layout[1] != counter->opaque) {
-        return SKAGGBAG_E_FIELDS_DIFFER_COUNTER;
-    }
     if (new_counter) {
         new_counter->opaque = counter->opaque;
     }
@@ -2755,12 +3124,13 @@ skAggBagKeyCounterAdd(
                    node->data_color+ ab->layout[0]->field_octets+ f->f_offset,
                    f->f_len);
             memcpy(&src, counter->data + f->f_offset, f->f_len);
-            dst = ntoh64(dst);
+            dst = tmp = ntoh64(dst);
             src = ntoh64(src);
-            if (dst >= UINT64_MAX - src) {
+            dst += src;
+            /* sum must be >= each number; if not, overflow detected */
+            if (dst < src || dst < tmp) {
+                /* overflow */
                 dst = UINT64_MAX;
-            } else {
-                dst += src;
             }
             dst = hton64(dst);
             memcpy(node->data_color+ ab->layout[0]->field_octets+ f->f_offset,
@@ -2772,6 +3142,95 @@ skAggBagKeyCounterAdd(
     }
     if (/* DISABLES CODE*/ (0)) {
         sk_rbtree_debug_print(ab, stderr, aggBagPrintData);
+    }
+}
+
+
+/*
+ *  Find `key` in `ab` and divide its counter by `counter`.
+ */
+int
+skAggBagKeyCounterDivide(
+    sk_aggbag_t                    *ab,
+    const sk_aggbag_aggregate_t    *key,
+    const sk_aggbag_aggregate_t    *counter,
+    const sk_aggbag_div_zero_t     *div_zero,
+    sk_aggbag_aggregate_t          *new_counter)
+{
+    aggBagReturnIfUndefinedKeyCounter(ab);
+    aggBagReturnIfMismatchedKey(ab, key);
+    aggBagReturnIfMismatchedCounter(ab, counter);
+
+    return aggBagKeyCounterDivide(ab, key, counter, div_zero, new_counter);
+}
+
+
+/*
+ *  Helper for skAggBagKeyCounterDivide().
+ */
+static int
+aggBagKeyCounterDivide(
+    sk_aggbag_t                    *ab,
+    const sk_aggbag_aggregate_t    *key,
+    const sk_aggbag_aggregate_t    *counter,
+    const sk_aggbag_div_zero_t     *div_zero,
+    sk_aggbag_aggregate_t          *new_counter)
+{
+    const ab_layout_t *layout;
+    const ab_field_t *f;
+    rbtree_node_t *node;
+    unsigned int i;
+    /* dst is dividend and src is divisor */
+    uint64_t dst;
+    uint64_t src;
+
+    if (new_counter) {
+        new_counter->opaque = counter->opaque;
+    }
+
+    ab->fixed_fields = 1;
+
+    node = sk_rbtree_find(ab, key->data);
+    if (node) {
+        layout = ab->layout[1];
+        for (i = 0, f = layout->fields; i < layout->field_count; ++i, ++f) {
+            assert(sizeof(uint64_t) == f->f_len);
+            memcpy(&dst,
+                   node->data_color+ ab->layout[0]->field_octets+ f->f_offset,
+                   f->f_len);
+            memcpy(&src, counter->data + f->f_offset, f->f_len);
+            dst = ntoh64(dst);
+            src = ntoh64(src);
+            if (src > 0) {
+                /* divide; add one if (remainder >= 0.5 * src) */
+                dst = ((dst / src)
+                       + ((dst % src) >= (src >> 1) + (src & 1)));
+            } else {
+                switch (div_zero->action) {
+                  case SKAGGBAG_DIV_ZERO_NOCHANGE:
+                    break;
+                  case SKAGGBAG_DIV_ZERO_VALUE:
+                    dst = div_zero->value;
+                    break;
+                  case SKAGGBAG_DIV_ZERO_ERROR:
+                    return SKAGGBAG_E_DIVIDE_BY_ZERO;
+                  case SKAGGBAG_DIV_ZERO_DELETE:
+                    /* remove the key */
+                    sk_rbtree_remove(ab, key->data);
+                    if (new_counter) {
+                        /* set all values in new_counter to zero */
+                        memset(new_counter->data, 0, layout->field_octets);
+                    }
+                    return SKAGGBAG_OK;
+                }
+            }
+            dst = hton64(dst);
+            memcpy(node->data_color+ ab->layout[0]->field_octets+ f->f_offset,
+                   &dst, f->f_len);
+            if (new_counter) {
+                memcpy(new_counter->data + f->f_offset, &dst, f->f_len);
+            }
+        }
     }
 
     return SKAGGBAG_OK;
@@ -2785,16 +3244,10 @@ skAggBagKeyCounterGet(
 {
     rbtree_node_t *node;
 
-    if (NULL == ab || NULL == key || NULL == counter) {
+    aggBagReturnIfUndefinedKeyCounter(ab);
+    aggBagReturnIfMismatchedKey(ab, key);
+    if (NULL == counter) {
         return SKAGGBAG_E_NULL_PARM;
-    }
-    if (NULL == ab->layout[0] || NULL == ab->layout[1]) {
-        return ((NULL == ab->layout[0])
-                ? SKAGGBAG_E_UNDEFINED_KEY : SKAGGBAG_E_UNDEFINED_COUNTER);
-    }
-
-    if (ab->layout[0] != key->opaque) {
-        return SKAGGBAG_E_FIELDS_DIFFER_KEY;
     }
 
     counter->opaque = ab->layout[1];
@@ -2815,17 +3268,8 @@ skAggBagKeyCounterRemove(
     sk_aggbag_t                    *ab,
     const sk_aggbag_aggregate_t    *key)
 {
-    if (NULL == ab || NULL == key) {
-        return SKAGGBAG_E_NULL_PARM;
-    }
-    if (NULL == ab->layout[0] || NULL == ab->layout[1]) {
-        return ((NULL == ab->layout[0])
-                ? SKAGGBAG_E_UNDEFINED_KEY : SKAGGBAG_E_UNDEFINED_COUNTER);
-    }
-
-    if (ab->layout[0] != key->opaque) {
-        return SKAGGBAG_E_FIELDS_DIFFER_KEY;
-    }
+    aggBagReturnIfUndefinedKeyCounter(ab);
+    aggBagReturnIfMismatchedKey(ab, key);
 
     ab->fixed_fields = 1;
 
@@ -2839,20 +3283,9 @@ skAggBagKeyCounterSet(
     const sk_aggbag_aggregate_t    *key,
     const sk_aggbag_aggregate_t    *counter)
 {
-    if (NULL == ab || NULL == key || NULL == counter) {
-        return SKAGGBAG_E_NULL_PARM;
-    }
-    if (NULL == ab->layout[0] || NULL == ab->layout[1]) {
-        return ((NULL == ab->layout[0])
-                ? SKAGGBAG_E_UNDEFINED_KEY : SKAGGBAG_E_UNDEFINED_COUNTER);
-    }
-
-    if (ab->layout[0] != key->opaque) {
-        return SKAGGBAG_E_FIELDS_DIFFER_KEY;
-    }
-    if (ab->layout[1] != counter->opaque) {
-        return SKAGGBAG_E_FIELDS_DIFFER_COUNTER;
-    }
+    aggBagReturnIfUndefinedKeyCounter(ab);
+    aggBagReturnIfMismatchedKey(ab, key);
+    aggBagReturnIfMismatchedCounter(ab, counter);
 
     ab->fixed_fields = 1;
 
@@ -2867,8 +3300,30 @@ skAggBagKeyCounterSet(
     }
 }
 
+/*
+ *  Find `key` in `ab` and subtract `counter` from its counter.
+ */
 int
 skAggBagKeyCounterSubtract(
+    sk_aggbag_t                    *ab,
+    const sk_aggbag_aggregate_t    *key,
+    const sk_aggbag_aggregate_t    *counter,
+    sk_aggbag_aggregate_t          *new_counter)
+{
+    aggBagReturnIfUndefinedKeyCounter(ab);
+    aggBagReturnIfMismatchedKey(ab, key);
+    aggBagReturnIfMismatchedCounter(ab, counter);
+
+    aggBagKeyCounterSubtract(ab, key, counter, new_counter);
+
+    return SKAGGBAG_OK;
+}
+
+/*
+ *  Helper for skAggBagKeyCounterSubtract() that does no error checking.
+ */
+static void
+aggBagKeyCounterSubtract(
     sk_aggbag_t                    *ab,
     const sk_aggbag_aggregate_t    *key,
     const sk_aggbag_aggregate_t    *counter,
@@ -2881,20 +3336,6 @@ skAggBagKeyCounterSubtract(
     uint64_t dst;
     uint64_t src;
 
-    if (NULL == ab || NULL == key || NULL == counter) {
-        return SKAGGBAG_E_NULL_PARM;
-    }
-    if (NULL == ab->layout[0] || NULL == ab->layout[1]) {
-        return ((NULL == ab->layout[0])
-                ? SKAGGBAG_E_UNDEFINED_KEY : SKAGGBAG_E_UNDEFINED_COUNTER);
-    }
-
-    if (ab->layout[0] != key->opaque) {
-        return SKAGGBAG_E_FIELDS_DIFFER_KEY;
-    }
-    if (ab->layout[1] != counter->opaque) {
-        return SKAGGBAG_E_FIELDS_DIFFER_COUNTER;
-    }
     if (new_counter) {
         new_counter->opaque = counter->opaque;
     }
@@ -2925,8 +3366,6 @@ skAggBagKeyCounterSubtract(
             }
         }
     }
-
-    return SKAGGBAG_OK;
 }
 
 
@@ -3317,6 +3756,8 @@ skAggBagStrerror(
         return "Unexpected error during insert";
       case SKAGGBAG_E_UNSUPPORTED_IPV6:
         return "SiLK is compiled without IPv6 support";
+      case SKAGGBAG_E_DIVIDE_BY_ZERO:
+        return "Aggregate Bag divisor has a value of zero or key is absent";
     }
 
     snprintf(buf, sizeof(buf),
@@ -3367,6 +3808,26 @@ skAggBagWrite(
     if (rv) {
         aggBagHentryFree(hentry);
         return SKAGGBAG_E_ALLOC;
+    }
+
+    if (ab->options) {
+        const sk_aggbag_options_t *opts = ab->options;
+        if (opts->note_strip) {
+            skHeaderRemoveAllMatching(hdr, SK_HENTRY_ANNOTATION_ID);
+        }
+        if (opts->invocation_strip) {
+            skHeaderRemoveAllMatching(hdr, SK_HENTRY_INVOCATION_ID);
+        } else if (opts->argc && opts->argv) {
+            rv = skHeaderAddInvocation(hdr, 1, opts->argc, opts->argv);
+            if (rv) {
+                return SKAGGBAG_E_WRITE;
+            }
+        }
+        if ((rv = skHeaderSetCompressionMethod(hdr, opts->comp_method))
+            || (rv = skOptionsNotesAddToStream(stream)))
+        {
+            return SKAGGBAG_E_WRITE;
+        }
     }
 
     /* write the file's header */

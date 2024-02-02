@@ -1,8 +1,50 @@
 /*
-** Copyright (C) 2011-2020 by Carnegie Mellon University.
+** Copyright (C) 2011-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -16,7 +58,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: rwsiteinfo.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: rwsiteinfo.c c05ad63a27aa 2023-05-12 19:43:56Z mthomas $");
 
 #include <silk/redblack.h>
 #include <silk/skmempool.h>
@@ -33,8 +75,8 @@ RCSIDENT("$SiLK: rwsiteinfo.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
 /* where to write --help output */
 #define USAGE_FH stdout
 
-/* max number of iterators is 3: flowtype, class, sensor */
-#define RWS_MAX_ITERATOR_COUNT  3
+/* max number of iterators is 4: flowtype, class, sensor, group */
+#define RWS_MAX_ITERATOR_COUNT  4
 
 /* size of memory pool */
 #define RWS_MEMORY_POOL_SIZE    256
@@ -44,48 +86,75 @@ RCSIDENT("$SiLK: rwsiteinfo.c ef14e54179be 2020-04-14 21:57:45Z mthomas $");
 
 
 /* Sub-iterator types */
-typedef enum {
+typedef enum rws_iter_type_en {
+    /* iterator is not set */
     RWS_NULL,
+    /* iterates over flowtypes; NO active class iterator */
     RWS_FLOWTYPE,
+    /* iterates over classes; NO active sensor iterator */
     RWS_CLASS,
+    /* iterates over sensors; NO active class or group iterator */
     RWS_SENSOR,
+    /* iterates over groups, NO active sensor iterator */
+    RWS_GROUP,
+    /* iterates over default classes */
     RWS_DEFAULT_CLASS,
+    /* iterates over classes; sensor iterator is active */
     RWS_CLASS_FROM_SENSOR,
+    /* iterates over sensors; class iterator is active */
     RWS_SENSOR_FROM_CLASS,
+    /* iterates over groups; sensor iterator is active */
+    RWS_GROUP_FROM_SENSOR,
+    /* iterates over sensors; group iterator is active */
+    RWS_SENSOR_FROM_GROUP,
+    /* iterates over flowtypes; class iterator is active */
     RWS_FLOWTYPE_FROM_CLASS,
+    /* iterates over default flowtypes; class iterator is active */
     RWS_DEFAULT_FLOWTYPE_FROM_CLASS
 } rws_iter_type_t;
 
 /* Site iterator */
 typedef struct rws_iter_st {
     /* The iterators */
-    sk_flowtype_iter_t  flowtype_iter;
-    sk_class_iter_t     class_iter;
-    sk_sensor_iter_t    sensor_iter;
+    sk_flowtype_iter_t      flowtype_iter;
+    sk_class_iter_t         class_iter;
+    sk_sensor_iter_t        sensor_iter;
+    sk_sensorgroup_iter_t   group_iter;
 
     /* The values */
-    sk_flowtype_id_t    flowtype_id;
-    sk_class_id_t       class_id;
-    sk_sensor_id_t      sensor_id;
+    sk_flowtype_id_t        flowtype_id;
+    sk_class_id_t           class_id;
+    sk_sensor_id_t          sensor_id;
+    sk_sensorgroup_id_t     group_id;
 
     /* Order and type of iterators */
-    rws_iter_type_t     order[RWS_MAX_ITERATOR_COUNT];
+    rws_iter_type_t         order[RWS_MAX_ITERATOR_COUNT];
 
     /* Number of iterators  */
-    int                 level;
+    int                     level;
     /* Highest bound iterator */
-    int                 bound;
+    int                     bound;
     /* Highest started iterator */
-    int                 started;
+    int                     started;
 
     /* Emitted at a given level */
-    int                 emitted[RWS_MAX_ITERATOR_COUNT];
+    int                     emitted[RWS_MAX_ITERATOR_COUNT];
     /* Lowest level at which information is emitted */
-    int                 emit_level;
+    int                     emit_level;
 
     /* Whether RWS_DEFAULT_FLOWTYPE_FROM_CLASS is one of the
      * iterators */
-    unsigned            default_type : 1;
+    unsigned                default_type : 1;
+
+    /* Whether the group iterator should check that it contains a sensor which
+     * is in the current class_id; set when a class or flowtype iterator
+     * occurs before a group iterator without a sensor iterator */
+    unsigned                group_check_class : 1;
+
+    /* Whether the class or flowtype iterator should check that it contains a
+     * sensor which is in the current group_id; set when a group iterator
+     * occurs before a class or flowtype iterator without a sensor iterator */
+    unsigned                class_check_group : 1;
 } rws_iter_t;
 
 /* Structure to hold information about files in the repository */
@@ -102,13 +171,14 @@ typedef struct rws_repo_file_st rws_repo_file_t;
 
 /* LOCAL VARIABLE DEFINITIONS */
 
-/* Masks for flowtypes, classes, and sensors as set by the --classes,
- * --types, --flowtypes, and --sensors switches.  When the bitmap is
- * NULL, all values are printed; when the bitmap is not NULL, only
- * values where the bit is high are printed. */
+/* Masks for flowtypes, classes, and sensors as set by the --classes, --types,
+ * --flowtypes, --sensors, and --groups switches.  When the bitmap is NULL,
+ * all values are printed; when the bitmap is not NULL, only values where the
+ * bit is high are printed. */
 static sk_bitmap_t *flowtype_mask = NULL;
-static sk_bitmap_t *class_mask   = NULL;
+static sk_bitmap_t *class_mask    = NULL;
 static sk_bitmap_t *sensor_mask   = NULL;
+static sk_bitmap_t *group_mask    = NULL;
 
 /* paging program */
 static const char *pager;
@@ -121,6 +191,9 @@ static char *classes_arg   = NULL;
 static char *types_arg     = NULL;
 static char *flowtypes_arg = NULL;
 static char *sensors_arg   = NULL;
+static char *groups_arg    = NULL;
+
+/* the fields to print; set by --fields; required */
 static char *fields_arg    = NULL;
 
 /* delimiters */
@@ -161,6 +234,7 @@ typedef enum {
     RWST_SENSOR,
     RWST_SENSOR_ID,
     RWST_SENSOR_DESC,
+    RWST_GROUP,
     RWST_DEFAULT_CLASS,
     RWST_DEFAULT_TYPE,
     RWST_MARK_DEFAULTS,
@@ -170,6 +244,7 @@ typedef enum {
     RWST_FLOWTYPE_ID_LIST,
     RWST_SENSOR_LIST,
     RWST_SENSOR_ID_LIST,
+    RWST_GROUP_LIST,
     RWST_DEFAULT_CLASS_LIST,
     RWST_DEFAULT_TYPE_LIST,
     RWST_REPO_START_DATE,
@@ -196,6 +271,8 @@ static const sk_stringmap_entry_t field_map_entries[] = {
      "sensor integer identifier",               "Sensor-ID"},
     {"describe-sensor",    RWST_SENSOR_DESC,
      "sensor description",                      "Sensor-Description"},
+    {"group",              RWST_GROUP,
+     "sensor-group name",                       "Group"},
     {"default-class",      RWST_DEFAULT_CLASS,
      "default class name",                      "Default-Class"},
     {"default-type",       RWST_DEFAULT_TYPE,
@@ -214,6 +291,8 @@ static const sk_stringmap_entry_t field_map_entries[] = {
      "list of sensor names",                    "Sensor:list"},
     {"id-sensor:list",     RWST_SENSOR_ID_LIST,
      "list of sensor integer identifiers",      "Sensor-ID:list"},
+    {"group:list",         RWST_GROUP_LIST,
+     "list of sensor-group names",              "Group:list"},
     {"default-class:list", RWST_DEFAULT_CLASS_LIST,
      "list of default class names",             "Default-Class:list"},
     {"default-type:list",  RWST_DEFAULT_TYPE_LIST,
@@ -241,7 +320,7 @@ static int col_width[RWST_MAX_FIELD_COUNT];
 
 typedef enum {
     OPT_HELP_FIELDS, OPT_FIELDS,
-    OPT_CLASSES, OPT_TYPES, OPT_FLOWTYPES, OPT_SENSORS,
+    OPT_CLASSES, OPT_TYPES, OPT_FLOWTYPES, OPT_SENSORS, OPT_GROUPS,
     OPT_NO_TITLES, OPT_NO_COLUMNS, OPT_COLUMN_SEPARATOR,
     OPT_NO_FINAL_DELIMITER, OPT_DELIMITED, OPT_LIST_DELIMETER,
     OPT_OUTPUT_PATH, OPT_PAGER, OPT_DATA_ROOTDIR
@@ -254,6 +333,8 @@ static struct option appOptions[] = {
     {"types",               REQUIRED_ARG, 0, OPT_TYPES},
     {"flowtypes",           REQUIRED_ARG, 0, OPT_FLOWTYPES},
     {"sensors",             REQUIRED_ARG, 0, OPT_SENSORS},
+    {"groups",              REQUIRED_ARG, 0, OPT_GROUPS},
+    /* timestamp-format gets inserted here */
     {"no-titles",           NO_ARG,       0, OPT_NO_TITLES},
     {"no-columns",          NO_ARG,       0, OPT_NO_COLUMNS},
     {"column-separator",    REQUIRED_ARG, 0, OPT_COLUMN_SEPARATOR},
@@ -270,18 +351,25 @@ static const char *appHelp[] = {
     "Describe each field and exit. Def. no",
     ("Print the fields named in this comma-separated list. Choices:"),
     ("Restrict the output using classes named in this comma-\n"
-     "\tseparated list. Use '@' to designate the default class.\n"
-     "\tDef. Print data for all classes"),
+     "\tseparated list. Use '@' to designate the default class. Use @FILE to\n"
+     "\tread class names from FILE, which may be a file path. Def. Print\n"
+     "\tdata for all classes"),
     ("Restrict the output using the types named in this comma-\n"
      "\tseparated list. Use '@' to designate the default type(s) for a class.\n"
+     "\tUse @FILE to read type names from FILE, which may be a file path.\n"
      "\tDef. Print data for all types"),
     ("Restrict the output using the class/type pairs named in\n"
-     "\tthis comma-separated list. May use 'all' for class and/or type. This\n"
-     "\tis an alternate way to specify class/type; switch may not be used\n"
-     "\twith --class or --type. Def. Print data for all class/type pairs"),
+     "\tthis comma-separated list. May use 'all' for class and/or type. Use\n"
+     "\t@FILE to read class/type pairs from FILE, which may be a file path.\n"
+     "\tThis is an alternate way to specify class/type; switch may not be\n"
+     "\tused with --class or --type. Def. Print data for all class/type pairs"),
     ("Restrict the output using the sensors named in this comma-\n"
      "\tseparated list. Sensors may be designated by name, ID (integer),\n"
-     "\tand/or ranges of IDs. Def. Print data for all sensors"),
+     "\tand/or ranges of IDs. Use @FILE to read sensors from FILE, which may\n"
+     "\tbe a file path. Def. Print data for all sensors"),
+    ("Restrict the output using sensor-groups named in this comma-\n"
+     "\tseparated list. Use @FILE to read group names from FILE, which may\n"
+     "\tbe a file path. Def. Print data for all sensor-groups"),
     ("Do not print column headers. Def. Print titles"),
     ("Disable fixed-width columnar output. Def. Columnar"),
     ("Use specified character between columns. Def. '|'"),
@@ -333,12 +421,12 @@ appUsageLong(
 #define MAX_TEXT_ON_LINE  72
 #define USAGE_MSG                                                            \
     ("--fields=<FIELDS> [SWITCHES]\n"                                        \
-     "\tPrint selected information about the classes, types, flowtypes\n"    \
-     "\tand sensors defined in the SiLK site configuration file.  By\n"      \
-     "\tdefault, the selected information is printed for every class,\n"     \
-     "\ttype, and sensor defined in the file; to restrict the output,\n"     \
-     "\tspecify one or more of --classes, --types, --flowtypes, or\n"        \
-     "\t--sensors.\n")
+     "\tPrint selected information about the classes, types, flowtypes,\n"   \
+     "\tsensors, and groups defined in the SiLK site configuration file.\n"  \
+     "\tBy default, the selected information is printed for every class,\n"  \
+     "\ttype, sensor, and group defined in the file; to restrict the\n"      \
+     "\toutput, specify one or more of --classes, --types, --flowtypes,\n"   \
+     "\t--sensors or --groups.\n")
 
     FILE *fh = USAGE_FH;
     char *cp, *ep, *sp;
@@ -367,7 +455,7 @@ appUsageLong(
                 skStringMapDestroy(map);
             }
             break;
-          case OPT_SENSORS:
+          case OPT_GROUPS:
             fprintf(fh, "%s\n", appHelp[i]);
             /* print help for --timestamp-usage */
             skOptionsTimestampFormatUsage(fh);
@@ -451,6 +539,7 @@ appTeardown(
     skBitmapDestroy(&flowtype_mask);
     skBitmapDestroy(&class_mask);
     skBitmapDestroy(&sensor_mask);
+    skBitmapDestroy(&group_mask);
 
     skAppUnregister();
 }
@@ -673,6 +762,12 @@ appOptionsHandler(
         sensors_arg = opt_arg;
         break;
 
+      case OPT_GROUPS:
+        CHECK_MULTIPLE_USE(opt_index, groups_arg);
+        /* CHECK_EMPTY_STRING(opt_index, opt_arg); */
+        groups_arg = opt_arg;
+        break;
+
       case OPT_FIELDS:
         CHECK_MULTIPLE_USE(opt_index, fields_arg);
         CHECK_EMPTY_STRING(opt_index, opt_arg);
@@ -843,11 +938,15 @@ rws_parse_fields(
  *      Parse the --sensors argument from the global 'sensors_arg'.
  *      Set a bit in 'sn_bitmap' for each sensor we see.  Return 0 on
  *      success, or -1 if any invalid sensors are found.
+ *
+ *      Helper for rws_parse_restrictions().
  */
 static int
 rws_parse_sensors(
     sk_bitmap_t        *sn_bitmap)
 {
+    const unsigned int flags = (SKSITE_SENSORS_ALLOW_RANGE
+                                | SKSITE_SENSORS_ALLOW_GROUP);
     sksite_error_iterator_t *error_iter = NULL;
     sk_vector_t *sensor_vec;
     sk_sensor_id_t id;
@@ -864,21 +963,21 @@ rws_parse_sensors(
         return -1;
     }
 
-    rv = sksiteParseSensorList(sensor_vec, sensors_arg, NULL, NULL, 2,
+    rv = sksiteParseSensorList(sensor_vec, sensors_arg, NULL, NULL, flags,
                                &error_iter);
     if (rv) {
         if (NULL == error_iter) {
-            skAppPrintErr("Invalid %s: Internal error parsing argument",
+            skAppPrintErr("Error parsing %s: Internal error parsing argument",
                           appOptions[OPT_SENSORS].name);
         } else if (1 == rv) {
             sksiteErrorIteratorNext(error_iter);
-            skAppPrintErr("Invalid %s '%s': %s",
+            skAppPrintErr("Error parsing %s '%s': %s",
                           appOptions[OPT_SENSORS].name, sensors_arg,
                           sksiteErrorIteratorGetMessage(error_iter));
             assert(sksiteErrorIteratorNext(error_iter)
                    == SK_ITERATOR_NO_MORE_ENTRIES);
         } else {
-            skAppPrintErr("Invalid %s '%s': Found multiple errors:",
+            skAppPrintErr("Error parsing %s '%s': Found multiple errors:",
                           appOptions[OPT_SENSORS].name, sensors_arg);
             while (sksiteErrorIteratorNext(error_iter) == SK_ITERATOR_OK) {
                 skAppPrintErr("%s", sksiteErrorIteratorGetMessage(error_iter));
@@ -889,14 +988,79 @@ rws_parse_sensors(
     } else if (0 == skVectorGetCount(sensor_vec)) {
         skAppPrintErr("Invalid %s '%s': No valid sensor names found",
                       appOptions[OPT_SENSORS].name, sensors_arg);
+        rv = -1;
     } else {
         for (i = 0; 0 == skVectorGetValue(&id, sensor_vec, i); ++i) {
             skBitmapSetBit(sn_bitmap, id);
         }
     }
 
-
     skVectorDestroy(sensor_vec);
+    return rv;
+}
+
+
+/*
+ *  status = rws_parse_groups(gr_bitmap);
+ *
+ *      Parse the --groups argument from the global 'groups_arg'.  Set a bit
+ *      in 'gr_bitmap' for each group we see.  Return 0 on success, or -1 if
+ *      any invalid groups are found.
+ *
+ *      Helper for rws_parse_restrictions().
+ */
+static int
+rws_parse_groups(
+    sk_bitmap_t        *gr_bitmap)
+{
+    sksite_error_iterator_t *error_iter = NULL;
+    sk_vector_t *group_vec;
+    sk_sensorgroup_id_t id;
+    size_t i;
+    int rv;
+
+    assert(groups_arg);
+    assert(gr_bitmap);
+    assert(skBitmapGetSize(gr_bitmap) > sksiteSensorgroupGetMaxID());
+
+    group_vec = skVectorNew(sizeof(sk_sensorgroup_id_t));
+    if (NULL == group_vec) {
+        skAppPrintOutOfMemory(NULL);
+        return -1;
+    }
+
+    rv = sksiteParseSensorgroupList(group_vec, groups_arg, &error_iter);
+    if (rv) {
+        if (NULL == error_iter) {
+            skAppPrintErr("Error parsing %s: Internal error parsing argument",
+                          appOptions[OPT_GROUPS].name);
+        } else if (1 == rv) {
+            sksiteErrorIteratorNext(error_iter);
+            skAppPrintErr("Error parsing %s '%s': %s",
+                          appOptions[OPT_GROUPS].name, groups_arg,
+                          sksiteErrorIteratorGetMessage(error_iter));
+            assert(sksiteErrorIteratorNext(error_iter)
+                   == SK_ITERATOR_NO_MORE_ENTRIES);
+        } else {
+            skAppPrintErr("Error parsing %s '%s': Found multiple errors:",
+                          appOptions[OPT_GROUPS].name, groups_arg);
+            while (sksiteErrorIteratorNext(error_iter) == SK_ITERATOR_OK) {
+                skAppPrintErr("%s", sksiteErrorIteratorGetMessage(error_iter));
+            }
+        }
+        sksiteErrorIteratorFree(error_iter);
+        error_iter = NULL;
+    } else if (0 == skVectorGetCount(group_vec)) {
+        skAppPrintErr("Invalid %s '%s': No valid group names found",
+                      appOptions[OPT_GROUPS].name, groups_arg);
+        rv = -1;
+    } else {
+        for (i = 0; 0 == skVectorGetValue(&id, group_vec, i); ++i) {
+            skBitmapSetBit(gr_bitmap, id);
+        }
+    }
+
+    skVectorDestroy(group_vec);
     return rv;
 }
 
@@ -908,6 +1072,8 @@ rws_parse_sensors(
  *    Set a bit on 'cl_bitmap' for each valid class and and a bit on
  *    'ft_bitmap' for each valid flowtype.  Return 0 on success, or -1
  *    on if any class/type value is not a valid pair.
+ *
+ *    Helper for rws_parse_restrictions().
  */
 static int
 rws_parse_flowtypes(
@@ -933,17 +1099,17 @@ rws_parse_flowtypes(
                                  NULL, NULL, &error_iter);
     if (rv) {
         if (NULL == error_iter) {
-            skAppPrintErr("Invalid %s: Internal error parsing argument",
+            skAppPrintErr("Error parsing %s: Internal error parsing argument",
                           appOptions[OPT_FLOWTYPES].name);
         } else if (1 == rv) {
             sksiteErrorIteratorNext(error_iter);
-            skAppPrintErr("Invalid %s '%s': %s",
+            skAppPrintErr("Error parsing %s '%s': %s",
                           appOptions[OPT_FLOWTYPES].name, flowtypes_arg,
                           sksiteErrorIteratorGetMessage(error_iter));
             assert(sksiteErrorIteratorNext(error_iter)
                    == SK_ITERATOR_NO_MORE_ENTRIES);
         } else {
-            skAppPrintErr("Invalid %s '%s': Found multiple errors:",
+            skAppPrintErr("Error parsing %s '%s': Found multiple errors:",
                           appOptions[OPT_FLOWTYPES].name, flowtypes_arg);
             while (sksiteErrorIteratorNext(error_iter) == SK_ITERATOR_OK) {
                 skAppPrintErr("%s", sksiteErrorIteratorGetMessage(error_iter));
@@ -954,6 +1120,7 @@ rws_parse_flowtypes(
     } else if (0 == skVectorGetCount(flowtypes_vec)) {
         skAppPrintErr("Invalid %s '%s': No valid class/type pairs found",
                       appOptions[OPT_FLOWTYPES].name, flowtypes_arg);
+        rv = -1;
     } else {
         for (i = 0; 0 == skVectorGetValue(&id, flowtypes_vec, i); ++i) {
             skBitmapSetBit(ft_bitmap, id);
@@ -975,6 +1142,8 @@ rws_parse_flowtypes(
  *    each valid class and and a bit on 'ft_bitmap' for each valid
  *    flowtype.  Return 0 on success, or -1 on if any class/type value
  *    is not a valid pair.
+ *
+ *    Helper for rws_parse_restrictions().
  */
 static int
 rws_parse_classes_and_types(
@@ -1010,17 +1179,17 @@ rws_parse_classes_and_types(
     }
     if (rv) {
         if (NULL == error_iter) {
-            skAppPrintErr("Invalid %s: Internal error parsing argument",
+            skAppPrintErr("Error parsing %s: Internal error parsing argument",
                           appOptions[OPT_CLASSES].name);
         } else if (1 == rv) {
             sksiteErrorIteratorNext(error_iter);
-            skAppPrintErr("Invalid %s '%s': %s",
+            skAppPrintErr("Error parsing %s '%s': %s",
                           appOptions[OPT_CLASSES].name, classes_arg,
                           sksiteErrorIteratorGetMessage(error_iter));
             assert(sksiteErrorIteratorNext(error_iter)
                    == SK_ITERATOR_NO_MORE_ENTRIES);
         } else {
-            skAppPrintErr("Invalid %s '%s': Found multiple errors:",
+            skAppPrintErr("Error parsing %s '%s': Found multiple errors:",
                           appOptions[OPT_CLASSES].name, classes_arg);
             while (sksiteErrorIteratorNext(error_iter) == SK_ITERATOR_OK) {
                 skAppPrintErr("%s", sksiteErrorIteratorGetMessage(error_iter));
@@ -1050,17 +1219,17 @@ rws_parse_classes_and_types(
     }
     if (rv) {
         if (NULL == error_iter) {
-            skAppPrintErr("Invalid %s: Internal error parsing argument",
+            skAppPrintErr("Error parsing %s: Internal error parsing argument",
                           appOptions[OPT_TYPES].name);
         } else if (1 == rv) {
             sksiteErrorIteratorNext(error_iter);
-            skAppPrintErr("Invalid %s '%s': %s",
+            skAppPrintErr("Error parsing %s '%s': %s",
                           appOptions[OPT_TYPES].name, types_arg,
                           sksiteErrorIteratorGetMessage(error_iter));
             assert(sksiteErrorIteratorNext(error_iter)
                    == SK_ITERATOR_NO_MORE_ENTRIES);
         } else {
-            skAppPrintErr("Invalid %s '%s': Found multiple errors:",
+            skAppPrintErr("Error parsing %s '%s': Found multiple errors:",
                           appOptions[OPT_TYPES].name, types_arg);
             while (sksiteErrorIteratorNext(error_iter) == SK_ITERATOR_OK) {
                 skAppPrintErr("%s", sksiteErrorIteratorGetMessage(error_iter));
@@ -1105,8 +1274,9 @@ rws_parse_classes_and_types(
 /*
  *  status = rws_parse_restrictions();
  *
- *    Parse the --classes, --types, --flowtypes, and --sensors options
- *    and create/fill bitmaps that restrict the output.
+ *    Calls helper functions to parse the --classes, --types, --flowtypes,
+ *    --sensors, and --groups options, then creates and fills bitmaps that
+ *    restrict the output.
  *
  *    Returns 0 on success, -1 on error.
  */
@@ -1116,29 +1286,40 @@ rws_parse_restrictions(
 {
     sk_bitmap_iter_t bmap_iter;
     uint32_t bmap_val;
-    sk_bitmap_t *cl_mask = NULL;
-    sk_bitmap_t *ft_mask = NULL;
     sk_bitmap_t *sn_mask = NULL;
-    sk_class_iter_t class_iter;
-    sk_flowtype_iter_t ft_iter;
     sk_sensor_iter_t sensor_iter;
     sk_class_id_t class_id;
     sk_sensor_id_t sensor_id;
-    sk_flowtype_id_t flowtype_id;
-    int sensors_only = 0;
-    int rv = 0;
+    sk_sensorgroup_id_t group_id;
+    int rv;
 
-    if (!classes_arg && !types_arg && !flowtypes_arg) {
-        if (!sensors_arg) {
-            /* nothing to do */
-            return 0;
+    /* Check which restrcition arguments were given */
+    if (flowtypes_arg) {
+        if (classes_arg || types_arg) {
+            /* error if --flowtypes used with --classes or --types */
+            skAppPrintErr(
+                "Cannot use --%s when either --%s or --%s is specified",
+                appOptions[OPT_FLOWTYPES].name,
+                appOptions[OPT_CLASSES].name,
+                appOptions[OPT_TYPES].name);
+            return -1;
         }
-        /* else, only need to process --sensors */
-        sensors_only = 1;
+    } else if (NULL == classes_arg && NULL == types_arg
+               && NULL == sensors_arg && NULL == groups_arg)
+    {
+        /* all are NULL; there is nothing to do */
+        return 0;
     }
 
-    /* create the global bitmaps for all classes, all flowtypes, and
-     * all sensors */
+    /* Create the bitmaps */
+    if (skBitmapCreate(&sensor_mask, 1 + sksiteSensorGetMaxID())) {
+        skAppPrintOutOfMemory("sensor bitmap");
+        return -1;
+    }
+    if (skBitmapCreate(&group_mask, 1 + sksiteSensorgroupGetMaxID())) {
+        skAppPrintOutOfMemory("group bitmap");
+        return -1;
+    }
     if (skBitmapCreate(&class_mask, 1 + sksiteClassGetMaxID())) {
         skAppPrintOutOfMemory("class bitmap");
         return -1;
@@ -1147,48 +1328,91 @@ rws_parse_restrictions(
         skAppPrintOutOfMemory("flowtype bitmap");
         return -1;
     }
-    if (skBitmapCreate(&sensor_mask, 1 + sksiteSensorGetMaxID())) {
-        skAppPrintOutOfMemory("sensor bitmap");
-        return -1;
-    }
 
-    if (!sensors_only && sensors_arg) {
-        /* need to create temporary bitmaps */
-        if (skBitmapCreate(&cl_mask, 1 + sksiteClassGetMaxID())) {
-            skAppPrintOutOfMemory("class bitmap");
-            rv = -1;
-            goto END;
-        }
-        if (skBitmapCreate(&ft_mask, 1 + sksiteFlowtypeGetMaxID())) {
-            skAppPrintOutOfMemory("flowtype bitmap");
-            rv = -1;
-            goto END;
-        }
-        if (skBitmapCreate(&sn_mask, 1 + sksiteSensorGetMaxID())) {
-            skAppPrintOutOfMemory("sensor bitmap");
-            rv = -1;
-            goto END;
-        }
-    } else {
-        /* else we can point the temporaries at the real thing */
-        cl_mask = class_mask;
-        ft_mask = flowtype_mask;
-        sn_mask = sensor_mask;
-    }
-
+    /* Parse all --classes, --types, etc switches first; then return if an
+     * error was encountered in any of them. */
+    rv = 0;
     if (sensors_arg) {
-        rv = rws_parse_sensors(sensor_mask);
+        rv |= rws_parse_sensors(sensor_mask);
+    }
+    if (groups_arg) {
+        rv |= rws_parse_groups(group_mask);
+    }
+    if (flowtypes_arg) {
+        rv |= rws_parse_flowtypes(class_mask, flowtype_mask);
+    }
+    if (classes_arg || types_arg) {
+        rv |= rws_parse_classes_and_types(class_mask, flowtype_mask);
+    }
+    if (rv) {
+        rv = -1;
+        goto END;
+    }
 
-        if (sensors_only && rv != 0) {
-            goto END;
+    /* Assume error */
+    rv = -1;
+
+    /* Create a temporary sensor bitmap. (Other temp bitmaps are created in
+     * their local block; this bitmaps is used multiple times.) */
+    if (skBitmapCreate(&sn_mask, 1 + sksiteSensorGetMaxID())) {
+        skAppPrintOutOfMemory("sensor bitmap");
+        goto END;
+    }
+
+    /* if --groups was given, use it to update sensor_mask */
+    if (groups_arg) {
+        skBitmapIteratorBind(group_mask, &bmap_iter);
+        while (skBitmapIteratorNext(&bmap_iter, &bmap_val) == SK_ITERATOR_OK) {
+            group_id = (sk_sensorgroup_id_t)bmap_val;
+            sksiteSensorgroupSensorIterator(group_id, &sensor_iter);
+            while (sksiteSensorIteratorNext(&sensor_iter, &sensor_id)) {
+                skBitmapSetBit(sn_mask, sensor_id);
+            }
         }
 
-        /* set class_mask and flowtype_mask based on the sensors we saw */
+        /* update the sensor_mask: intersect the bitmaps if sensors_arg
+         * updated the sensor_mask; else union them */
+        if (sensors_arg) {
+            skBitmapIntersection(sensor_mask, sn_mask);
+        } else {
+            assert(0 == skBitmapGetHighCount(sensor_mask));
+            skBitmapUnion(sensor_mask, sn_mask);
+        }
+        skBitmapClearAllBits(sn_mask);
+    }
+
+    /* if --sensors or --groups was given, update the class_mask and
+     * flowtype_mask from the current sensor_mask */
+    if (sensors_arg || groups_arg) {
+        sk_bitmap_t *cl_mask = NULL;
+        sk_bitmap_t *ft_mask = NULL;
+        sk_class_iter_t class_iter;
+        sk_flowtype_id_t flowtype_id;
+        sk_flowtype_iter_t ft_iter;
+
+        if (NULL == classes_arg && NULL == types_arg && NULL == flowtypes_arg)
+        {
+            /* set bits in class_mask and flowtype_mask directly */
+            cl_mask = class_mask;
+            ft_mask = flowtype_mask;
+        } else {
+            /* create temporary bitmaps for intersection */
+            if (skBitmapCreate(&cl_mask, 1 + sksiteClassGetMaxID())) {
+                skAppPrintOutOfMemory("class bitmap");
+                goto END;
+            }
+            if (skBitmapCreate(&ft_mask, 1 + sksiteFlowtypeGetMaxID())) {
+                skAppPrintOutOfMemory("flowtype bitmap");
+                skBitmapDestroy(&cl_mask);
+                goto END;
+            }
+        }
+
+        /* for each sensor, gets its classes.  for each of those classes, set
+         * a bit in the cl_mask and set bits in ft_mask for each type in the
+         * class */
         skBitmapIteratorBind(sensor_mask, &bmap_iter);
-        while (skBitmapIteratorNext(&bmap_iter, &bmap_val)==SK_ITERATOR_OK) {
-            /* for each sensor, gets its classes.  for each of those
-             * classes, set a bit in the cl_mask and set bits in
-             * ft_mask for each type in the class */
+        while (skBitmapIteratorNext(&bmap_iter, &bmap_val) == SK_ITERATOR_OK) {
             sensor_id = (sk_sensor_id_t)bmap_val;
             sksiteSensorClassIterator(sensor_id, &class_iter);
             while (sksiteClassIteratorNext(&class_iter, &class_id)) {
@@ -1202,71 +1426,81 @@ rws_parse_restrictions(
             }
         }
 
-        if (sensors_only) {
-            return 0;
+        /* intersect the bitmaps and destroy temporaries */
+        if (cl_mask != class_mask) {
+            skBitmapIntersection(class_mask, cl_mask);
+            skBitmapIntersection(flowtype_mask, ft_mask);
+            skBitmapDestroy(&cl_mask);
+            skBitmapDestroy(&ft_mask);
         }
     }
 
-    /* handle case when --flowtypes is given */
-    if (flowtypes_arg) {
-        if (classes_arg || types_arg) {
-            skAppPrintErr(("Cannot use --%s when either --%s or --%s is"
-                           " specified"),
-                          appOptions[OPT_FLOWTYPES].name,
-                          appOptions[OPT_CLASSES].name,
-                          appOptions[OPT_TYPES].name);
-            goto END;
+    /* if --classes, --types, or --flowtypes was given, update sensor_mask
+     * from the class_mask */
+    if (classes_arg || types_arg || flowtypes_arg) {
+        skBitmapIteratorBind(class_mask, &bmap_iter);
+        while (skBitmapIteratorNext(&bmap_iter, &bmap_val) == SK_ITERATOR_OK) {
+            class_id = (sk_class_id_t)bmap_val;
+            sksiteClassSensorIterator(class_id, &sensor_iter);
+            while (sksiteSensorIteratorNext(&sensor_iter, &sensor_id)) {
+                skBitmapSetBit(sn_mask, sensor_id);
+            }
         }
-        rv |= rws_parse_flowtypes(class_mask, flowtype_mask);
-        if (rv != 0) {
-            goto END;
-        }
-    } else {
-        assert(classes_arg || types_arg);
-        rv |= rws_parse_classes_and_types(class_mask, flowtype_mask);
-        if (rv != 0) {
-            goto END;
+
+        /* update the sensor_mask: intersect the bitmaps if either sensors_arg
+         * or groups_arg updated the sensor_mask; else union them */
+        if (sensors_arg || groups_arg) {
+            skBitmapIntersection(sensor_mask, sn_mask);
+        } else {
+            assert(0 == skBitmapGetHighCount(sensor_mask));
+            skBitmapUnion(sensor_mask, sn_mask);
         }
     }
 
-    /* set sensor_mask based on the classes we saw */
-    skBitmapIteratorBind(class_mask, &bmap_iter);
-    while (skBitmapIteratorNext(&bmap_iter, &bmap_val)==SK_ITERATOR_OK) {
-        class_id = (sk_class_id_t)bmap_val;
-        sksiteClassSensorIterator(class_id, &sensor_iter);
-        while (sksiteSensorIteratorNext(&sensor_iter, &sensor_id)) {
-            skBitmapSetBit(sn_mask, sensor_id);
+    /* finally, if any non-group masks were set from the command line, update
+     * group_mask based on values in the sensor_mask */
+    if (classes_arg || types_arg || flowtypes_arg || sensors_arg) {
+        sk_bitmap_t *gr_mask = NULL;
+        sk_sensorgroup_iter_t group_iter;
+
+        if (NULL == groups_arg) {
+            /* set bits in group_mask directly */
+            gr_mask = group_mask;
+        } else {
+            /* create a temporary bitmap for intersection */
+            if (skBitmapCreate(&gr_mask, 1 + sksiteSensorgroupGetMaxID())) {
+                skAppPrintOutOfMemory("group bitmap");
+                goto END;
+            }
+        }
+
+        skBitmapIteratorBind(sensor_mask, &bmap_iter);
+        while (skBitmapIteratorNext(&bmap_iter, &bmap_val) == SK_ITERATOR_OK) {
+            sensor_id = (sk_sensor_id_t)bmap_val;
+            sksiteSensorSensorgroupIterator(sensor_id, &group_iter);
+            while (sksiteSensorgroupIteratorNext(&group_iter, &group_id)) {
+                skBitmapSetBit(gr_mask, group_id);
+            }
+        }
+
+        /* intersect the bitmaps */
+        if (gr_mask != group_mask) {
+            skBitmapIntersection(group_mask, gr_mask);
+            skBitmapDestroy(&gr_mask);
         }
     }
 
-    /* perform the intersection of the masks with the temporaries */
-    if (sn_mask && sn_mask != sensor_mask) {
-        skBitmapIntersection(sensor_mask, sn_mask);
-        skBitmapDestroy(&sn_mask);
-    }
-    if (cl_mask && cl_mask != class_mask) {
-        skBitmapIntersection(class_mask, cl_mask);
-        skBitmapDestroy(&cl_mask);
-    }
-    if (ft_mask && ft_mask != flowtype_mask) {
-        skBitmapIntersection(flowtype_mask, ft_mask);
-        skBitmapDestroy(&ft_mask);
-    }
+    rv = 0;
 
   END:
-    if (sn_mask && sn_mask != sensor_mask) {
-        skBitmapDestroy(&sn_mask);
-    }
-    if (cl_mask && cl_mask != class_mask) {
-        skBitmapDestroy(&cl_mask);
-    }
-    if (ft_mask && ft_mask != flowtype_mask) {
-        skBitmapDestroy(&ft_mask);
-    }
+    skBitmapDestroy(&sn_mask);
     return rv;
 }
 
 
+/*
+ *    Comparison function used by red-black tree.
+ */
 static int
 rws_repo_file_compare(
     const void         *v_repo_file_a,
@@ -1437,6 +1671,10 @@ rws_iter_bind(
             sksiteSensorIterator(&iter->sensor_iter);
             iter->sensor_id = SK_INVALID_SENSOR;
             break;
+          case RWS_GROUP:
+            sksiteSensorgroupIterator(&iter->group_iter);
+            iter->group_id = SK_INVALID_SENSORGROUP;
+            break;
           case RWS_FLOWTYPE_FROM_CLASS:
             sksiteClassFlowtypeIterator(iter->class_id, &iter->flowtype_iter);
             iter->flowtype_id = SK_INVALID_FLOWTYPE;
@@ -1454,6 +1692,16 @@ rws_iter_bind(
                 iter->class_id, &iter->flowtype_iter);
             iter->flowtype_id = SK_INVALID_FLOWTYPE;
             iter->default_type = 1;
+            break;
+          case RWS_GROUP_FROM_SENSOR:
+            sksiteSensorSensorgroupIterator(iter->sensor_id,
+                                            &iter->group_iter);
+            iter->group_id = SK_INVALID_SENSORGROUP;
+            break;
+          case RWS_SENSOR_FROM_GROUP:
+            sksiteSensorgroupSensorIterator(iter->group_id,
+                                            &iter->sensor_iter);
+            iter->sensor_id = SK_INVALID_SENSOR;
             break;
           case RWS_NULL:
             skAbortBadCase(iter->order[level]);
@@ -1484,6 +1732,10 @@ rws_iter_next(
     rws_iter_t         *iter,
     const int           level)
 {
+    sk_sensor_iter_t s_iter;
+    sk_sensor_id_t s_id;
+    sk_class_id_t class_id;
+    int done;
     int rv;
 
     assert(iter);
@@ -1530,11 +1782,45 @@ rws_iter_next(
           case RWS_FLOWTYPE_FROM_CLASS:
           case RWS_DEFAULT_FLOWTYPE_FROM_CLASS:
             /* Flowtype iteration */
-            while ((rv = sksiteFlowtypeIteratorNext(&iter->flowtype_iter,
-                                                    &iter->flowtype_id))
-                   && flowtype_mask != NULL
-                   && !skBitmapGetBit(flowtype_mask, iter->flowtype_id))
-                ; /* empty */
+            if (!iter->class_check_group) {
+                while ((rv = sksiteFlowtypeIteratorNext(
+                            &iter->flowtype_iter, &iter->flowtype_id))
+                       && NULL != flowtype_mask
+                       && !skBitmapGetBit(flowtype_mask, iter->flowtype_id))
+                    ; /* empty */
+            } else {
+                /* This flowtype iteration must check whether the flowtype's
+                 * class and the current iter->group_id share a sensor */
+                done = 0;
+                while (!done &&
+                       (rv = sksiteFlowtypeIteratorNext(
+                           &iter->flowtype_iter, &iter->flowtype_id)))
+                {
+                    if (NULL != flowtype_mask
+                        && !skBitmapGetBit(flowtype_mask, iter->flowtype_id))
+                    {
+                        /* flowtype_mask is set and this flowtype is not in
+                         * the set of flowtypes to print */
+                        continue;
+                    }
+                    /* Visit sensors in the current flowtype's group (ignoring
+                     * those sensors not in the sensor_mask) and see if the
+                     * sensor is in this class */
+                    class_id = sksiteFlowtypeGetClassID(iter->flowtype_id);
+                    sksiteSensorgroupSensorIterator(iter->group_id, &s_iter);
+                    while (sksiteSensorIteratorNext(&s_iter, &s_id)) {
+                        if (NULL != sensor_mask
+                            && !skBitmapGetBit(sensor_mask, s_id))
+                        {
+                            continue;
+                        }
+                        if (sksiteIsSensorInClass(s_id, class_id)) {
+                            done = 1;
+                            break;
+                        }
+                    }
+                }
+            }
             /* Set class from flowtype */
             if (rv) {
                 iter->class_id = sksiteFlowtypeGetClassID(iter->flowtype_id);
@@ -1542,6 +1828,41 @@ rws_iter_next(
             break;
 
           case RWS_CLASS:
+            if (iter->class_check_group) {
+                /* This class iteration must check whether the class and the
+                 * current iter->group_id share a sensor */
+                done = 0;
+                while (!done &&
+                       (rv = sksiteClassIteratorNext(&iter->class_iter,
+                                                     &iter->class_id)))
+                {
+                    if (NULL != class_mask
+                        && !skBitmapGetBit(class_mask, iter->class_id))
+                    {
+                        /* A class_mask is set and the current class_id is not
+                         * in the mask */
+                        continue;
+                    }
+                    /* Visit sensors in the current group (ignoring those
+                     * sensors not in the sensor_mask) and see if the sensor
+                     * is in this class */
+                    sksiteSensorgroupSensorIterator(iter->group_id, &s_iter);
+                    while (sksiteSensorIteratorNext(&s_iter, &s_id)) {
+                        if (NULL != sensor_mask
+                            && !skBitmapGetBit(sensor_mask, s_id))
+                        {
+                            continue;
+                        }
+                        if (sksiteIsSensorInClass(s_id, iter->class_id)) {
+                            done = 1;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+            /* FALLTHROUGH */
+
           case RWS_CLASS_FROM_SENSOR:
             /* Class iteration */
             while ((rv = sksiteClassIteratorNext(&iter->class_iter,
@@ -1553,11 +1874,57 @@ rws_iter_next(
 
           case RWS_SENSOR:
           case RWS_SENSOR_FROM_CLASS:
+          case RWS_SENSOR_FROM_GROUP:
             /* Sensor iteration */
             while ((rv = sksiteSensorIteratorNext(&iter->sensor_iter,
                                                   &iter->sensor_id))
                    && sensor_mask != NULL
                    && !skBitmapGetBit(sensor_mask, iter->sensor_id))
+                ; /* empty */
+            break;
+
+          case RWS_GROUP:
+            if (iter->group_check_class) {
+                /* This group iteration must check whether the group and the
+                 * current iter->class_id share a sensor */
+                done = 0;
+                while (!done &&
+                       (rv = sksiteSensorgroupIteratorNext(&iter->group_iter,
+                                                           &iter->group_id)))
+                {
+                    if (NULL != group_mask
+                        && !skBitmapGetBit(group_mask, iter->group_id))
+                    {
+                        /* A group_mask is set and the current group_id is not
+                         * in the mask */
+                        continue;
+                    }
+                    /* Visit sensors in the this group (ignoring those sensors
+                     * not in the sensor_mask) and see if the sensor is in the
+                     * current class */
+                    sksiteSensorgroupSensorIterator(iter->group_id, &s_iter);
+                    while (sksiteSensorIteratorNext(&s_iter, &s_id)) {
+                        if (NULL != sensor_mask
+                            && !skBitmapGetBit(sensor_mask, s_id))
+                        {
+                            continue;
+                        }
+                        if (sksiteIsSensorInClass(s_id, iter->class_id)) {
+                            done = 1;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+            /* FALLTHROUGH */
+
+          case RWS_GROUP_FROM_SENSOR:
+            /* Group iteration */
+            while ((rv = sksiteSensorgroupIteratorNext(&iter->group_iter,
+                                                       &iter->group_id))
+                   && group_mask != NULL
+                   && !skBitmapGetBit(group_mask, iter->group_id))
                 ; /* empty */
             break;
 
@@ -1816,6 +2183,13 @@ rws_print_field(
         }
         break;
 
+      case RWST_GROUP:
+        if (iter->group_id != SK_INVALID_SENSORGROUP) {
+            sksiteSensorgroupGetName(buf, sizeof(buf), iter->group_id);
+            rv = rws_print(fd, "%*s", width, buf);
+        }
+        break;
+
       case RWST_DEFAULT_CLASS:
       case RWST_DEFAULT_CLASS_LIST:
         if (field == RWST_DEFAULT_CLASS_LIST
@@ -1879,6 +2253,9 @@ rws_print_field(
       case RWST_SENSOR_ID_LIST:
         rv = rws_print_list_field(fd, iter, RWST_SENSOR_ID, width);
         break;
+      case RWST_GROUP_LIST:
+        rv = rws_print_list_field(fd, iter, RWST_GROUP, width);
+        break;
       case RWST_DEFAULT_TYPE_LIST:
         rv = rws_print_list_field(fd, iter, RWST_DEFAULT_TYPE, width);
         break;
@@ -1938,6 +2315,7 @@ rws_print_list_field(
         }
         subiter.sensor_id = iter->sensor_id;
         break;
+
       case RWST_TYPE:
       case RWST_FLOWTYPE:
       case RWST_FLOWTYPE_ID:
@@ -1949,15 +2327,32 @@ rws_print_list_field(
         subiter.class_id = iter->class_id;
         subiter.flowtype_id = iter->flowtype_id;
         break;
+
       case RWST_SENSOR:
       case RWST_SENSOR_ID:
+        /* FIXME: Iteraction of group and class */
         if (iter->class_id == SK_INVALID_CLASS) {
-            subiter.order[0] = RWS_SENSOR;
+            if (iter->group_id == SK_INVALID_SENSORGROUP) {
+                subiter.order[0] = RWS_SENSOR;
+            } else {
+                subiter.order[0] = RWS_SENSOR_FROM_GROUP;
+            }
         } else {
             subiter.order[0] = RWS_SENSOR_FROM_CLASS;
         }
         subiter.class_id = iter->class_id;
+        subiter.group_id = iter->group_id;
         break;
+
+      case RWST_GROUP:
+        if (iter->sensor_id == SK_INVALID_SENSOR) {
+            subiter.order[0] = RWS_GROUP;
+        } else {
+            subiter.order[0] = RWS_GROUP_FROM_SENSOR;
+        }
+        subiter.sensor_id = iter->sensor_id;
+        break;
+
       case RWST_DEFAULT_TYPE:
         if (iter->class_id == SK_INVALID_CLASS) {
             return 0;
@@ -1965,6 +2360,7 @@ rws_print_list_field(
         subiter.order[0] = RWS_DEFAULT_FLOWTYPE_FROM_CLASS;
         subiter.class_id = iter->class_id;
         break;
+
       default:
         skAbortBadCase(field);
     }
@@ -1982,13 +2378,14 @@ rws_print_list_field(
     /* Iterate over the fields, printing each */
     first = 1;
     while (rws_iter_next(&subiter, 0)) {
-        if (!first) {
+        if (first) {
+            first = 0;
+        } else {
             len = rws_print(fd, "%c", list_separator);
             total += len;
         }
         len = rws_print_field(fd, &subiter, field, 0);
         total += len;
-        first = 0;
     }
 
     return total;
@@ -2071,7 +2468,7 @@ rws_print_titles(
  *
  *    Return 0 for normal iteration.  Return -1 for no output (other
  *    than titles).  Return 1 for outputting a single non-iterated
- *    entry.
+ *    entry (e.g., a foo:list).
  */
 static int
 rws_setup_iter_from_fields(
@@ -2084,6 +2481,8 @@ rws_setup_iter_from_fields(
     int class_set = 0;
     /* Boolean: flowtype iterator set? */
     int flowtype_set = 0;
+    /* Boolean: group iterator set? */
+    int group_set = 0;
     /* Boolean: sensor iterator set? */
     int sensor_set = 0;
     /* Default-type iterator set at this level (0 == none, since
@@ -2104,6 +2503,9 @@ rws_setup_iter_from_fields(
             if (class_set || flowtype_set) {
                 break;
             }
+            if (group_set && !sensor_set) {
+                iter->class_check_group = 1;
+            }
             if (sensor_set) {
                 iter->order[level] = RWS_CLASS_FROM_SENSOR;
             } else if (fields[i] == RWST_DEFAULT_CLASS) {
@@ -2115,11 +2517,23 @@ rws_setup_iter_from_fields(
             ++level;
             class_set = 1;
             break;
+
           case RWST_TYPE:
           case RWST_FLOWTYPE:
           case RWST_FLOWTYPE_ID:
             if (flowtype_set) {
                 break;
+            }
+            if (group_set && !sensor_set) {
+                iter->class_check_group = 1;
+            }
+            if (sensor_set && !class_set) {
+                /* add a class iterator based on the sensor to limit the
+                 * flowtypes to those matching the sensor */
+                iter->order[level] = RWS_CLASS_FROM_SENSOR;
+                ++level;
+                iter->level = level;
+                class_set = 1;
             }
             if (default_type) {
                 /* Replace default type, as flowtype and default type
@@ -2135,17 +2549,42 @@ rws_setup_iter_from_fields(
             }
             flowtype_set = 1;
             break;
+
           case RWST_SENSOR:
           case RWST_SENSOR_ID:
           case RWST_SENSOR_DESC:
             if (sensor_set) {
                 break;
             }
-            iter->order[level] = class_set ? RWS_SENSOR_FROM_CLASS : RWS_SENSOR;
+            if (class_set || flowtype_set) {
+                iter->order[level] = RWS_SENSOR_FROM_CLASS;
+            } else if (group_set) {
+                iter->order[level] = RWS_SENSOR_FROM_GROUP;
+            } else {
+                iter->order[level] = RWS_SENSOR;
+            }
             iter->level = level;
             ++level;
             sensor_set = 1;
             break;
+
+          case RWST_GROUP:
+            if (group_set) {
+                break;
+            }
+            if (sensor_set) {
+                iter->order[level] = RWS_GROUP_FROM_SENSOR;
+            } else {
+                if (class_set || flowtype_set) {
+                    iter->group_check_class = 1;
+                }
+                iter->order[level] = RWS_GROUP;
+            }
+            iter->level = level;
+            ++level;
+            group_set = 1;
+            break;
+
           case RWST_DEFAULT_TYPE:
             assert(!default_type);
             if (flowtype_set) {
@@ -2166,12 +2605,14 @@ rws_setup_iter_from_fields(
             ++level;
             default_type = level;
             break;
+
           case RWST_CLASS_LIST:
           case RWST_TYPE_LIST:
           case RWST_FLOWTYPE_LIST:
           case RWST_FLOWTYPE_ID_LIST:
           case RWST_SENSOR_LIST:
           case RWST_SENSOR_ID_LIST:
+          case RWST_GROUP_LIST:
           case RWST_DEFAULT_CLASS_LIST:
           case RWST_REPO_START_DATE:
           case RWST_REPO_END_DATE:
@@ -2180,8 +2621,10 @@ rws_setup_iter_from_fields(
              * row of output. */
             singleton = 1;
             break;
+
           case RWST_MARK_DEFAULTS:
             break;
+
           case RWST_MAX_FIELD_COUNT:
           default:
             skAbortBadCase(fields[i]);
@@ -2192,6 +2635,7 @@ rws_setup_iter_from_fields(
     iter->flowtype_id = SK_INVALID_FLOWTYPE;
     iter->class_id    = SK_INVALID_CLASS;
     iter->sensor_id   = SK_INVALID_SENSOR;
+    iter->group_id    = SK_INVALID_SENSORGROUP;
     rws_iter_bind(iter, level ? 0 : -1);
 
     if (level != 0) {

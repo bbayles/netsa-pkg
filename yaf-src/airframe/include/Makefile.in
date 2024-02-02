@@ -94,13 +94,15 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps =  \
 	$(top_srcdir)/m4/ax_check_aligned_access_required.m4 \
 	$(top_srcdir)/m4/ax_check_libz.m4 \
+	$(top_srcdir)/m4/ax_enable_warnings.m4 \
+	$(top_srcdir)/m4/ax_lib_openssl.m4 \
 	$(top_srcdir)/m4/ax_prog_doxygen.m4 \
 	$(top_srcdir)/m4/infomodel.m4 $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltargz.m4 $(top_srcdir)/m4/ltdl.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
 	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/m4/spread.m4 $(top_srcdir)/m4/yafsummary.m4 \
-	$(top_srcdir)/acinclude.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/yafutil.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(nobase_include_HEADERS) \
@@ -228,7 +230,6 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-ENABLE_ZLIB = @ENABLE_ZLIB@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
@@ -281,6 +282,8 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OPENSSL_CPPFLAGS = @OPENSSL_CPPFLAGS@
+OPENSSL_LDFLAGS = @OPENSSL_LDFLAGS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -307,8 +310,11 @@ SPREAD_CFLAGS = @SPREAD_CFLAGS@
 SPREAD_LDFLAGS = @SPREAD_LDFLAGS@
 SPREAD_LIBS = @SPREAD_LIBS@
 STRIP = @STRIP@
+UPDATE_MARKINGS = @UPDATE_MARKINGS@
 VERSION = @VERSION@
+WARN_CFLAGS = @WARN_CFLAGS@
 XSLTPROC = @XSLTPROC@
+YAF_CPPFLAGS = @YAF_CPPFLAGS@
 YAF_HAS_DAG = @YAF_HAS_DAG@
 YAF_HAS_NAPATECH = @YAF_HAS_NAPATECH@
 YAF_HAS_NETRONOME = @YAF_HAS_NETRONOME@

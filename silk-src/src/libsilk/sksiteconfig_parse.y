@@ -1,9 +1,51 @@
 %{
 /*
-** Copyright (C) 2006-2020 by Carnegie Mellon University.
+** Copyright (C) 2006-2023 by Carnegie Mellon University.
 **
 ** @OPENSOURCE_LICENSE_START@
-** See license information in ../../LICENSE.txt
+**
+** SiLK 3.22.0
+**
+** Copyright 2023 Carnegie Mellon University.
+**
+** NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+** INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON
+** UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+** AS TO ANY MATTER INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR
+** PURPOSE OR MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF
+** THE MATERIAL. CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF
+** ANY KIND WITH RESPECT TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT
+** INFRINGEMENT.
+**
+** Released under a GNU GPL 2.0-style license, please see LICENSE.txt or
+** contact permission@sei.cmu.edu for full terms.
+**
+** [DISTRIBUTION STATEMENT A] This material has been approved for public
+** release and unlimited distribution.  Please see Copyright notice for
+** non-US Government use and distribution.
+**
+** GOVERNMENT PURPOSE RIGHTS - Software and Software Documentation
+**
+** Contract No.: FA8702-15-D-0002
+** Contractor Name: Carnegie Mellon University
+** Contractor Address: 4500 Fifth Avenue, Pittsburgh, PA 15213
+**
+** The Government's rights to use, modify, reproduce, release, perform,
+** display, or disclose this software are restricted by paragraph (b)(2) of
+** the Rights in Noncommercial Computer Software and Noncommercial Computer
+** Software Documentation clause contained in the above identified
+** contract. No restrictions apply after the expiration date shown
+** above. Any reproduction of the software or portions thereof marked with
+** this legend must also reproduce the markings.
+**
+** Carnegie Mellon(R) and CERT(R) are registered in the U.S. Patent and
+** Trademark Office by Carnegie Mellon University.
+**
+** This Software includes and/or makes use of Third-Party Software each
+** subject to its own license.
+**
+** DM23-0973
+**
 ** @OPENSOURCE_LICENSE_END@
 */
 
@@ -14,7 +56,7 @@
 
 #include <silk/silk.h>
 
-RCSIDENT("$SiLK: sksiteconfig_parse.y ef14e54179be 2020-04-14 21:57:45Z mthomas $");
+RCSIDENT("$SiLK: sksiteconfig_parse.y b94afc02f4c5 2023-09-07 14:09:10Z mthomas $");
 
 #include "sksiteconfig.h"
 #include <silk/sksite.h>
@@ -120,19 +162,17 @@ static void do_err_args_none(const char *cmd);
 
 %token TOK_NL
 
-%token TOK_ATOM TOK_INTEGER TOK_STRING
-
 %token TOK_CLASS TOK_DEF_CLASS TOK_DEF_TYPES TOK_END_CLASS TOK_END_GROUP
 %token TOK_GROUP TOK_INCLUDE TOK_PATH_FORMAT TOK_PACKING_LOGIC
 %token TOK_SENSOR TOK_SENSORS TOK_TYPE TOK_VERSION
 
-%token ERR_UNK_CMD ERR_UNREC ERR_UNTERM_STRING ERR_STR_TOO_LONG
+%token ERR_UNREC ERR_UNTERM_STRING ERR_STR_TOO_LONG
 %token ERR_INVALID_OCTAL_ESCAPE
 
-%type <str> TOK_ATOM
-%type <str> TOK_INTEGER
-%type <str> TOK_STRING
-%type <str> ERR_UNK_CMD
+%token <str> TOK_ATOM
+%token <str> TOK_INTEGER
+%token <str> TOK_STRING
+%token <str> ERR_UNK_CMD
 
 %type <integer> int
 %type <str> str

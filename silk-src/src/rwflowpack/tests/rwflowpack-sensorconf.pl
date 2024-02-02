@@ -857,7 +857,7 @@ for $sensor_conf (@sensor_files) {
     # compute MD5 of the file and compare to expected value; if there
     # is not a match, put name into @mismatch.
     my $md5;
-    compute_md5(\$md5, "cat $sensor_conf.OUT", 0);
+    compute_md5_file(\$md5, "$sensor_conf.OUT");
     if ($md5_sums{$sensor_conf} ne $md5) {
         if ($ENV{SK_TESTS_VERBOSE}) {
             print STDERR "$NAME: FAIL: checksum mismatch [$md5]",
